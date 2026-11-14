@@ -1,5 +1,6 @@
 import type { BoneSpec } from '../schema/bone-spec';
 import { type Item, validateItem } from '../schema/item';
+import { type Backup, type ImportMode, type ImportSummary, exportBackup, importBackup } from './backup';
 import { type Db, type StoreDeps, type StoredItem, compact, inTx, openDb } from './db';
 import { type StoreResult, fail, invalid, toStoreError } from './errors';
 
@@ -9,6 +10,8 @@ export interface Store {
   list(): Promise<StoreResult<StoredItem[]>>;
   update(id: string, values: unknown): Promise<StoreResult<StoredItem>>;
   remove(id: string): Promise<StoreResult<void>>;
+  exportBackup(): Promise<StoreResult<Backup>>;
+  importBackup(text: string, mode: ImportMode): Promise<StoreResult<ImportSummary>>;
   close(): void;
 }
 
@@ -70,6 +73,8 @@ function itemStore(spec: BoneSpec, db: Db, deps: StoreDeps): Store {
         return ok(undefined);
       }),
     ),
+    exportBackup: guarded(() => exportBackup(db, spec, deps)),
+    importBackup: guarded((text: string, mode: ImportMode) => importBackup(db, spec, text, mode)),
     close: () => {
       try {
         db.close();

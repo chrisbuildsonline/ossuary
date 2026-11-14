@@ -34,7 +34,7 @@ Rules for every task: write the failing test first, then the code, and keep the 
 - [ ] 4. Local store (`src/store`)
   - [x] 4.1 Write failing tests with `fake-indexeddb`, then implement `errors.ts` and `db.ts` (`ossuary:<appId>` database, `items` and `meta` stores, error mapping). _Requirements: 3.1, 3.12_
   - [x] 4.2 Implement `repo.ts` CRUD with injected `newId` and `nowIso`, validation on write, `not_found`, and namespace isolation tests. _Requirements: 3.2, 3.3, 3.4_
-  - [ ] 4.3 Implement `backup.ts`: zod backup schema, `exportBackup`, `importBackup` in `merge` and `replace` modes in one transaction, round-trip test. _Requirements: 3.5, 3.6, 3.7_
+  - [x] 4.3 Implement `backup.ts`: zod backup schema, `exportBackup`, `importBackup` in `merge` and `replace` modes in one transaction, round-trip test. _Requirements: 3.5, 3.6, 3.7_
   - [ ] 4.4 Implement `csv.ts`: RFC 4180 parser with quotes, CRLF, BOM, embedded newlines, and the 5 MB / 10,000 row limits. _Requirements: 3.8, 3.11_
   - [ ] 4.5 Implement `csv-import.ts`: `suggestMapping`, `previewCsvImport` (dates as `YYYY-MM-DD`, enum match by value or label, skipped reasons) and `commitCsvImport`. _Requirements: 3.9, 3.10_
   - [ ] 4.6 Add fuzz tests for backup text and CSV grids: never throws, never leaves a partial write. Assert no network calls from the store. _Requirements: 3.7, 3.13, 3.14_
