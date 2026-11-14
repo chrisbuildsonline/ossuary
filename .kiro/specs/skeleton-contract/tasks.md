@@ -8,8 +8,8 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [ ] 1.3 Add boundary tests: banned-word scan, `Date.now()` / `new Date()` scan over `engine`, `schema`, `ics`, import scan for `apps/` and `tools/`, runtime dependency allow-list, and a gallery network guard helper. _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
 - [ ] 2. Bone spec schema (`src/schema`)
-  - [ ] 2.1 Add `issues.ts` (`Issue`, `Result`, `formatIssues` with readable paths, max 50) with tests. _Requirements: 1.20_
-  - [ ] 2.2 Add `contrast.ts` (`relativeLuminance`, `contrastRatio`) with tests against the DESIGN.md ratios. _Requirements: 1.14, 1.15, 1.16_
+  - [x] 2.1 Add `issues.ts` (`Issue`, `Result`, `formatIssues` with readable paths, max 50) with tests. _Requirements: 1.20_
+  - [x] 2.2 Add `contrast.ts` (`relativeLuminance`, `contrastRatio`) with tests against the DESIGN.md ratios. _Requirements: 1.14, 1.15, 1.16_
   - [ ] 2.3 Write failing tests, then implement `fields.ts`: kinds text/date/enum/number, unique keys, enum options, number min/max/step. _Requirements: 1.2, 1.3, 1.4_
   - [ ] 2.4 Write failing tests, then implement `lifespans.ts` (array of one to four lifespans, unique ids, labels, `startField`, base as duration or date field) and `rules.ts` (extend, shorten, clamp, lookup, `when`, declared order kept, rule ids unique per lifespan). Add the one-lifespan, four, five, empty and duplicate-id cases. _Requirements: 1.5, 1.6, 1.7, 1.8, 1.9, 1.23_
   - [ ] 2.5 Write failing tests, then implement `stages.ts`, applied per lifespan: tones, unique ids, thresholds strictly decreasing, single last `dead` stage. _Requirements: 1.11_
