@@ -15,6 +15,10 @@ export interface StoredItem {
   updatedAt: string;
 }
 
+/** Drops keys whose value is `undefined`, so stored values match what a JSON backup gives back. */
+export const compact = (values: Item): Item =>
+  Object.fromEntries(Object.entries(values).filter(([, v]) => v !== undefined));
+
 /** Edges the store must not read itself: ids, the clock and (optionally) the IndexedDB factory. */
 export interface StoreDeps {
   newId(): string;
