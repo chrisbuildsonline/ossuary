@@ -1,0 +1,7 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "node_modules/.tmp/tsc-config"
+  },
+  "include": ["*.config.ts"]
+}

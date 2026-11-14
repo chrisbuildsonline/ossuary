@@ -1,0 +1,23 @@
+{
+  "name": "ossuary",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@10.34.9",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -b",
+    "e2e": "playwright test",
+    "dev": "bun run dev:pantry",
+    "dev:pantry": "vite apps/pantry-reaper --port 5173 --strictPort",
+    "dev:wraith": "vite apps/warranty-wraith --port 5174 --strictPort",
+    "build": "vite build apps/pantry-reaper && vite build apps/warranty-wraith",
+    "playwright:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.0"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/ossuary-core" },
+    { "path": "tools/bone-forge" },
+    { "path": "tsconfig.config.json" }
+  ]
+}
