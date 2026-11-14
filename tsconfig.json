@@ -2,6 +2,8 @@
   "files": [],
   "references": [
     { "path": "packages/ossuary-core" },
+    { "path": "apps/pantry-reaper" },
+    { "path": "apps/warranty-wraith" },
     { "path": "tools/bone-forge" },
     { "path": "tsconfig.config.json" }
   ]
