@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./schema": "./src/schema/index.ts",
     "./engine": "./src/engine/index.ts",
+    "./store": "./src/store/index.ts",
     "./bone-spec.schema.json": "./bone-spec.schema.json"
   },
   "scripts": {
