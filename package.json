@@ -6,6 +6,7 @@
   "packageManager": "pnpm@10.34.9",
   "scripts": {
     "test": "vitest run",
+    "test:tz": "TZ=UTC vitest run packages/ossuary-core && TZ=America/New_York vitest run packages/ossuary-core && TZ=Pacific/Auckland vitest run packages/ossuary-core",
     "typecheck": "tsc -b",
     "e2e": "playwright test",
     "dev": "bun run dev:pantry",

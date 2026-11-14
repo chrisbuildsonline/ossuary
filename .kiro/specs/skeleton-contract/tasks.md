@@ -3,8 +3,8 @@
 Rules for every task: write the failing test first, then the code, and keep the whole suite green before the next task. Requirement numbers refer to `requirements.md`.
 
 - [ ] 1. Scaffold the package
-  - [ ] 1.1 Create `packages/ossuary-core` with `package.json` (exports map, runtime deps `zod`, `idb`, `ics`, `@fontsource-variable/inter|fraunces|space-grotesk`), `tsconfig.json`, Vite and vitest config, and a `test:tz` script. _Requirements: 6.5_
-  - [ ] 1.2 Add dev dependencies: `vitest`, `fast-check`, `fake-indexeddb`, `happy-dom`, `ical.js`, `@playwright/test`, `@axe-core/playwright`. _Requirements: 3.14, 4.7, 5.23_
+  - [x] 1.1 Create `packages/ossuary-core` with `package.json` (exports map, runtime deps `zod`, `idb`, `ics`, `@fontsource-variable/inter|fraunces|space-grotesk`), `tsconfig.json`, Vite and vitest config, and a `test:tz` script. _Requirements: 6.5_
+  - [x] 1.2 Add dev dependencies: `vitest`, `fast-check`, `fake-indexeddb`, `happy-dom`, `ical.js`, `@playwright/test`, `@axe-core/playwright`. _Requirements: 3.14, 4.7, 5.23_
   - [ ] 1.3 Add boundary tests: banned-word scan, `Date.now()` / `new Date()` scan over `engine`, `schema`, `ics`, import scan for `apps/` and `tools/`, runtime dependency allow-list, and a gallery network guard helper. _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
 - [ ] 2. Bone spec schema (`src/schema`)
