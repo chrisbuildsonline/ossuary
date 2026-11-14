@@ -2,23 +2,23 @@
 
 Rules for every task: write the failing test first, then the code, and keep the whole suite green before the next task. Requirement numbers refer to `requirements.md`.
 
-- [ ] 1. Scaffold the package
+- [x] 1. Scaffold the package
   - [x] 1.1 Create `packages/ossuary-core` with `package.json` (exports map, runtime deps `zod`, `idb`, `ics`, `@fontsource-variable/inter|fraunces|space-grotesk`), `tsconfig.json`, Vite and vitest config, and a `test:tz` script. _Requirements: 6.5_
   - [x] 1.2 Add dev dependencies: `vitest`, `fast-check`, `fake-indexeddb`, `happy-dom`, `ical.js`, `@playwright/test`, `@axe-core/playwright`. _Requirements: 3.14, 4.7, 5.23_
-  - [ ] 1.3 Add boundary tests: banned-word scan, `Date.now()` / `new Date()` scan over `engine`, `schema`, `ics`, import scan for `apps/` and `tools/`, runtime dependency allow-list, and a gallery network guard helper. _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
+  - [x] 1.3 Add boundary tests: banned-word scan, `Date.now()` / `new Date()` scan over `engine`, `schema`, `ics`, import scan for `apps/` and `tools/`, runtime dependency allow-list, and a gallery network guard helper. _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 2. Bone spec schema (`src/schema`)
+- [x] 2. Bone spec schema (`src/schema`)
   - [x] 2.1 Add `issues.ts` (`Issue`, `Result`, `formatIssues` with readable paths, max 50) with tests. _Requirements: 1.20_
   - [x] 2.2 Add `contrast.ts` (`relativeLuminance`, `contrastRatio`) with tests against the DESIGN.md ratios. _Requirements: 1.14, 1.15, 1.16_
-  - [ ] 2.3 Write failing tests, then implement `fields.ts`: kinds text/date/enum/number, unique keys, enum options, number min/max/step. _Requirements: 1.2, 1.3, 1.4_
-  - [ ] 2.4 Write failing tests, then implement `lifespans.ts` (array of one to four lifespans, unique ids, labels, `startField`, base as duration or date field) and `rules.ts` (extend, shorten, clamp, lookup, `when`, declared order kept, rule ids unique per lifespan). Add the one-lifespan, four, five, empty and duplicate-id cases. _Requirements: 1.5, 1.6, 1.7, 1.8, 1.9, 1.23_
-  - [ ] 2.5 Write failing tests, then implement `stages.ts`, applied per lifespan: tones, unique ids, thresholds strictly decreasing, single last `dead` stage. _Requirements: 1.11_
-  - [ ] 2.6 Write failing tests, then implement `theme.ts`: strict eight keys, hex format, enums, accent contrast on white and canvas, canvas luminance range, accentInk on accentTint. _Requirements: 1.12, 1.13, 1.14, 1.15, 1.16_
-  - [ ] 2.7 Implement `sources` attribution and `sourceId` references, `titleField` / `summaryFields`, optional `copy`. _Requirements: 1.17, 1.18_
-  - [ ] 2.8 Implement root `parseBoneSpec` with cross-reference checks in `superRefine` (run per lifespan, paths like `lifespans[1].rules[0].when.field`), size limits (40 fields, 4 lifespans, 50 rules in total, 8 stages per lifespan), unknown-key rejection and the last-resort `try/catch`. _Requirements: 1.1, 1.10, 1.19, 1.20, 1.23_
-  - [ ] 2.9 Implement `buildItemSchema` / `validateItem` (real calendar days, enum membership, required fields) with tests. _Requirements: 2.13, 3.3_
-  - [ ] 2.10 Generate `bone-spec.schema.json` with `z.toJSONSchema`, check it in, and add the sync test. _Requirements: 1.21_
-  - [ ] 2.11 Add fast-check fuzz: `fc.jsonValue()`, `fc.anything()`, and mutated valid specs never throw, and accepted specs reparse equal. Add the valid-spec arbitrary used by later tasks (one to four lifespans). _Requirements: 1.1, 1.22_
+  - [x] 2.3 Write failing tests, then implement `fields.ts`: kinds text/date/enum/number, unique keys, enum options, number min/max/step. _Requirements: 1.2, 1.3, 1.4_
+  - [x] 2.4 Write failing tests, then implement `lifespans.ts` (array of one to four lifespans, unique ids, labels, `startField`, base as duration or date field) and `rules.ts` (extend, shorten, clamp, lookup, `when`, declared order kept, rule ids unique per lifespan). Add the one-lifespan, four, five, empty and duplicate-id cases. _Requirements: 1.5, 1.6, 1.7, 1.8, 1.9, 1.23_
+  - [x] 2.5 Write failing tests, then implement `stages.ts`, applied per lifespan: tones, unique ids, thresholds strictly decreasing, single last `dead` stage. _Requirements: 1.11_
+  - [x] 2.6 Write failing tests, then implement `theme.ts`: strict eight keys, hex format, enums, accent contrast on white and canvas, canvas luminance range, accentInk on accentTint. _Requirements: 1.12, 1.13, 1.14, 1.15, 1.16_
+  - [x] 2.7 Implement `sources` attribution and `sourceId` references, `titleField` / `summaryFields`, optional `copy`. _Requirements: 1.17, 1.18_
+  - [x] 2.8 Implement root `parseBoneSpec` with cross-reference checks in `superRefine` (run per lifespan, paths like `lifespans[1].rules[0].when.field`), size limits (40 fields, 4 lifespans, 50 rules in total, 8 stages per lifespan), unknown-key rejection and the last-resort `try/catch`. _Requirements: 1.1, 1.10, 1.19, 1.20, 1.23_
+  - [x] 2.9 Implement `buildItemSchema` / `validateItem` (real calendar days, enum membership, required fields) with tests. _Requirements: 2.13, 3.3_
+  - [x] 2.10 Generate `bone-spec.schema.json` with `z.toJSONSchema`, check it in, and add the sync test. _Requirements: 1.21_
+  - [x] 2.11 Add fast-check fuzz: `fc.jsonValue()`, `fc.anything()`, and mutated valid specs never throw, and accepted specs reparse equal. Add the valid-spec arbitrary used by later tasks (one to four lifespans). _Requirements: 1.1, 1.22_
 
 - [ ] 3. Lifespan engine (`src/engine`)
   - [ ] 3.1 Write failing tests, then implement `iso-day.ts` (parse, format, day numbers, real-day check) with no `Date` object. Include leap years and century rules. _Requirements: 2.4_
