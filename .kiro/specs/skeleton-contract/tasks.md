@@ -20,7 +20,7 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 2.10 Generate `bone-spec.schema.json` with `z.toJSONSchema`, check it in, and add the sync test. _Requirements: 1.21_
   - [x] 2.11 Add fast-check fuzz: `fc.jsonValue()`, `fc.anything()`, and mutated valid specs never throw, and accepted specs reparse equal. Add the valid-spec arbitrary used by later tasks (one to four lifespans). _Requirements: 1.1, 1.22_
 
-- [ ] 3. Lifespan engine (`src/engine`)
+- [x] 3. Lifespan engine (`src/engine`)
   - [x] 3.1 Write failing tests, then implement `iso-day.ts` (parse, format, day numbers, real-day check) with no `Date` object. Include leap years and century rules. _Requirements: 2.4_
   - [x] 3.2 Write failing tests, then implement `duration.ts` with month and year arithmetic that clamps to the last day of the target month. _Requirements: 2.6_
   - [x] 3.3 Write failing tests, then implement base evaluation and rules in declared order for one lifespan (`extend`, `shorten` with start floor, `clamp`, `lookup`, `when`). _Requirements: 2.5, 2.7, 2.8_
@@ -29,7 +29,7 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 3.6 Implement `evaluate(spec, item, now)` returning `Result<Evaluation>`: validate the item once, evaluate every lifespan in declared order into `lifespans`, with invalid-item issues, no mutation and deep-equal determinism. _Requirements: 2.1, 2.2, 2.3, 2.13_
   - [x] 3.7 Write failing tests, then implement `primary.ts` (`pickPrimary`) and set `primaryIndex`: fewest `remaining.days` among live lifespans (days >= 0), ties to the earlier declared lifespan; when every lifespan has expired, the greatest `remaining.days`, ties to the earlier declared lifespan; live beats dead; single lifespan gives index 0. _Requirements: 2.15, 2.16_
   - [x] 3.8 Add fast-check properties per lifespan: monotonic `remaining` and stage index, `extend` never shortens, clamp bounds hold, exact stage boundaries, determinism, lifespan independence. Add the primary properties (same length and order, if any lifespan is live the primary is live, minimal days among live, greatest days when all expired, no earlier tie). Use fixed seeds and fixed `now` values. _Requirements: 2.14, 2.16_
-  - [ ] 3.9 Run the engine suite under `TZ=UTC`, `America/New_York` and `Pacific/Auckland` through `test:tz`, with dates across DST changes. _Requirements: 2.4, 2.14_
+  - [x] 3.9 Run the engine suite under `TZ=UTC`, `America/New_York` and `Pacific/Auckland` through `test:tz`, with dates across DST changes. _Requirements: 2.4, 2.14_
 
 - [ ] 4. Local store (`src/store`)
   - [ ] 4.1 Write failing tests with `fake-indexeddb`, then implement `errors.ts` and `db.ts` (`ossuary:<appId>` database, `items` and `meta` stores, error mapping). _Requirements: 3.1, 3.12_
