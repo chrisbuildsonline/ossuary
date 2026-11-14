@@ -21,8 +21,8 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 2.11 Add fast-check fuzz: `fc.jsonValue()`, `fc.anything()`, and mutated valid specs never throw, and accepted specs reparse equal. Add the valid-spec arbitrary used by later tasks (one to four lifespans). _Requirements: 1.1, 1.22_
 
 - [ ] 3. Lifespan engine (`src/engine`)
-  - [ ] 3.1 Write failing tests, then implement `iso-day.ts` (parse, format, day numbers, real-day check) with no `Date` object. Include leap years and century rules. _Requirements: 2.4_
-  - [ ] 3.2 Write failing tests, then implement `duration.ts` with month and year arithmetic that clamps to the last day of the target month. _Requirements: 2.6_
+  - [x] 3.1 Write failing tests, then implement `iso-day.ts` (parse, format, day numbers, real-day check) with no `Date` object. Include leap years and century rules. _Requirements: 2.4_
+  - [x] 3.2 Write failing tests, then implement `duration.ts` with month and year arithmetic that clamps to the last day of the target month. _Requirements: 2.6_
   - [ ] 3.3 Write failing tests, then implement base evaluation and rules in declared order for one lifespan (`extend`, `shorten` with start floor, `clamp`, `lookup`, `when`). _Requirements: 2.5, 2.7, 2.8_
   - [ ] 3.4 Write failing tests, then implement `trace.ts` templates, one line per applied rule (including "no change" for clamp) and source names. _Requirements: 2.9_
   - [ ] 3.5 Write failing tests, then implement `remaining`, `hours`, `fraction` and exact stage selection at thresholds, using the lifespan's own stages. _Requirements: 2.10, 2.11, 2.12_
