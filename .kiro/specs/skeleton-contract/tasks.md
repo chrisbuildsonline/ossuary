@@ -39,10 +39,10 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 4.5 Implement `csv-import.ts`: `suggestMapping`, `previewCsvImport` (dates as `YYYY-MM-DD`, enum match by value or label, skipped reasons) and `commitCsvImport`. _Requirements: 3.9, 3.10_
   - [x] 4.6 Add fuzz tests for backup text and CSV grids: never throws, never leaves a partial write. Assert no network calls from the store. _Requirements: 3.7, 3.13, 3.14_
 
-- [ ] 5. ICS export (`src/ics`)
+- [x] 5. ICS export (`src/ics`)
   - [x] 5.1 Write failing tests that parse output with `ical.js`, then implement `exportIcs` for one entry with one lifespan: all-day event on that lifespan's `expiresAt`, stable UID from app id, item id and lifespan id, `DTSTAMP` from `now`, summary. _Requirements: 4.1, 4.2, 4.7_
   - [x] 5.2 Add alarms at each threshold stage of the event's own lifespan (09:00 on the entry day), drop past alarms, and assert trigger values by parsing. Add a two-lifespan case: two events per entry, distinct UIDs, label appended to the summary, alarms taken from each lifespan's stages. _Requirements: 4.2, 4.3, 4.4, 4.7_
-  - [ ] 5.3 Support many entries, skipped entries with issues (all lifespans of the entry skipped), and escaping and folding round-trip tests. _Requirements: 4.1, 4.5, 4.6, 4.7_
+  - [x] 5.3 Support many entries, skipped entries with issues (all lifespans of the entry skipped), and escaping and folding round-trip tests. _Requirements: 4.1, 4.5, 4.6, 4.7_
 
 - [ ] 6. UI foundations (`src/ui`)
   - [ ] 6.1 Add `tokens.css` from DESIGN.md section 2, the tone slot colours from section 3, and the reduced-motion block. Add a test that every colour pair in the tone table meets 4.5:1. _Requirements: 5.1, 5.8, 5.20_
