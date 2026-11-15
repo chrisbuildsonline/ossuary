@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as engine from './engine/index';
+import * as ics from './ics/index';
 import { widgetSpec } from './testing/fixtures';
 import * as core from './index';
 import * as schema from './schema/index';
@@ -55,9 +56,20 @@ describe('ossuary-core', () => {
     }
   });
 
-  it('declares the ./engine and ./store subpath exports', () => {
+  it('exports the ICS API from the root and from ./ics', () => {
+    for (const api of [core, ics]) {
+      const spec = core.parseBoneSpec(widgetSpec);
+      if (!spec.ok) throw new Error('fixture invalid');
+      const out = api.exportIcs(spec.value, [{ id: 'w1', values: { name: 'Widget', place: 'cold', made: '2026-11-14' } }], { now: { day: '2026-11-14' } });
+      expect(out.skipped).toEqual([]);
+      expect(out.ics).toContain('BEGIN:VEVENT');
+    }
+  });
+
+  it('declares the ./engine, ./store and ./ics subpath exports', () => {
     const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { exports: Record<string, string> };
     expect(pkg.exports['./engine']).toBe('./src/engine/index.ts');
     expect(pkg.exports['./store']).toBe('./src/store/index.ts');
+    expect(pkg.exports['./ics']).toBe('./src/ics/index.ts');
   });
 });

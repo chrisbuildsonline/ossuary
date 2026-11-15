@@ -9,6 +9,7 @@
     "./schema": "./src/schema/index.ts",
     "./engine": "./src/engine/index.ts",
     "./store": "./src/store/index.ts",
+    "./ics": "./src/ics/index.ts",
     "./bone-spec.schema.json": "./bone-spec.schema.json"
   },
   "scripts": {
