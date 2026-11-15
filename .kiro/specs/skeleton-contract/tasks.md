@@ -41,7 +41,7 @@ Rules for every task: write the failing test first, then the code, and keep the 
 
 - [ ] 5. ICS export (`src/ics`)
   - [x] 5.1 Write failing tests that parse output with `ical.js`, then implement `exportIcs` for one entry with one lifespan: all-day event on that lifespan's `expiresAt`, stable UID from app id, item id and lifespan id, `DTSTAMP` from `now`, summary. _Requirements: 4.1, 4.2, 4.7_
-  - [ ] 5.2 Add alarms at each threshold stage of the event's own lifespan (09:00 on the entry day), drop past alarms, and assert trigger values by parsing. Add a two-lifespan case: two events per entry, distinct UIDs, label appended to the summary, alarms taken from each lifespan's stages. _Requirements: 4.2, 4.3, 4.4, 4.7_
+  - [x] 5.2 Add alarms at each threshold stage of the event's own lifespan (09:00 on the entry day), drop past alarms, and assert trigger values by parsing. Add a two-lifespan case: two events per entry, distinct UIDs, label appended to the summary, alarms taken from each lifespan's stages. _Requirements: 4.2, 4.3, 4.4, 4.7_
   - [ ] 5.3 Support many entries, skipped entries with issues (all lifespans of the entry skipped), and escaping and folding round-trip tests. _Requirements: 4.1, 4.5, 4.6, 4.7_
 
 - [ ] 6. UI foundations (`src/ui`)

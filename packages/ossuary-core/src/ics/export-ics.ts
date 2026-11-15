@@ -54,6 +54,9 @@ function stampOf(now: Now): string {
   return `${dateValue(now.day)}T${hh}${mm}00Z`;
 }
 
+/** Offset from the event start (midnight on the expiry day) to 09:00 on the day `n` days before. */
+const triggerFor = (n: number): string => (n === 0 ? 'PT9H' : n === 1 ? '-PT15H' : `-P${n - 1}DT15H`);
+
 export function exportIcs(spec: BoneSpec, entries: IcsEntry[], opts: { now: Now; prodId?: string }): IcsExport {
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', `PRODID:${escapeText(opts.prodId ?? `-//Ossuary//${spec.id}//EN`)}`, 'CALSCALE:GREGORIAN'];
   const skipped: IcsExport['skipped'] = [];
@@ -66,20 +69,28 @@ export function exportIcs(spec: BoneSpec, entries: IcsEntry[], opts: { now: Now;
       skipped.push({ id: entry.id, issues: result.error });
       continue;
     }
+    const nowDay = toDayNumber(opts.now.day); // evaluate has checked that now.day is a real day
     const title = String(entry.values[spec.entity.titleField] ?? '');
-    for (const lifespan of result.value.lifespans) {
+    result.value.lifespans.forEach((lifespan, i) => {
       const summary = several ? `${title} - ${lifespan.label}` : title;
+      const expiry = toDayNumber(lifespan.expiresAt);
+      const alarms = (spec.lifespans[i]?.stages ?? []).flatMap(({ enterAtDays, label }) =>
+        enterAtDays === undefined || expiry - enterAtDays < nowDay
+          ? []
+          : ['BEGIN:VALARM', 'ACTION:DISPLAY', `TRIGGER:${triggerFor(enterAtDays)}`, `DESCRIPTION:${escapeText(`${summary}: ${label}`)}`, 'END:VALARM'],
+      );
       lines.push(
         'BEGIN:VEVENT',
         `UID:${escapeText(`${spec.id}-${entry.id}-${lifespan.lifespanId}@ossuary`)}`,
         `DTSTAMP:${stamp}`,
         `DTSTART;VALUE=DATE:${dateValue(lifespan.expiresAt)}`,
-        `DTEND;VALUE=DATE:${dateValue(fromDayNumber(toDayNumber(lifespan.expiresAt) + 1))}`,
+        `DTEND;VALUE=DATE:${dateValue(fromDayNumber(expiry + 1))}`,
         `SUMMARY:${escapeText(summary)}`,
         'TRANSP:TRANSPARENT',
+        ...alarms,
         'END:VEVENT',
       );
-    }
+    });
   }
   lines.push('END:VCALENDAR');
   return { ics: `${lines.map(fold).join('\r\n')}\r\n`, skipped };
