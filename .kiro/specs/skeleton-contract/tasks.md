@@ -44,12 +44,12 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 5.2 Add alarms at each threshold stage of the event's own lifespan (09:00 on the entry day), drop past alarms, and assert trigger values by parsing. Add a two-lifespan case: two events per entry, distinct UIDs, label appended to the summary, alarms taken from each lifespan's stages. _Requirements: 4.2, 4.3, 4.4, 4.7_
   - [x] 5.3 Support many entries, skipped entries with issues (all lifespans of the entry skipped), and escaping and folding round-trip tests. _Requirements: 4.1, 4.5, 4.6, 4.7_
 
-- [ ] 6. UI foundations (`src/ui`)
-  - [ ] 6.1 Add `tokens.css` from DESIGN.md section 2, the tone slot colours from section 3, and the reduced-motion block. Add a test that every colour pair in the tone table meets 4.5:1. _Requirements: 5.1, 5.8, 5.20_
-  - [ ] 6.2 Implement `theme.ts` (`applyTheme`) and `fonts.ts` (`loadDisplayFont`), and unit-test that only the allowed custom properties are written. _Requirements: 5.2_
-  - [ ] 6.3 Implement `glyphs.ts` (five tone glyphs, alert, import, calendar, bone) and the pure motif functions (candle, ghost, hourglass) with output tests at fractions 0, 0.5, 1 for each tone. _Requirements: 5.9, 5.21_
-  - [ ] 6.4 Implement the countdown formatter and accessible-name builder (primary sentence, plus one sentence per other lifespan) with boundary tests (5 hrs, today, 59 and 60 days, 23 and 24 months, dead) and one- and two-lifespan names. _Requirements: 5.6, 5.7_
-  - [ ] 6.5 Implement `focus-trap.ts` and a shared constructable-stylesheet helper. _Requirements: 5.15_
+- [x] 6. UI foundations (`src/ui`)
+  - [x] 6.1 Add `tokens.css` from DESIGN.md section 2, the tone slot colours from section 3, and the reduced-motion block. Add a test that every colour pair in the tone table meets 4.5:1. _Requirements: 5.1, 5.8, 5.20_
+  - [x] 6.2 Implement `theme.ts` (`applyTheme`) and `fonts.ts` (`loadDisplayFont`), and unit-test that only the allowed custom properties are written. _Requirements: 5.2_
+  - [x] 6.3 Implement `glyphs.ts` (five tone glyphs, alert, import, calendar, bone) and the pure motif functions (candle, ghost, hourglass) with output tests at fractions 0, 0.5, 1 for each tone. _Requirements: 5.9, 5.21_
+  - [x] 6.4 Implement the countdown formatter and accessible-name builder (primary sentence, plus one sentence per other lifespan) with boundary tests (5 hrs, today, 59 and 60 days, 23 and 24 months, dead) and one- and two-lifespan names. _Requirements: 5.6, 5.7_
+  - [x] 6.5 Implement `focus-trap.ts` and a shared constructable-stylesheet helper. _Requirements: 5.15_
 
 - [ ] 7. UI elements (each starts with a failing happy-dom test)
   - [ ] 7.1 `oss-button` (primary, ghost, link; 44 px targets). _Requirements: 5.1, 5.4_

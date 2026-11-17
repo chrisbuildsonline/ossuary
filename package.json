@@ -7,6 +7,7 @@
   "scripts": {
     "test": "bun packages/ossuary-core/scripts/test-tz.ts --all",
     "test:tz": "bun packages/ossuary-core/scripts/test-tz.ts",
+    "test:one": "vitest run",
     "typecheck": "tsc -b",
     "e2e": "playwright test",
     "dev": "bun run dev:pantry",

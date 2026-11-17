@@ -1,0 +1,118 @@
+/* Ossuary core tokens (design/DESIGN.md sections 2, 3 and 5). Components use only these. */
+:root {
+  /* colour */
+  --canvas: #eef0f4;
+  --surface: #ffffff;
+  --surface-sunken: #f4f5f8;
+  --track: #e9ebf0;
+  --line: #eceef2;
+  --line-strong: #8a909c;
+  --text: #15171c;
+  --text-2: #555c69;
+  --text-3: #646a78;
+  --ink: #15171c;
+  --ink-hover: #2a2d35;
+  --on-ink: #ffffff;
+  --scrim: rgb(21 23 28 / .32);
+  --disabled: #c9ccd3;
+  --grabber: #d5d8df;
+  --error: #a8261b;
+
+  /* accent (a theme overrides these on oss-shell) */
+  --accent: #3657c9;
+  --accent-ink: #3657c9;
+  --accent-tint: #e8edfa;
+
+  /* tone slots: the core owns these, themes cannot change them */
+  --tone-fresh-bg: #e2f3e8;
+  --tone-fresh-fg: #17663a;
+  --tone-steady-bg: #e5edfa;
+  --tone-steady-fg: #2b4f96;
+  --tone-soon-bg: #fcefd6;
+  --tone-soon-fg: #8a4b00;
+  --tone-urgent-bg: #fde3df;
+  --tone-urgent-fg: #a8261b;
+  --tone-dead-bg: #e4e6ea;
+  --tone-dead-fg: #3c414b;
+
+  /* motif colours (section 5 and 8) */
+  --motif-wax: #f6efe3;
+  --motif-flame: #f59e0b;
+  --motif-flame-core: #fde68a;
+
+  /* radius */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+
+  /* shadow (cool ink tint, never pure black) */
+  --shadow-1: 0 1px 2px rgb(21 23 28 / .04), 0 4px 12px rgb(21 23 28 / .05);
+  --shadow-2: 0 2px 4px rgb(21 23 28 / .05), 0 12px 32px rgb(21 23 28 / .09);
+  --shadow-3: 0 8px 16px rgb(21 23 28 / .08), 0 24px 64px rgb(21 23 28 / .18);
+
+  /* spacing (4px base) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-14: 56px;
+  --s-18: 72px;
+
+  /* type */
+  --font-ui: "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-ui);
+  --t-body: 400 16px/24px var(--font-ui);
+  --t-label: 500 14px/20px var(--font-ui);
+  --t-caption: 500 13px/18px var(--font-ui);
+  --t-eyebrow: 600 12px/16px var(--font-ui);
+  --t-heading: 600 17px/24px var(--font-ui);
+
+  /* motion */
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-4: 600ms;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --ease-settle: cubic-bezier(.34, 1.4, .64, 1);
+}
+
+/* Tokens built from themable ones. They are declared again wherever a theme is applied
+   (applyTheme sets data-motif), so a theme's accent and display face flow into them. */
+:root, [data-motif] {
+  --font-num: var(--font-display);
+  --t-display: 600 48px/52px var(--font-display);
+  --t-title: 600 28px/34px var(--font-display);
+  --t-num-xl: 600 88px/88px var(--font-num);
+  --t-num-l: 600 40px/40px var(--font-num);
+  --t-num-m: 600 24px/28px var(--font-num);
+  --focus: 3px solid var(--accent);
+}
+
+@media (max-width: 899px) {
+  :root, [data-motif] {
+    --t-display: 600 34px/38px var(--font-display);
+    --t-title: 600 24px/30px var(--font-display);
+    --t-num-xl: 600 72px/72px var(--font-num);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root, [data-motif] {
+    --dur-1: 0ms;
+    --dur-2: 0ms;
+    --dur-3: 0ms;
+    --dur-4: 0ms;
+  }
+  :host, *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
