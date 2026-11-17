@@ -1,0 +1,64 @@
+{
+  "id": "pantry-reaper",
+  "name": "Pantry Reaper",
+  "version": 1,
+  "entity": {
+    "titleField": "name",
+    "summaryFields": ["storage"],
+    "fields": [
+      { "key": "name", "kind": "text", "label": "Food", "required": true },
+      { "key": "food_id", "kind": "text", "label": "FoodKeeper entry", "required": true, "hidden": true },
+      {
+        "key": "storage",
+        "kind": "enum",
+        "label": "Storage",
+        "required": true,
+        "options": [
+          { "value": "pantry", "label": "Pantry" },
+          { "value": "fridge", "label": "Fridge" },
+          { "value": "freezer", "label": "Freezer" }
+        ]
+      },
+      { "key": "bought", "kind": "date", "label": "Opened or bought", "required": true }
+    ]
+  },
+  "lifespans": [
+    {
+      "id": "best_by",
+      "label": "Best by",
+      "startField": "bought",
+      "base": { "type": "duration", "amount": 7, "unit": "day", "label": "Typical shelf life" },
+      "rules": [
+        {
+          "id": "storage_life",
+          "kind": "lookup",
+          "field": "storage",
+          "label": "Storage",
+          "table": {
+            "pantry": { "amount": 30, "unit": "day" },
+            "fridge": { "amount": 7, "unit": "day" },
+            "freezer": { "amount": 180, "unit": "day" }
+          },
+          "sourceId": "usda_foodkeeper"
+        }
+      ],
+      "stages": [
+        { "id": "fresh", "label": "Fresh", "tone": "fresh" },
+        { "id": "steady", "label": "Keeping well", "tone": "steady", "enterAtDays": 14 },
+        { "id": "soon", "label": "Use soon", "tone": "soon", "enterAtDays": 3 },
+        { "id": "urgent", "label": "Eat today", "tone": "urgent", "enterAtDays": 0 },
+        { "id": "spoiled", "label": "Spoiled", "tone": "dead" }
+      ]
+    }
+  ],
+  "copy": { "emptyTitle": "Nothing's dying yet.", "addLabel": "Add food" },
+  "sources": [
+    {
+      "id": "usda_foodkeeper",
+      "name": "USDA FoodKeeper",
+      "url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json",
+      "license": "Public domain (US government work)",
+      "retrievedOn": "2026-11-17"
+    }
+  ]
+}
