@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { mapFoodKeeper } from './foodkeeper';
 import foods from './foods.json';
+import { searchFoods } from './search';
 
 const raw: unknown = JSON.parse(readFileSync(new URL('../../data/foodkeeper.raw.json', import.meta.url), 'utf8'));
 
@@ -24,8 +25,10 @@ describe('foods.json', () => {
     expect(new Set(foods.map((f) => f.id)).size).toBe(foods.length);
   });
 
-  it.each(['yogurt', 'chicken', 'spinach', 'bread'])('has real foods for "%s"', (word) => {
-    expect(foods.filter((f) => f.name.toLowerCase().includes(word)).length).toBeGreaterThan(0);
+  it.each(['yogurt', 'chicken', 'spinach', 'bread'])('finds real foods for "%s" by search', (word) => {
+    const hits = searchFoods(foods, word);
+    expect(hits.length).toBeGreaterThan(0);
+    for (const f of hits) expect(f.name.toLowerCase()).toContain(word);
   });
 
   it('keeps plain yogurt in the fridge and the freezer', () => {
