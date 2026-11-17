@@ -1,0 +1,65 @@
+{
+  "id": "warranty-wraith",
+  "name": "Warranty Wraith",
+  "version": 1,
+  "entity": {
+    "titleField": "name",
+    "summaryFields": ["retailer", "model"],
+    "fields": [
+      { "key": "name", "kind": "text", "label": "Item", "required": true },
+      { "key": "retailer", "kind": "text", "label": "Bought at", "required": true },
+      { "key": "bought", "kind": "date", "label": "Bought on", "required": true },
+      { "key": "return_days", "kind": "number", "label": "Return window (days)", "min": 0, "max": 365, "step": 1 },
+      { "key": "warranty_months", "kind": "number", "label": "Warranty (months)", "min": 0, "max": 120, "step": 1 },
+      { "key": "price", "kind": "number", "label": "Price", "min": 0, "step": 0.01 },
+      { "key": "model", "kind": "text", "label": "Model" },
+      { "key": "recalls_dismissed", "kind": "text", "label": "Dismissed recalls", "hidden": true }
+    ]
+  },
+  "lifespans": [
+    {
+      "id": "return_window",
+      "label": "Return window",
+      "startField": "bought",
+      "base": { "type": "duration", "amount": 30, "unit": "day", "amountField": "return_days", "label": "Return window" },
+      "stages": [
+        { "id": "covered", "label": "Covered", "tone": "fresh" },
+        { "id": "closing", "label": "Closing", "tone": "soon", "enterAtDays": 7 },
+        { "id": "last_days", "label": "Last days", "tone": "urgent", "enterAtDays": 2 },
+        { "id": "lapsed", "label": "Lapsed", "tone": "dead" }
+      ]
+    },
+    {
+      "id": "warranty",
+      "label": "Warranty",
+      "startField": "bought",
+      "base": { "type": "duration", "amount": 12, "unit": "month", "amountField": "warranty_months", "label": "Warranty" },
+      "stages": [
+        { "id": "covered", "label": "Covered", "tone": "fresh" },
+        { "id": "ending", "label": "Ending", "tone": "steady", "enterAtDays": 90 },
+        { "id": "closing", "label": "Closing", "tone": "soon", "enterAtDays": 30 },
+        { "id": "last_days", "label": "Last days", "tone": "urgent", "enterAtDays": 7 },
+        { "id": "lapsed", "label": "Lapsed", "tone": "dead" }
+      ]
+    }
+  ],
+  "theme": {
+    "accent": "#5a4bd1",
+    "accentInk": "#5a4bd1",
+    "accentTint": "#ebe9fb",
+    "canvas": "#edeff6",
+    "display": "space-grotesk",
+    "motif": "ghost",
+    "emptyArt": "ghost-parcel",
+    "wordmark": "Warranty Wraith"
+  },
+  "copy": { "emptyTitle": "No ghosts in the drawer yet.", "addLabel": "Add purchase" },
+  "sources": [
+    {
+      "id": "cpsc_recalls",
+      "name": "CPSC Recalls",
+      "url": "https://www.saferproducts.gov/RestWebServices/Recall",
+      "license": "Public domain (US government work)"
+    }
+  ]
+}
