@@ -1,8 +1,23 @@
 // The app glue: store, evaluation per food spec, and the core elements. No engine, schema, store or ICS logic here.
-import { type Evaluation, type Item, evaluate } from '@ossuary/core';
+import { type Evaluation, type Item, type Now, evaluate } from '@ossuary/core';
 import { type Store, openStore } from '@ossuary/core/store';
-import { type Download, type ListEntry, type OssList, ensureDocumentTokens, loadDisplayFont, shortDay, titleOf } from '@ossuary/core/ui';
+import {
+  type Download,
+  type ListEntry,
+  type OssList,
+  type OssSheet,
+  type OssToast,
+  ensureDocumentTokens,
+  fieldText,
+  formatCountdown,
+  loadDisplayFont,
+  longDay,
+  shortDay,
+  titleOf,
+} from '@ossuary/core/ui';
+import type { Food } from './data/foodkeeper';
 import { foods } from './data/foods';
+import './elements/pr-food-search';
 import { boneSpec, nowFromClock, specForFood } from './spec';
 
 export interface AppDeps {
@@ -17,19 +32,43 @@ export interface App {
 }
 
 const byId = new Map(foods.map((f) => [f.id, f]));
+const foodOf = (values: Item): Food | undefined => byId.get(String(values.food_id));
 
 /** Page layout only. Every value is a core token. */
 const css = `
 body { margin: 0; background: var(--canvas); }
-.pr-hero { display: grid; gap: var(--s-2); margin: var(--s-6) 0 var(--s-8); }
-.pr-hero h1 { margin: 0; font: var(--t-display); letter-spacing: -0.02em; color: var(--text); }
-.pr-hero p { margin: 0; font: var(--t-body); color: var(--text-2); }
+[hidden] { display: none !important; }
+h1:focus { outline: none; }
+.pr-hero { display: grid; gap: var(--s-2); margin: var(--s-6) 0 var(--s-6); }
+.pr-hero h1, .pr-detail h1 { margin: 0; font: var(--t-display); letter-spacing: -0.02em; color: var(--text); }
+.pr-hero p { margin: 0; font: var(--t-body); color: var(--text-2); max-width: 60ch; }
+pr-food-search { margin-bottom: var(--s-10); max-width: 640px; }
 .pr-notes:not(:empty) { display: grid; gap: var(--s-3); margin-bottom: var(--s-8); }
 .pr-note {
   display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin: 0; padding: var(--s-3) var(--s-3) var(--s-3) var(--s-5);
   background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-1); font: var(--t-label); color: var(--text-2);
 }
-@media (max-width: 899px) { .pr-hero { margin: var(--s-4) 0 var(--s-6); } }
+.pr-back { margin: var(--s-2) 0 var(--s-2) calc(-1 * var(--s-2)); }
+.pr-detail header { display: grid; gap: var(--s-1); margin-bottom: var(--s-6); }
+.pr-meta { margin: 0; font: var(--t-body); color: var(--text-2); }
+.pr-grid { display: grid; grid-template-columns: 7fr 5fr; gap: var(--s-6); align-items: start; }
+.pr-card { display: grid; gap: var(--s-6); padding: var(--s-6); background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-1); }
+.pr-life { display: grid; grid-template-columns: auto 1fr; gap: var(--s-6); align-items: center; }
+.pr-count { display: flex; align-items: baseline; gap: var(--s-2); }
+.pr-num { font: var(--t-num-xl); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; color: var(--text); }
+.pr-unit { font: var(--t-heading); color: var(--text-2); }
+.pr-when { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin-top: var(--s-3); font: var(--t-label); color: var(--text-3); }
+.pr-eyebrow { margin: 0 0 var(--s-2); font: var(--t-eyebrow); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.pr-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+@media (max-width: 899px) {
+  .pr-hero { margin: var(--s-4) 0 var(--s-5); }
+  pr-food-search { margin-bottom: var(--s-8); }
+  .pr-grid { grid-template-columns: 1fr; gap: var(--s-4); }
+  .pr-card { padding: var(--s-5) var(--s-4); gap: var(--s-5); }
+  .pr-life { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: var(--s-3); }
+  .pr-count, .pr-when { justify-content: center; }
+  .pr-detail oss-trace { justify-self: center; }
+}
 `;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...children: (Node | string)[]): HTMLElementTagNameMap[K] {
@@ -43,53 +82,119 @@ const primaryOf = (e: Evaluation) => e.lifespans[e.primaryIndex];
 const days = (n: number) => `${n} ${Math.abs(n) === 1 ? 'day' : 'days'}`;
 
 /** Evaluates a stored item against its own food spec. */
-function evaluateItem(values: Item, now: ReturnType<typeof nowFromClock>): Evaluation | undefined {
-  const food = byId.get(String(values.food_id));
+function evaluateItem(values: Item, now: Now): Evaluation | undefined {
+  const food = foodOf(values);
   if (!food) return undefined;
   const r = evaluate(specForFood(food), values, now);
   return r.ok ? r.value : undefined;
 }
 
+const firstMethod = (food: Food) => (food.days.fridge !== undefined ? 'fridge' : (['pantry', 'freezer'] as const).find((m) => food.days[m] !== undefined));
+
 export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   ensureDocumentTokens(document);
-  const sheet = new CSSStyleSheet();
-  sheet.replaceSync(css);
-  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+  const sheetCss = new CSSStyleSheet();
+  sheetCss.replaceSync(css);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheetCss];
   void loadDisplayFont(boneSpec.theme?.display);
 
   const now = () => nowFromClock(deps.clock());
   const shell = el('oss-shell', { current: 'items' });
   shell.spec = boneSpec;
-  const headline = el('h1');
+
+  const addButton = el('oss-button', { variant: 'primary', slot: 'primary' }, boneSpec.copy?.addLabel ?? 'Add food');
+  const usedButton = el('oss-button', { variant: 'primary', slot: 'primary', hidden: '' }, 'Used it');
+
+  const headline = el('h1', { tabindex: '-1' });
   const support = el('p');
+  const search = el('pr-food-search');
+  search.foods = foods;
+  const notes = el('div', { class: 'pr-notes' });
   const list = el('oss-list', { layout: 'auto' }) as OssList;
   Object.assign(list, { spec: boneSpec, now: now() });
-  const notes = el('div', { class: 'pr-notes' });
-  shell.append(el('section', { class: 'pr-hero' }, headline, support), notes, list);
+  const home = el('div', { class: 'pr-home' }, el('section', { class: 'pr-hero' }, headline, support), search, notes, list);
+  const detail = el('div', { class: 'pr-detail', hidden: '' });
+
+  const sheet = el('oss-sheet') as OssSheet;
+  const toast = el('oss-toast') as OssToast;
+  shell.append(addButton, usedButton, home, detail, sheet, toast);
   root.append(shell);
 
   let store: Store | undefined;
   let entries: ListEntry[] = [];
+  let selected: string | undefined;
+
+  function render(): void {
+    const entry = entries.find((e) => e.id === selected);
+    const food = entry && foodOf(entry.values);
+    if (!entry || !food) selected = undefined;
+    home.hidden = selected !== undefined;
+    detail.hidden = selected === undefined;
+    // One primary pill per screen: the empty state brings its own.
+    addButton.hidden = selected !== undefined || entries.length === 0;
+    usedButton.hidden = selected === undefined;
+    renderHome();
+    if (entry && food && selected) renderDetail(entry, food);
+  }
 
   function renderHome(): void {
     const today = now();
     list.now = today;
     list.removeAttribute('state');
     list.entries = entries;
-    const soon = entries
-      .map((e) => ({ e, l: primaryOf(e.evaluation) }))
-      .filter(({ l }) => l && l.stage.tone !== 'dead' && l.remaining.days <= 7)
-      .sort((a, b) => (a.l?.remaining.days ?? 0) - (b.l?.remaining.days ?? 0));
     if (entries.length === 0) {
       headline.textContent = "What's in your kitchen?";
       support.textContent = `Search ${foods.length} foods with USDA FoodKeeper shelf life, and see when each one dies.`;
       return;
     }
+    const soon = entries
+      .map((e) => ({ e, l: primaryOf(e.evaluation) }))
+      .filter(({ l }) => l && l.stage.tone !== 'dead' && l.remaining.days <= 7)
+      .sort((a, b) => (a.l?.remaining.days ?? 0) - (b.l?.remaining.days ?? 0));
     headline.textContent = soon.length === 0 ? 'Nothing dies this week' : `${soon.length} ${soon.length === 1 ? 'thing dies' : 'things die'} this week`;
-    const when = (d: number, day: string) => (d === 0 ? 'today' : d === 1 ? 'tomorrow' : d <= 7 ? `in ${days(d)}` : `by ${shortDay(day, today)}`);
+    const when = (d: number) => (d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${days(d)}`);
     support.textContent = soon.length
-      ? `${soon.slice(0, 2).map(({ e, l }) => `${titleOf(boneSpec, e.values)} ${when(l?.remaining.days ?? 0, l?.expiresAt ?? today.day)}`).join(', ')}.`
+      ? `${soon.slice(0, 2).map(({ e, l }) => `${titleOf(boneSpec, e.values)} ${when(l?.remaining.days ?? 0)}`).join(', ')}.`
       : 'Everything you have keeps for more than a week.';
+  }
+
+  function renderDetail(entry: ListEntry, food: Food): void {
+    const today = now();
+    const spec = specForFood(food);
+    const l = primaryOf(entry.evaluation);
+    if (!l) return;
+    const c = formatCountdown(l, today);
+    const back = el('oss-button', { variant: 'link', class: 'pr-back' }, '← All food');
+    back.addEventListener('click', () => go(undefined));
+    const edit = el('oss-button', { variant: 'ghost', 'data-action': 'edit' }, 'Edit');
+    edit.addEventListener('click', () => {
+      Object.assign(sheet, { spec, now: today });
+      sheet.show(entry.values, entry.id);
+    });
+    const title = el('h1', { tabindex: '-1' }, titleOf(boneSpec, entry.values));
+    const where = fieldText(spec, 'storage', entry.values.storage);
+    const meta = el('p', { class: 'pr-meta' }, `${where} · opened or bought ${shortDay(String(entry.values.bought), today)}`);
+    const life = el(
+      'div',
+      { class: 'pr-life' },
+      el('oss-decay', { motif: boneSpec.theme?.motif ?? 'candle', fraction: String(l.fraction), tone: l.stage.tone, size: 'l', idle: '' }),
+      el(
+        'div',
+        {},
+        el('p', { class: 'pr-count', style: 'margin:0', 'aria-label': `${l.stage.label}. ${c.spoken}` }, el('span', { class: 'pr-num' }, c.value), c.unit ? el('span', { class: 'pr-unit' }, c.unit) : ''),
+        el('div', { class: 'pr-when' }, el('oss-pill', { tone: l.stage.tone, label: l.stage.label }), el('time', { datetime: l.expiresAt }, longDay(l.expiresAt, today))),
+      ),
+    );
+    const card = el('section', { class: 'pr-card', 'aria-label': 'Best by' }, life, el('div', { class: 'pr-actions' }, edit));
+    detail.replaceChildren(back, el('header', {}, title, meta), el('div', { class: 'pr-grid' }, card));
+  }
+
+  function go(id: string | undefined): void {
+    selected = id;
+    history.pushState(null, '', id ? `#item-${id}` : location.pathname + location.search);
+    render();
+    (selected ? detail.querySelector('h1') : headline)?.focus();
+    scrollTo?.(0, 0);
   }
 
   function showError(message: string): void {
@@ -109,7 +214,7 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
       if (evaluation) entries.push({ id: item.id, values: item.values, evaluation });
       else notes.append(unreadable(item.id, titleOf(boneSpec, item.values)));
     }
-    renderHome();
+    render();
   }
 
   /** An item whose food left the snapshot: one line and one action. */
@@ -126,13 +231,56 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     const opened = await openStore(boneSpec, { newId: deps.newId, nowIso: () => deps.clock().toISOString(), indexedDB: deps.indexedDB });
     if (!opened.ok) return showError('message' in opened.error ? opened.error.message : 'Storage is not available. Try again.');
     store = opened.value;
+    selected = /^#item-(.+)$/.exec(location.hash)?.[1];
     await reload();
   }
 
+  const focusSearch = () => {
+    go(undefined);
+    search.scrollIntoView?.({ block: 'center' });
+    search.focus();
+  };
+  addButton.addEventListener('click', focusSearch);
+  shell.addEventListener('oss-add', focusSearch);
   shell.addEventListener('oss-retry', () => void start());
+  list.addEventListener('oss-open', (e) => go((e as CustomEvent<{ id: string }>).detail.id));
+  addEventListener('popstate', () => {
+    selected = /^#item-(.+)$/.exec(location.hash)?.[1];
+    render();
+  });
+
+  search.addEventListener('pr-pick', (e) => {
+    const food = (e as CustomEvent<{ food: Food }>).detail.food;
+    const today = now();
+    Object.assign(sheet, { spec: specForFood(food), now: today });
+    sheet.show({ name: food.name, food_id: food.id, storage: firstMethod(food), bought: today.day });
+  });
+
+  sheet.addEventListener('oss-save', async (e) => {
+    const { id, values } = (e as CustomEvent<{ id?: string; values: Item }>).detail;
+    if (!store) return;
+    const r = id ? await store.update(id, values) : await store.create(values);
+    if (!r.ok) return toast.show(`Could not save ${titleOf(boneSpec, values)}. Try again.`);
+    await reload();
+    toast.show(id ? 'Saved' : `Added ${titleOf(boneSpec, values)}`);
+  });
+
+  usedButton.addEventListener('click', async () => {
+    const entry = entries.find((x) => x.id === selected);
+    if (!store || !entry) return;
+    const r = await store.remove(entry.id);
+    if (!r.ok) return toast.show('Could not remove it. Try again.');
+    go(undefined);
+    await reload();
+    const name = titleOf(boneSpec, entry.values);
+    toast.show(`${name} used up`, { undoLabel: 'Undo' });
+    toast.addEventListener('oss-undo', async () => {
+      await store?.create(entry.values);
+      await reload();
+    }, { once: true });
+  });
 
   renderHome();
   await start();
   return { close: () => store?.close() };
 }
-

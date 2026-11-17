@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
 import 'fake-indexeddb/auto';
 import { openStore } from '@ossuary/core/store';
+import type { OssField } from '@ossuary/core/ui';
 import { IDBFactory } from 'fake-indexeddb';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type App, type AppDeps, mountApp } from './app';
 import { foods } from './data/foods';
+import { searchFoods } from './data/search';
 import { boneSpec } from './spec';
 
 const yogurt = foods.find((f) => f.name === 'Yogurt');
@@ -29,6 +31,19 @@ function deps(indexedDB: IDBFactory = new IDBFactory()): AppDeps {
 
 const shadow = (el: Element | null | undefined, sel: string) => el?.shadowRoot?.querySelector(sel) ?? null;
 const list = () => document.querySelector('oss-list');
+const press = (target: Element, key: string) =>
+  target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true }));
+
+/** Opens the detail view of the first listed item. */
+async function openFirstItem(): Promise<void> {
+  const item = await vi.waitFor(() => {
+    const el = shadow(list(), 'oss-item');
+    if (!el) throw new Error('no item yet');
+    return el;
+  });
+  (shadow(item, 'a') as HTMLElement).click();
+  await vi.waitFor(() => expect(document.querySelector('.pr-detail:not([hidden])')).not.toBeNull());
+}
 
 async function seeded(values: Record<string, string>): Promise<IDBFactory> {
   const indexedDB = new IDBFactory();
@@ -76,6 +91,55 @@ describe('pantry reaper app', () => {
     (note.querySelector('oss-button') as HTMLElement).click();
     await vi.waitFor(() => expect(document.querySelector('.pr-note')).toBeNull());
     expect(shadow(list(), 'oss-empty')).not.toBeNull();
+  });
+
+  it('finds a food with the keyboard, opens the sheet prefilled and saves the item', async () => {
+    app = await mountApp(document.body, deps());
+    const search = document.querySelector('pr-food-search');
+    const input = shadow(search, 'input') as HTMLInputElement;
+    input.value = 'yogurt';
+    input.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    const options = Array.from(search?.shadowRoot?.querySelectorAll('[role="option"]') ?? []);
+    const expected = searchFoods(foods, 'yogurt');
+    expect(options.map((o) => o.querySelector('.name')?.textContent)).toEqual(expected.map((f) => f.name.split(', ')[0]));
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+    expect(options[0]?.textContent).toContain('Fridge 7 days · Freezer 1 month');
+
+    press(input, 'ArrowDown');
+    press(input, 'ArrowDown');
+    press(input, 'ArrowUp');
+    expect(input.getAttribute('aria-activedescendant')).toBe(options[0]?.id);
+    expect(options[0]?.getAttribute('aria-selected')).toBe('true');
+    press(input, 'Enter');
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+
+    const sheet = document.querySelector('oss-sheet');
+    const fields = Array.from(sheet?.shadowRoot?.querySelectorAll('oss-field') ?? []) as OssField[];
+    expect(fields.map((f) => [f.field?.key, f.value])).toEqual([
+      ['name', 'Yogurt'],
+      ['storage', 'fridge'],
+      ['bought', '2026-11-17'],
+    ]);
+    expect(sheet?.shadowRoot?.textContent).not.toContain('FoodKeeper entry');
+    (shadow(sheet, '.foot oss-button') as HTMLElement).click();
+
+    await vi.waitFor(() => expect(shadow(list(), 'oss-item')).not.toBeNull());
+    expect(list()?.entries.map((e) => e.values)).toEqual([{ name: 'Yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' }]);
+  });
+
+  it('keeps the food when a saved item is edited', async () => {
+    app = await mountApp(document.body, deps(await seeded({ name: 'Yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' })));
+    await openFirstItem();
+    (document.querySelector('[data-action="edit"]') as HTMLElement).click();
+    const sheet = document.querySelector('oss-sheet');
+    const fields = Array.from(sheet?.shadowRoot?.querySelectorAll('oss-field') ?? []) as OssField[];
+    expect(fields.map((f) => f.field?.key)).toEqual(['name', 'storage', 'bought']);
+    const name = shadow(fields[0], 'input') as HTMLInputElement;
+    name.value = 'Greek yogurt';
+    name.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+    (shadow(sheet, '.foot oss-button') as HTMLElement).click();
+    await vi.waitFor(() => expect(document.querySelector('.pr-detail h1')?.textContent).toBe('Greek yogurt'));
+    expect(list()?.entries[0]?.values).toEqual({ name: 'Greek yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' });
   });
 
   it('shows a store error as one line and one action, without throwing', async () => {
