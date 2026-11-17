@@ -44,6 +44,38 @@ test('the storage switch is a segmented control with one selected segment and no
   expect(guard.errors).toEqual([]);
 });
 
+type Box = { x: number; y: number; width: number; height: number };
+const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+test('at 390 px the Undo toast sits above the bottom bar and clear of the item actions', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const guard = watchPage(page);
+  await page.goto('/');
+  await addFood(page, 'yogurt');
+  await page.locator('oss-item', { hasText: 'Yogurt' }).click();
+  await page.locator('pr-storage-switch').getByRole('radio', { name: 'Freezer' }).click();
+  const toast = page.locator('oss-toast .toast');
+  await expect(toast.getByRole('button', { name: 'Undo' })).toBeVisible();
+  // Let the enter animation finish so the box is the resting one.
+  await page.waitForTimeout(400);
+
+  const box = async (l: ReturnType<Page['locator']>) => {
+    const b = await l.boundingBox();
+    expect(b).not.toBeNull();
+    return b as Box;
+  };
+  const t = await box(toast);
+  const bar = await box(page.locator('oss-shell nav[aria-label="Tabs"]'));
+  const calendar = await box(page.getByRole('button', { name: 'Add to calendar' }));
+  const edit = await box(page.getByRole('button', { name: 'Edit' }));
+  expect(t.y + t.height).toBeLessThanOrEqual(bar.y);
+  expect(overlaps(t, calendar), 'toast covers "Add to calendar"').toBe(false);
+  expect(overlaps(t, edit), 'toast covers "Edit"').toBe(false);
+
+  guard.check();
+  expect(guard.errors).toEqual([]);
+});
+
 const tab = (page: Page, name: string) => page.locator('oss-shell nav[aria-label="Main"]').getByRole('button', { name });
 
 test('the Import tab, the import link and the Backup tab all work', async ({ page }) => {
