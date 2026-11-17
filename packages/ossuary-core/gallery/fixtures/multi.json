@@ -1,0 +1,25 @@
+{
+  "id": "gallery-multi",
+  "name": "Gizmo Keeper",
+  "version": 1,
+  "entity": {
+    "titleField": "name",
+    "summaryFields": ["maker", "plan"],
+    "fields": [
+      { "key": "name", "kind": "text", "label": "Name", "required": true },
+      { "key": "maker", "kind": "text", "label": "Maker" },
+      { "key": "bought", "kind": "date", "label": "Bought on", "required": true },
+      { "key": "plan", "kind": "enum", "label": "Plan", "options": [ { "value": "basic", "label": "Basic" }, { "value": "plus", "label": "Plus" } ] }
+    ]
+  },
+  "lifespans": [
+    { "id": "trial", "label": "Trial", "startField": "bought",
+      "base": { "type": "duration", "amount": 30, "unit": "day", "label": "Trial" },
+      "rules": [ { "id": "plus_days", "kind": "extend", "label": "Plus plan", "when": { "field": "plan", "equals": "plus" }, "by": { "amount": 14, "unit": "day" } } ],
+      "stages": [ { "id": "open", "label": "Open", "tone": "fresh" }, { "id": "last", "label": "Last days", "tone": "urgent", "enterAtDays": 3 }, { "id": "closed", "label": "Closed", "tone": "dead" } ] },
+    { "id": "cover", "label": "Cover", "startField": "bought",
+      "base": { "type": "duration", "amount": 2, "unit": "year", "label": "Cover" },
+      "stages": [ { "id": "covered", "label": "Covered", "tone": "steady" }, { "id": "ending", "label": "Ending", "tone": "soon", "enterAtDays": 30 }, { "id": "ended", "label": "Ended", "tone": "dead" } ] }
+  ],
+  "theme": { "accent": "#3657c9", "accentInk": "#3657c9", "accentTint": "#e8edfa", "canvas": "#eef0f4", "display": "inter", "motif": "hourglass", "emptyArt": "hourglass-side", "wordmark": "Gizmo Keeper" }
+}

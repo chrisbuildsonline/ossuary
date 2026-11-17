@@ -30,7 +30,7 @@ export class OssShell extends OssElement {
 main { display: block; max-width: 1120px; margin: 0 auto; padding: var(--s-4) var(--s-10) var(--s-14); }
 .bottom { display: none; }
 @media (max-width: 899px) {
-  .top { position: sticky; top: 0; z-index: 5; height: 56px; padding: 0 var(--s-4); background: var(--canvas); gap: var(--s-3); justify-content: space-between; }
+  .top { position: sticky; top: 0; z-index: 12; height: 56px; padding: 0 var(--s-4); background: var(--canvas); gap: var(--s-3); justify-content: space-between; }
   .top-nav { display: none; }
   .primary { position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); min-width: 160px; }
   ::slotted([slot="primary"]) { min-width: 160px; }

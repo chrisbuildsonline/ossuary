@@ -23,8 +23,9 @@ h3:first-of-type { margin-top: 0; }
 .mark { color: var(--accent-ink); font: var(--t-caption); font-weight: 600; }
 ol { list-style: none; margin: 0; padding: 0; position: relative; }
 ol::before { content: ""; position: absolute; left: 4px; top: 12px; bottom: 12px; width: 2px; background: var(--line); }
-li { position: relative; display: grid; grid-template-columns: 10px 1fr auto; gap: var(--s-3); align-items: baseline; padding: var(--s-2) 0; animation: line-in var(--dur-2) var(--ease-out) both; }
-li:nth-child(2) { animation-delay: 40ms; } li:nth-child(3) { animation-delay: 80ms; } li:nth-child(4) { animation-delay: 120ms; }
+li { position: relative; display: grid; grid-template-columns: 10px 1fr auto; gap: var(--s-3); align-items: baseline; padding: var(--s-2) 0; }
+dialog[open] li { animation: line-in var(--dur-2) var(--ease-out) both; }
+dialog[open] li:nth-child(2) { animation-delay: 40ms; } dialog[open] li:nth-child(3) { animation-delay: 80ms; } dialog[open] li:nth-child(4) { animation-delay: 120ms; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--surface); box-shadow: inset 0 0 0 2px var(--line-strong); align-self: center; }
 .text { font: var(--t-body); }
 .delta { font: var(--t-label); font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; text-align: right; }

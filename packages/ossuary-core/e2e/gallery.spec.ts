@@ -1,0 +1,235 @@
+import AxeBuilder from '@axe-core/playwright';
+import { type Page, expect, test } from '@playwright/test';
+import ICAL from 'ical.js';
+import { guardNetwork } from '../src/testing/network-guard';
+
+const themes = ['core', 'warm', 'cool'] as const;
+const tags = ['wcag2a', 'wcag2aa', 'wcag21aa'];
+
+let blocked: () => string[];
+test.beforeEach(({ page }) => {
+  blocked = guardNetwork(page);
+});
+test.afterEach(() => {
+  expect(blocked()).toEqual([]);
+});
+
+async function open(page: Page, query: string) {
+  await page.goto(`/?${query}`);
+  await page.locator('oss-shell').waitFor();
+  await page.waitForFunction(() => {
+    const list = document.querySelector('oss-list[data-list="items"]');
+    return !!list?.shadowRoot?.querySelector('oss-item, oss-empty, [aria-busy]');
+  });
+}
+
+async function axe(page: Page) {
+  // Let sheet, drawer and line entrances finish so contrast is measured at rest.
+  await page.waitForTimeout(450);
+  const r = await new AxeBuilder({ page }).withTags(tags).analyze();
+  expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+}
+
+/** Description of the focused element, looking through shadow roots. */
+const focused = (page: Page) =>
+  page.evaluate(() => {
+    let a = document.activeElement;
+    while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement;
+    const host = (a?.getRootNode() as ShadowRoot | Document) instanceof ShadowRoot ? (a?.getRootNode() as ShadowRoot).host : null;
+    return { tag: a?.tagName.toLowerCase(), host: host?.tagName.toLowerCase(), text: a?.textContent?.trim(), inDialog: !!a?.closest('dialog') || !!host?.closest('dialog') || deepInDialog(a) };
+    function deepInDialog(el: Element | null | undefined): boolean {
+      for (let n: Node | null | undefined = el; n; n = n instanceof ShadowRoot ? n.host : n.parentNode) if (n instanceof HTMLDialogElement) return true;
+      return false;
+    }
+  });
+
+const deepSheetOpen = (page: Page, tag: string) =>
+  page.evaluate((t) => !!document.querySelector(t)?.shadowRoot?.querySelector('dialog[open]'), tag);
+
+for (const theme of themes) {
+  test(`${theme}: axe passes on every state`, async ({ page }, info) => {
+    for (const state of ['ready', 'empty', 'error', 'loading']) {
+      await open(page, `theme=${theme}&state=${state}`);
+      await axe(page);
+    }
+    await open(page, `theme=${theme}`);
+    await page.screenshot({ path: `test-results/gallery-${theme}-${info.project.name}.png`, fullPage: true });
+    await page.locator('oss-button[data-action="add"]').click();
+    expect(await deepSheetOpen(page, 'oss-sheet')).toBe(true);
+    await axe(page);
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => (document.querySelector('oss-import') as unknown as { show(): void }).show());
+    await page.locator('oss-import textarea').fill('name,kept in,made\nBlue widget,cold,2026-11-12\nNo date,cold,\n');
+    await axe(page);
+    await page.keyboard.press('Escape');
+    await page.locator('#primitives oss-trace[mode="drawer"] button.open').click();
+    expect(await page.evaluate(() => !!document.querySelector('#primitives oss-trace[mode="drawer"]')?.shadowRoot?.querySelector('dialog[open]'))).toBe(true);
+    await axe(page);
+  });
+}
+
+test('layout: no horizontal scroll, one primary pill, 44px targets', async ({ page }) => {
+  for (const theme of themes) {
+    await open(page, `theme=${theme}`);
+    const m = await page.evaluate(() => {
+      const all: Element[] = [];
+      const walk = (root: Document | ShadowRoot) =>
+        root.querySelectorAll('*').forEach((e) => {
+          all.push(e);
+          if (e.shadowRoot) walk(e.shadowRoot);
+        });
+      walk(document);
+      const visible = (e: Element) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== 'hidden';
+      };
+      const small = all
+        .filter((e) => e.matches('button, a[href], input, select, [role="radio"]') && visible(e) && !e.closest('.sr-only'))
+        .map((e) => ({ e, r: e.getBoundingClientRect() }))
+        .filter(({ e, r }) => (r.height < 44 || r.width < 44) && !(e instanceof HTMLInputElement && e.type === 'file'))
+        .map(({ e, r }) => `${e.tagName} ${e.textContent?.trim()} ${r.width}x${r.height}`);
+      const primaries = all.filter((e) => e.matches('oss-button[variant="primary"]') && visible(e));
+      return { scroll: document.documentElement.scrollWidth - document.documentElement.clientWidth, primaries: primaries.length, small };
+    });
+    expect(m.scroll).toBeLessThanOrEqual(0);
+    expect(m.primaries).toBe(1);
+    expect(m.small).toEqual([]);
+  }
+});
+
+test('layout: card grid on desktop, row groups on phone', async ({ page }, info) => {
+  await open(page, 'theme=core');
+  const variant = await page.evaluate(() => document.querySelector('oss-list[data-list="items"]')?.shadowRoot?.querySelector('oss-item')?.getAttribute('variant'));
+  expect(variant).toBe(info.project.name === 'gallery-phone' ? 'row' : 'card');
+});
+
+test('keyboard: sheet traps and returns focus, arrows change the segmented control', async ({ page }) => {
+  await open(page, 'theme=core');
+  await page.locator('oss-button[data-action="add"]').focus();
+  await page.keyboard.press('Enter');
+  expect(await deepSheetOpen(page, 'oss-sheet')).toBe(true);
+  expect((await focused(page)).inDialog).toBe(true);
+  for (let i = 0; i < 25; i++) {
+    await page.keyboard.press('Tab');
+    expect((await focused(page)).inDialog).toBe(true);
+  }
+  await page.keyboard.press('Shift+Tab');
+  expect((await focused(page)).inDialog).toBe(true);
+  const preview = () => page.evaluate(() => document.querySelector('oss-sheet')?.shadowRoot?.querySelector('.expires')?.textContent);
+  await page.evaluate(() => {
+    const field = document.querySelector('oss-sheet')?.shadowRoot?.querySelector('oss-field[data-key="name"]') as HTMLElement;
+    field.focus();
+  });
+  await page.keyboard.type('Key widget');
+  await page.evaluate(() => (document.querySelector('oss-sheet')?.shadowRoot?.querySelector('oss-field[data-key="place"]') as HTMLElement).focus());
+  const before = await preview();
+  await page.keyboard.press('ArrowRight');
+  expect((await focused(page)).text).toBe('Deep cold');
+  expect(await preview()).not.toBe(before);
+  await page.keyboard.press('Escape');
+  expect(await deepSheetOpen(page, 'oss-sheet')).toBe(false);
+  expect((await focused(page)).host).toBe('oss-button');
+  expect((await focused(page)).text).toBe('');
+});
+
+test('keyboard: drawer and import dialog close on Escape and return focus', async ({ page }) => {
+  await open(page, 'theme=core');
+  const link = page.locator('#primitives oss-trace[mode="drawer"] button.open');
+  await link.focus();
+  await page.keyboard.press('Enter');
+  expect((await focused(page)).inDialog).toBe(true);
+  await page.keyboard.press('Escape');
+  expect((await focused(page)).text).toMatch(/Why this date/);
+  await page.locator('oss-button[data-action="calendar"]').focus();
+  await page.evaluate(() => (document.querySelector('oss-import') as unknown as { show(): void }).show());
+  expect((await focused(page)).inDialog).toBe(true);
+  await page.keyboard.press('Escape');
+  expect(await deepSheetOpen(page, 'oss-import')).toBe(false);
+});
+
+test.describe('reduced motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+  test('no running animations, the sheet opens without sliding', async ({ page }) => {
+    await open(page, 'theme=warm');
+    await page.locator('oss-button[data-action="add"]').click();
+    const running = await page.evaluate(() => {
+      const els: Element[] = [];
+      const walk = (root: Document | ShadowRoot) =>
+        root.querySelectorAll('*').forEach((e) => {
+          els.push(e);
+          if (e.shadowRoot) walk(e.shadowRoot);
+        });
+      walk(document);
+      return els.flatMap((e) => e.getAnimations()).filter((a) => a.playState === 'running').length;
+    });
+    expect(running).toBe(0);
+  });
+});
+
+test('flow: add, invalid save, import with a skipped row, backup restore and calendar', async ({ page }) => {
+  await open(page, 'theme=core');
+  const names = () =>
+    page.evaluate(() =>
+      Array.from(document.querySelector('oss-list[data-list="items"]')?.shadowRoot?.querySelectorAll('oss-item') ?? []).map((i) => (i as unknown as { values: { name: string } }).values.name),
+    );
+  const sheet = page.locator('oss-sheet');
+  await page.locator('oss-button[data-action="add"]').click();
+  await sheet.locator('oss-button[variant="primary"]').click();
+  expect(await deepSheetOpen(page, 'oss-sheet')).toBe(true);
+  await expect(sheet.locator('oss-field[data-key="name"] .help.error')).toHaveText('This is required.');
+  await sheet.locator('oss-field[data-key="name"] input').fill('New widget');
+  await sheet.locator('oss-field[data-key="place"] [role="radio"]', { hasText: 'Cold' }).first().click();
+  await expect(sheet.locator('.expires')).toHaveText('Expires in 14 days · Sat 28 Nov');
+  await sheet.locator('oss-button[variant="primary"]').click();
+  await expect.poll(names).toContain('New widget');
+  await expect(page.locator('oss-toast [role="status"]')).toContainText('Saved');
+
+  await page.evaluate(() => (document.querySelector('oss-import') as unknown as { show(): void }).show());
+  const imp = page.locator('oss-import');
+  await imp.locator('textarea').fill('name,kept in,made\nCSV widget,cold,2026-11-10\nNo date widget,cold,\n');
+  await expect(imp.locator('.preview .skipped oss-pill')).toHaveCount(1);
+  await expect(imp.locator('.summary')).toHaveText('1 item ready, 1 skipped');
+  if ((await page.viewportSize())?.width === 390) {
+    await imp.locator('.foot oss-button[variant="primary"]').click();
+    await imp.locator('.foot oss-button[variant="primary"]').click();
+  }
+  await imp.locator('.foot oss-button[variant="primary"]').click();
+  await expect.poll(names).toContain('CSV widget');
+
+  const backup = JSON.stringify({
+    format: 'ossuary-backup',
+    version: 1,
+    appId: 'gallery-core',
+    exportedAt: '2026-11-14T10:00:00.000Z',
+    items: [{ id: 'restored-1', values: { name: 'Restored widget', place: 'shelf', made: '2026-11-01' }, createdAt: 'x', updatedAt: 'x' }],
+  });
+  await page.evaluate(() => (document.querySelector('oss-import') as unknown as { show(): void }).show());
+  await imp.locator('oss-field [role="radio"]', { hasText: 'Restore backup' }).click();
+  await imp.locator('textarea').fill(backup);
+  await expect(imp.locator('.summary')).toHaveText('1 item in this backup: 1 new, 0 updated');
+  if ((await page.viewportSize())?.width === 390) await imp.locator('.foot oss-button[variant="primary"]').click();
+  await imp.locator('.foot oss-button[variant="primary"]').click();
+  await expect.poll(names).toContain('Restored widget');
+
+  const download = page.waitForEvent('download');
+  await page.locator('oss-button[data-action="calendar"]').click();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe('gallery-core.ics');
+  const text = await (await file.createReadStream()).toArray().then((c) => Buffer.concat(c).toString('utf8'));
+  const events = new ICAL.Component(ICAL.parse(text)).getAllSubcomponents('vevent');
+  const count = (await names()).length;
+  expect(events).toHaveLength(count);
+  const blue = events.find((e) => e.getFirstPropertyValue('summary') === 'Blue widget');
+  expect(blue?.getAllSubcomponents('valarm').map((a) => String(a.getFirstPropertyValue('trigger')))).toEqual(['-P2DT15H']);
+  await expect(page.locator('oss-toast [role="status"]')).toContainText('Calendar file saved');
+});
+
+test('flow: a two-lifespan item gives one calendar event per lifespan', async ({ page }) => {
+  await open(page, 'theme=cool');
+  const download = page.waitForEvent('download');
+  await page.locator('oss-button[data-action="calendar-multi"]').click();
+  const file = await download;
+  const text = await (await file.createReadStream()).toArray().then((c) => Buffer.concat(c).toString('utf8'));
+  const events = new ICAL.Component(ICAL.parse(text)).getAllSubcomponents('vevent');
+  expect(events.map((e) => e.getFirstPropertyValue('summary'))).toEqual(['Desk gizmo - Trial', 'Desk gizmo - Cover', 'Spare gizmo - Trial', 'Spare gizmo - Cover']);
+});

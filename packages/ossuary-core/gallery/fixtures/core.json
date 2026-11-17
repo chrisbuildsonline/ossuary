@@ -1,0 +1,42 @@
+{
+  "id": "gallery-core",
+  "name": "Widget Shelf",
+  "version": 1,
+  "entity": {
+    "titleField": "name",
+    "summaryFields": ["kind", "place"],
+    "fields": [
+      { "key": "name", "kind": "text", "label": "Name", "required": true },
+      { "key": "kind", "kind": "enum", "label": "Kind", "options": [
+        { "value": "a", "label": "Type A" }, { "value": "b", "label": "Type B" }, { "value": "c", "label": "Type C" },
+        { "value": "d", "label": "Type D" }, { "value": "e", "label": "Type E" } ] },
+      { "key": "place", "kind": "enum", "label": "Kept in", "required": true, "options": [
+        { "value": "cold", "label": "Cold" }, { "value": "deep_cold", "label": "Deep cold" }, { "value": "shelf", "label": "Shelf" } ] },
+      { "key": "made", "kind": "date", "label": "Made on", "required": true },
+      { "key": "count", "kind": "number", "label": "Count", "min": 0, "step": 1 }
+    ]
+  },
+  "lifespans": [
+    {
+      "id": "main",
+      "label": "Use by",
+      "startField": "made",
+      "base": { "type": "duration", "amount": 14, "unit": "day", "label": "Base", "sourceId": "ref" },
+      "rules": [
+        { "id": "by_place", "kind": "lookup", "field": "place", "label": "Kept in", "sourceId": "ref",
+          "table": { "cold": { "amount": 14, "unit": "day" }, "deep_cold": { "amount": 6, "unit": "month" }, "shelf": { "amount": 2, "unit": "year" } } },
+        { "id": "limit", "kind": "clamp", "label": "Limit", "max": { "amount": 3, "unit": "year" } }
+      ],
+      "stages": [
+        { "id": "fresh", "label": "Fresh", "tone": "fresh" },
+        { "id": "settled", "label": "Settled", "tone": "steady", "enterAtDays": 90 },
+        { "id": "soon", "label": "Use soon", "tone": "soon", "enterAtDays": 14 },
+        { "id": "urgent", "label": "Last days", "tone": "urgent", "enterAtDays": 3 },
+        { "id": "gone", "label": "Gone", "tone": "dead" }
+      ]
+    }
+  ],
+  "theme": { "accent": "#3657c9", "accentInk": "#3657c9", "accentTint": "#e8edfa", "canvas": "#eef0f4", "display": "inter", "motif": "hourglass", "emptyArt": "hourglass-side", "wordmark": "Widget Shelf" },
+  "copy": { "emptyTitle": "Nothing is running out yet.", "emptyBody": "Add a widget and its clock starts.", "addLabel": "Add widget" },
+  "sources": [ { "id": "ref", "name": "Example reference", "url": "https://example.org/data", "license": "CC0-1.0", "retrievedOn": "2026-10-01" } ]
+}

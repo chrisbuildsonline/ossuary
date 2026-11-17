@@ -7,6 +7,7 @@ export type ButtonVariant = (typeof variants)[number];
 
 export class OssButton extends OssElement {
   static observedAttributes = ['variant', 'icon', 'label', 'disabled', 'pressed', 'current'];
+  static override delegatesFocus = true;
   static override styles = `
 :host { display: inline-flex; vertical-align: middle; }
 :host([block]) { display: flex; width: 100%; }

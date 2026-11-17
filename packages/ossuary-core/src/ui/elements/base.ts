@@ -35,11 +35,13 @@ export const nextId = (prefix: string): string => `${prefix}-${++uid}`;
 
 export abstract class OssElement extends HTMLElement {
   static styles = '';
+  /** Set on elements whose host should pass focus to the first focusable control inside. */
+  static delegatesFocus = false;
   readonly root: ShadowRoot;
 
   constructor() {
     super();
-    this.root = this.attachShadow({ mode: 'open' });
+    this.root = this.attachShadow({ mode: 'open', delegatesFocus: (this.constructor as typeof OssElement).delegatesFocus });
     adopt(this.root, (this.constructor as typeof OssElement).styles);
   }
 

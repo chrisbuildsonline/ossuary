@@ -31,9 +31,9 @@ select { padding-right: 40px; cursor: pointer; }
   display: grid; place-items: center; cursor: pointer;
 }
 .step:hover { background: var(--line); }
-.seg { display: flex; gap: 4px; padding: 4px; min-height: 48px; border-radius: var(--r-pill); background: var(--track); }
+.seg { display: flex; gap: 4px; padding: 4px; min-height: 52px; border-radius: var(--r-pill); background: var(--track); }
 .seg button {
-  flex: 1 1 0; min-width: 44px; min-height: 40px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-pill); background: none;
+  flex: 1 1 0; min-width: 44px; min-height: 44px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-pill); background: none;
   font: var(--t-label); color: var(--text-2); cursor: pointer; white-space: nowrap;
   transition: background-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
 }
