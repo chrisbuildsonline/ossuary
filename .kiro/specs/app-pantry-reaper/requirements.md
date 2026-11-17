@@ -62,6 +62,8 @@ Scope: spec, data, theme and wiring, plus the one core addendum in requirement 6
 
 2.8 WHEN `searchFoods(foods, query)` is called THE SYSTEM SHALL match the query case-insensitively and ignoring accents against the food name, rank names that start with the query before names that contain it, and return at most 8 foods.
 
+2.9 WHEN a product has no usable `fridge` value from either the "from purchase" or the general Refrigerate columns THE SYSTEM SHALL fall back to its `Refrigerate_After_Opening` value, using the same unit conversion, rounding and range-minimum rules as requirement 2.4, SHALL mark that food's `fridge` method as after opening (`afterOpening: true`), and SHALL NOT use the after-opening value when any other usable Refrigerate value exists. WHERE a food's `fridge` method is after opening THE SYSTEM SHALL label the storage option "Fridge (after opening)", so that the trace line for that method names the USDA FoodKeeper after-opening time (requirement 3.6). A product that still has no usable method SHALL stay skipped with a reason (requirement 2.3).
+
 ## Requirement 3: App behaviour
 
 **User story:** As a user, I want to find a food, add it, and see how long it keeps in each place, so that I know when to eat it.

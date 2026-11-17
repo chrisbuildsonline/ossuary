@@ -126,7 +126,11 @@ Stage thresholds are time based, so a stage label never names a storage place.
 
 ```ts
 export type StorageMethod = 'pantry' | 'fridge' | 'freezer';
-export interface Food { id: string; name: string; days: Partial<Record<StorageMethod, number>> }
+export interface Food {
+  id: string; name: string;
+  days: Partial<Record<StorageMethod, number>>;
+  afterOpening?: true;   // set only when days.fridge came from the Refrigerate_After_Opening fallback
+}
 export interface MapResult { foods: Food[]; skipped: { row: number; reason: string }[] }
 export function mapFoodKeeper(raw: unknown): MapResult;   // never throws
 ```
@@ -137,7 +141,7 @@ The snapshot is the FoodKeeper JSON from the real download (file name `FMA-Data-
 - Per storage method, a minimum, a maximum and a metric, for pantry, refrigerate and freeze: `Pantry_Min`, `Pantry_Max`, `Pantry_Metric`, `Refrigerate_Min`, `Refrigerate_Max`, `Refrigerate_Metric`, `Freeze_Min`, `Freeze_Max`, `Freeze_Metric`.
 - The separate "from purchase" (date of purchase) variants of the same nine columns, prefixed `DOP_`: `DOP_Pantry_Min`, `DOP_Pantry_Max`, `DOP_Pantry_Metric`, `DOP_Refrigerate_Min`, `DOP_Refrigerate_Max`, `DOP_Refrigerate_Metric`, `DOP_Freeze_Min`, `DOP_Freeze_Max`, `DOP_Freeze_Metric`.
 
-The mapper ignores the `*_tips` and `*_Tips` columns, the `*_After_Opening_*` columns and the `Refrigerate_After_Thawing_*` columns, and every other sheet. A zod schema describes only the columns the mapper reads and ignores the rest, so a changed column fails loudly in a test and not silently in the app.
+The mapper ignores the `*_tips` and `*_Tips` columns, the `Refrigerate_After_Thawing_*` columns, every `*_After_Opening_*` column except the three `Refrigerate_After_Opening_*` ones (minimum, maximum and metric, used only by the fallback below), and every other sheet. A zod schema describes only the columns the mapper reads and ignores the rest, so a changed column fails loudly in a test and not silently in the app.
 
 The maintainer downloaded the snapshot once and committed it as `data/foodkeeper.raw.json`. The repo has no fetch script. The dataset licence is CC0 1.0. The live FSIS URL (`https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`) returned HTTP 403 from the download environment, so the committed bytes come from the Internet Archive copy `https://web.archive.org/web/20250314020622id_/https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`, retrieved 2026-11-17. The `url` of the `usda_foodkeeper` source in `bone.json` is the official FSIS URL and `retrievedOn` is `2026-11-17`. `SOURCE.md` records the Internet Archive URL, the catalog page `https://catalog.data.gov/dataset/fsis-foodkeeper-data`, the retrieval day and the licence.
 
@@ -148,7 +152,9 @@ Rules (requirements 2.3 to 2.6):
 - `days = minimum * unitFactor`, with hours rounded up to 1 day, weeks x 7, months x 30, years x 365. Anything else (missing, zero, "When ripe") leaves that method out.
 - A "from purchase" value wins over the general value.
 - The minimum is used because the app errs on the early side for food.
-- A product with no usable method is skipped with a reason.
+- After-opening fallback (requirement 2.9): only when neither the `DOP_Refrigerate_*` nor the `Refrigerate_*` columns give a usable value, `days.fridge` is taken from `Refrigerate_After_Opening_*` with the same conversion, rounding and range-minimum rules, and the food gets `afterOpening: true`. The flag belongs to the `fridge` method, the only method with an after-opening column, and it is omitted (not `false`) otherwise, so existing entries in `foods.json` do not change. This lets sour cream, soy milk and almond milk be mapped and found by search. The fallback never overrides a usable Refrigerate value.
+- Storage option label: `specForFood` labels the `fridge` option "Fridge (after opening)" when `food.afterOpening` is true, and "Fridge" otherwise. The rule table and the other options are unchanged. The lookup trace line then reads "Storage is Fridge (after opening): N days (USDA FoodKeeper)", so the value is shown as the after-opening time and not as a general fridge life. This label is part of the "options" difference the derived spec is allowed to have (section 3).
+- A product with no usable method, after the fallback, is skipped with a reason.
 - Name is `name` plus `, subtitle` when present.
 
 `searchFoods(foods, query)`: normalise with `toLowerCase()` and `normalize('NFD')` with accent marks removed, rank prefix before substring, then alphabetical, limit 8.
@@ -219,10 +225,10 @@ Per `tech.md`, each task writes the failing test first. Everything runs from the
 - Sheet test next to `oss-sheet.ts`: a hidden field renders no input, a prefilled or edited hidden value is kept and saved.
 
 **Unit (vitest, in `apps/pantry-reaper/src`).**
-- `foodkeeper.test.ts`: a small fixture of raw rows. Cases: days, weeks, months and years conversion, hours rounded up, "When ripe" dropped, minimum of a range, "from purchase" value preferred, name plus subtitle, skipped row with reason, fuzzed input (`fc.anything()`) never throws.
-- `foods-snapshot.test.ts`: `foods.json` equals `mapFoodKeeper(raw)`, has at least one food for each of yogurt, chicken, spinach and bread (real names, found by search), and every food has at least one method.
+- `foodkeeper.test.ts`: a small fixture of raw rows. Cases: days, weeks, months and years conversion, hours rounded up, "When ripe" dropped, minimum of a range, "from purchase" value preferred, name plus subtitle, skipped row with reason, fuzzed input (`fc.anything()`) never throws. After-opening fallback: a row with only `Refrigerate_After_Opening` gets `days.fridge` and `afterOpening: true`; the same unit, rounding and range-minimum rules apply; a row with a usable `Refrigerate` or `DOP_Refrigerate` value ignores the after-opening value and has no `afterOpening` flag; a row with an unusable after-opening value and nothing else is skipped with a reason.
+- `foods-snapshot.test.ts`: `foods.json` equals `mapFoodKeeper(raw)`, has at least one food for each of yogurt, chicken, spinach and bread (real names, found by search), and every food has at least one method. It also asserts that "sour cream" is present, found by `searchFoods`, with a `fridge` value and `afterOpening: true`.
 - `search.test.ts`: case, accents, prefix before substring, limit 8, empty query.
-- `spec.test.ts`: `bone.json` parses; `food_id` is hidden; one lifespan, five stages with the five tones in order; theme values equal the DESIGN.md table; trace base label is not "Base"; the derived spec differs from `bone.json` only in the table and the options; a food without a freezer value has no freezer option; evaluating yogurt-like food with fixed `now` gives the expected `expiresAt` for fridge and freezer, and the trace line contains "Storage", the method and "USDA FoodKeeper".
+- `spec.test.ts`: `bone.json` parses; `food_id` is hidden; one lifespan, five stages with the five tones in order; theme values equal the DESIGN.md table; trace base label is not "Base"; the derived spec differs from `bone.json` only in the table and the options; a food without a freezer value has no freezer option; a food with `afterOpening: true` has the option label "Fridge (after opening)" and a trace line that contains "Storage", "Fridge (after opening)" and "USDA FoodKeeper", while other foods keep the label "Fridge"; evaluating yogurt-like food with fixed `now` gives the expected `expiresAt` for fridge and freezer, and the trace line contains "Storage", the method and "USDA FoodKeeper".
 - `boundaries.test.ts`: imports only from the core exports map, no import of `warranty-wraith` or `tools`, runtime dependency allow-list (`@ossuary/core` only).
 - `precache.test.ts` and `sw.test.ts`: the file list includes the index, JS, CSS, fonts, manifest and `foods.json`, the cache name changes when a file changes, and the worker handles same-origin GET only.
 
