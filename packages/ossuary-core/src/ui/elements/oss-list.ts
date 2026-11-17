@@ -40,9 +40,20 @@ export function groupEntries(entries: readonly ListEntry[]): { tone: Tone; entri
 export class OssList extends OssElement {
   static observedAttributes = ['layout', 'state', 'message'];
   static override styles = `
-:host { display: block; }
+:host { display: block; container-type: inline-size; }
 .groups { display: grid; gap: var(--s-10); }
 section { display: grid; gap: var(--s-3); }
+/* Card mode: groups share one column grid, so small groups sit side by side and cards line up across them. */
+.groups.cards { grid-template-columns: minmax(0, 1fr); column-gap: var(--s-5); align-items: start; }
+.cards > section { grid-template-columns: subgrid; gap: 0; row-gap: var(--s-3); }
+.cards > section > h2, .cards > section > .grid { grid-column: 1 / -1; }
+.cards > section > .grid { grid-template-columns: subgrid; gap: 0; row-gap: var(--s-5); }
+.cards > section[data-span="all"] { grid-column: 1 / -1; }
+@container (min-width: 680px) {
+  .groups.cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cards > section[data-span="2"] { grid-column: span 2; }
+}
+@container (min-width: 1040px) { .groups.cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 h2 { margin: 0; display: flex; align-items: center; gap: var(--s-3); font: var(--t-heading); color: var(--text-2); }
 .toggle {
   display: inline-flex; align-items: center; gap: var(--s-3); min-height: 44px; padding: 0 var(--s-3) 0 0; margin: 0;
@@ -120,7 +131,7 @@ h2 { margin: 0; display: flex; align-items: center; gap: var(--s-3); font: var(-
       return;
     }
     const rows = this.#rows();
-    this.root.replaceChildren(h('div', { class: 'groups' }, groupEntries(this.#entries).map((g) => this.#group(g.tone, g.entries, rows))));
+    this.root.replaceChildren(h('div', { class: rows ? 'groups' : 'groups cards' }, groupEntries(this.#entries).map((g) => this.#group(g.tone, g.entries, rows))));
   }
 
   #group(tone: Tone, entries: ListEntry[], rows: boolean): HTMLElement {
@@ -141,7 +152,9 @@ h2 { margin: 0; display: flex; align-items: center; gap: var(--s-3); font: var(-
       });
       heading = h('h2', { id: headId }, toggle);
     } else heading = h('h2', { id: headId }, pill, count);
-    return h('section', { 'aria-labelledby': headId, 'data-tone': tone }, heading, body);
+    // How many grid columns the group takes in card mode: one per card up to two, then the full row.
+    const span = tone === 'dead' || entries.length > 2 ? 'all' : String(entries.length);
+    return h('section', { 'aria-labelledby': headId, 'data-tone': tone, 'data-span': span }, heading, body);
   }
 
   #item(e: ListEntry, rows: boolean): OssItem {

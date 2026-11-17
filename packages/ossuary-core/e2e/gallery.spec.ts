@@ -103,6 +103,26 @@ test('layout: card grid on desktop, row groups on phone', async ({ page }, info)
   expect(variant).toBe(info.project.name === 'gallery-phone' ? 'row' : 'card');
 });
 
+test('layout: the list fills the desktop width, phone stays one column', async ({ page }, info) => {
+  for (const theme of themes) {
+    await open(page, `theme=${theme}`);
+    const m = await page.evaluate(() => {
+      const items = Array.from(document.querySelector('oss-list[data-list="items"]')?.shadowRoot?.querySelectorAll('oss-item') ?? []);
+      const boxes = items.map((i) => i.getBoundingClientRect()).filter((r) => r.width > 0);
+      return {
+        columns: new Set(boxes.map((r) => Math.round(r.left))).size,
+        span: Math.max(...boxes.map((r) => r.right)) - Math.min(...boxes.map((r) => r.left)),
+        width: document.documentElement.clientWidth,
+      };
+    });
+    if (info.project.name === 'gallery-phone') expect(m.columns, theme).toBe(1);
+    else {
+      expect(m.columns, theme).toBeGreaterThanOrEqual(3);
+      expect(m.span / m.width, theme).toBeGreaterThan(0.6);
+    }
+  }
+});
+
 test('keyboard: sheet traps and returns focus, arrows change the segmented control', async ({ page }) => {
   await open(page, 'theme=core');
   await page.locator('oss-button[data-action="add"]').focus();
