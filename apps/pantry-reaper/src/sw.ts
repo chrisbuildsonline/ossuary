@@ -43,15 +43,10 @@ export function startWorker(scope: WorkerScope, precache: Precache): void {
 
 async function respond(scope: WorkerScope, precache: Precache, request: Request): Promise<Response> {
   const cache = await scope.caches.open(precache.cacheName);
-  const hit = await cache.match(request);
-  if (hit) return hit;
-  try {
-    return await scope.fetch(request);
-  } catch (err) {
-    const index = request.mode === 'navigate' ? await cache.match('./index.html') : undefined;
-    if (index) return index;
-    throw err;
-  }
+  // Static files only: a Vary header (the preview server sends Vary: Origin) must not turn a hit into a miss.
+  // A navigation always gets the app shell, so a reload never waits on the network.
+  const hit = await cache.match(request.mode === 'navigate' ? './index.html' : request, { ignoreVary: true });
+  return hit ?? scope.fetch(request);
 }
 
 declare const __PRECACHE__: Precache | undefined;

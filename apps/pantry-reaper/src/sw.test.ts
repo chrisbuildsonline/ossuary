@@ -59,13 +59,13 @@ describe('service worker', () => {
     expect(await miss?.text()).toBe('network https://pantry.test/other.txt');
   });
 
-  it('falls back to the cached index.html for navigations when offline', async () => {
+  it('serves navigations from the cached index.html, so an offline reload makes no failed request', async () => {
     const f = fakeSelf({ './index.html': '<html>app</html>' });
     startWorker(f.scope, precache);
     await f.run('install');
-    f.network.mockRejectedValue(new TypeError('offline'));
     const page = await f.run('fetch', { request: get('https://pantry.test/', 'navigate') });
     expect(await page?.text()).toBe('<html>app</html>');
+    expect(f.network).not.toHaveBeenCalled();
   });
 
   it('leaves other origins and non-GET requests to the browser', async () => {
