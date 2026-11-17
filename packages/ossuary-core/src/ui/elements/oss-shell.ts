@@ -27,14 +27,14 @@ export class OssShell extends OssElement {
 .tab:hover { color: var(--text); }
 .tab[aria-current="page"] { color: var(--accent-ink); text-decoration: underline 2px var(--accent); text-underline-offset: 8px; }
 .actions { display: flex; align-items: center; gap: var(--s-3); flex: none; }
-main { display: block; max-width: 1120px; margin: 0 auto; padding: var(--s-4) var(--s-10) var(--s-14); }
+main { display: block; max-width: 1120px; margin: 0 auto; padding: var(--s-4) var(--s-10) calc(var(--s-14) + var(--oss-toast-space, 0px)); }
 .bottom { display: none; }
 @media (max-width: 899px) {
   .top { position: sticky; top: 0; z-index: 12; height: 56px; padding: 0 var(--s-4); background: var(--canvas); gap: var(--s-3); justify-content: space-between; }
   .top-nav { display: none; }
   .primary { position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); bottom: calc(8px + env(safe-area-inset-bottom)); min-width: 160px; }
   ::slotted([slot="primary"]) { min-width: 160px; }
-  main { padding: var(--s-2) var(--s-4) calc(72px + var(--s-10) + env(safe-area-inset-bottom)); }
+  main { padding: var(--s-2) var(--s-4) calc(72px + var(--s-10) + env(safe-area-inset-bottom) + var(--oss-toast-space, 0px)); }
   .bottom {
     display: flex; justify-content: space-between; align-items: center; position: fixed; z-index: 10; left: 0; right: 0; bottom: 0;
     height: calc(72px + env(safe-area-inset-bottom)); padding: 0 var(--s-4) env(safe-area-inset-bottom);

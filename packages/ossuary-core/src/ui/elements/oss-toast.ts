@@ -29,6 +29,7 @@ button:focus-visible { outline: 3px solid var(--on-ink); outline-offset: -3px; }
   #left = 0;
   #started = 0;
   #paused = false;
+  #observer: ResizeObserver | undefined;
 
   protected render(): void {
     if (this.root.querySelector('.region')) return;
@@ -51,7 +52,9 @@ button:focus-visible { outline: 3px solid var(--on-ink); outline-offset: -3px; }
       this.emit('oss-undo');
       this.hide();
     });
-    region.replaceChildren(h('div', { class: 'toast' }, h('span', {}, message), undo));
+    const box = h('div', { class: 'toast' }, h('span', {}, message), undo);
+    region.replaceChildren(box);
+    this.#reserve(box);
     this.#left = opts.duration ?? 5000;
     this.#paused = false;
     this.#arm();
@@ -59,7 +62,30 @@ button:focus-visible { outline: 3px solid var(--on-ink); outline-offset: -3px; }
 
   hide(): void {
     clearTimeout(this.#timer);
+    this.#release();
     this.root.querySelector('.region')?.replaceChildren();
+  }
+
+  disconnectedCallback(): void {
+    this.#release();
+  }
+
+  /** Tells the page how much room the toast takes (`--oss-toast-space`), so oss-shell keeps the scroll end above it. */
+  #reserve(box: HTMLElement): void {
+    this.#release();
+    const style = this.ownerDocument.documentElement.style;
+    const set = () => style.setProperty('--oss-toast-space', `calc(${box.getBoundingClientRect().height}px + var(--s-3))`);
+    set();
+    if (typeof ResizeObserver === 'function') {
+      this.#observer = new ResizeObserver(set);
+      this.#observer.observe(box);
+    }
+  }
+
+  #release(): void {
+    this.#observer?.disconnect();
+    this.#observer = undefined;
+    this.ownerDocument.documentElement.style.removeProperty('--oss-toast-space');
   }
 
   #arm(): void {
