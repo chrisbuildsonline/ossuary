@@ -2,7 +2,7 @@
 
 ## Overview
 
-Pantry Reaper is `bone.json`, a FoodKeeper snapshot, one mapping module and glue that connects the public API of `@ossuary/core` (`packages/ossuary-core`: schema, engine, store, ICS, UI elements). The contract is in `.kiro/specs/skeleton-contract/`. This design records what the app adds, plus one small generic addendum to the core (optional `hidden` on a field).
+Pantry Reaper is `bone.json`, a FoodKeeper snapshot, one mapping module and glue that connects the public API of `@ossuary/core` (`packages/ossuary-core`: schema, engine, store, ICS, UI elements). The contract is in `.kiro/specs/skeleton-contract/`. This design records what the app adds, plus one small generic addendum to the core (optional `hidden` on a field) and a generic `oss-list` gap fix found at sign-off.
 
 ```
 data/foodkeeper.raw.json --mapFoodKeeper--> src/data/foods.json   (bun run data:pantry)
@@ -53,7 +53,7 @@ apps/pantry-reaper/
     sw.ts  sw.test.ts             service worker (hand-written)
     boundaries.test.ts
   public/  manifest.webmanifest  icon-192.png  icon-512.png  icon-512-maskable.png
-  e2e/  smoke.spec.ts  pantry-reaper.spec.ts  offline.spec.ts
+  e2e/  smoke.spec.ts  pantry-reaper.spec.ts  offline.spec.ts  signoff.spec.ts
 ```
 
 ## Components and interfaces
@@ -65,6 +65,8 @@ The one change outside `apps/pantry-reaper` besides root scripts and Playwright 
 - `packages/ossuary-core/src/schema/fields.ts`: the shared field shape gains `hidden: z.boolean().optional()`. Validation of items, the store, CSV, backup and ICS do not change, so a hidden field is validated and stored like any other.
 - `packages/ossuary-core/src/ui/elements/oss-sheet.ts`: skips hidden fields when it builds inputs. Values for hidden fields from the prefill or the item being edited are kept and written on save.
 - `packages/ossuary-core/bone-spec.schema.json`: regenerated with the existing generator. The existing drift test keeps it in sync.
+
+Sign-off addendum (requirement 7): the `oss-list` desktop stage-group subgrid has no gap, so two cards in one stage group touch. The fix is a non-zero `gap` (a core spacing token) on that subgrid, in the `oss-list` component and its CSS under `packages/ossuary-core/src/ui`, with a core test next to the list test. It needs no domain word and changes nothing else in the core.
 
 ### 1. `bone.json`
 
@@ -183,6 +185,10 @@ Items are stored against `boneSpec` (all three options). Evaluation, ICS and the
 6. `pr-storage-switch`: a thin wrapper that renders `oss-field` for `storage` with only the food's methods. On change it calls `store.update`, re-evaluates, builds the toast text from the difference of the two `expiresAt` day numbers, and shows `oss-toast` with Undo.
 7. `oss-trace` on the detail view for the selected item.
 8. Calendar button: exports the selected item with `exportIcs`, then the core download helper and toast.
+9. Import and Backup (requirement 3.13): the Import tab and the empty state's "or import a list" link open the core `oss-import` element, bound to `boneSpec` and the store. The Backup tab offers a download from the core store export and a restore control that uses the core store import, then refreshes the list. The glue only connects events to these core calls. It has no parsing or file-format code.
+10. Toast placement (requirement 3.14): at 390 px the toast host is offset above the bottom bar by the bar's height, using core tokens only, so it never covers the selected item's actions.
+
+`pr-storage-switch` is a segmented control (requirement 3.15): one segment per method the food has, always one selected, no required marker and no "Required." hint.
 
 The two app elements use the core's tokens and the shared stylesheet helper. They add no colours, radii or durations.
 
@@ -194,7 +200,8 @@ The two app elements use the core's tokens and the shared stylesheet helper. The
 - `src/sw.ts`: on `install`, `cache.addAll` of the list. On `activate`, delete caches not named for this hash and `clients.claim()`. On `fetch`, same-origin GET only: cache first, falling back to the network, and for navigations falling back to the cached `index.html`.
 - `register-sw.ts` registers the worker after `load`, in production builds only.
 - No Workbox and no PWA plugin. The worker is about 40 lines and has no dependency.
-- Data lives in IndexedDB, so items survive offline reloads without the worker. The worker supplies the shell, fonts and `foods.json`.
+- Data lives in IndexedDB, so items survive offline reloads without the worker. The worker supplies the shell, fonts and the JS bundle that contains the food data.
+- `foods.json` is imported as a module (`import foods from './data/foods.json'`), so Vite bundles it into a JS chunk. The build emits no separate `foods.json` and the precache list has no entry for one. The food data is available offline because that chunk is precached.
 
 ## Data models
 
@@ -220,6 +227,7 @@ Stored through the core as `StoredItem.values` (C3.2). Backup format is the core
 Per `tech.md`, each task writes the failing test first. Everything runs from the root: `bun run test` (all vitest suites), `bun run typecheck`, `bun run e2e`.
 
 **Core addendum (vitest, in `packages/ossuary-core`).**
+- `oss-list` gap test, next to the list test (`item-list.test.ts` or a new test beside `oss-list.ts`): the stage-group subgrid has a computed non-zero `gap` in the desktop layout. It uses no domain word.
 - Schema test next to `fields.ts`: `hidden: true` and `hidden: false` parse, a non-boolean `hidden` is rejected with the field path, and an item with a hidden required field still fails validation when the value is missing.
 - `json-schema.test.ts`: the checked-in `bone-spec.schema.json` equals the generated one and contains `hidden`.
 - Sheet test next to `oss-sheet.ts`: a hidden field renders no input, a prefilled or edited hidden value is kept and saved.
@@ -230,7 +238,8 @@ Per `tech.md`, each task writes the failing test first. Everything runs from the
 - `search.test.ts`: case, accents, prefix before substring, limit 8, empty query.
 - `spec.test.ts`: `bone.json` parses; `food_id` is hidden; one lifespan, five stages with the five tones in order; theme values equal the DESIGN.md table; trace base label is not "Base"; the derived spec differs from `bone.json` only in the table and the options; a food without a freezer value has no freezer option; a food with `afterOpening: true` has the option label "Fridge (after opening)" and a trace line that contains "Storage", "Fridge (after opening)" and "USDA FoodKeeper", while other foods keep the label "Fridge"; evaluating yogurt-like food with fixed `now` gives the expected `expiresAt` for fridge and freezer, and the trace line contains "Storage", the method and "USDA FoodKeeper".
 - `boundaries.test.ts`: imports only from the core exports map, no import of `warranty-wraith` or `tools`, runtime dependency allow-list (`@ossuary/core` only).
-- `precache.test.ts` and `sw.test.ts`: the file list includes the index, JS, CSS, fonts, manifest and `foods.json`, the cache name changes when a file changes, and the worker handles same-origin GET only.
+- `precache.test.ts` builds the real app (`bun run build:pantry`) and checks the real `dist`, not a fixture. It asserts: every URL in the precache list exists in `dist`; every built file except `sw.js` and source maps is in the list; the list includes the index, a JS file, a CSS file, the Fraunces and Inter font files, the manifest and the icons; and the food data (a known food name from `foods.json`, for example "yogurt") appears inside a script that is in the list, because `foods.json` is bundled into JS and is not a separate file. The cache name changes when a file changes (pure-function case with small inputs).
+- `sw.test.ts`: the worker handles same-origin GET only.
 
 **Playwright (root `playwright.config.ts`, tests in `apps/pantry-reaper/e2e`).** Two files in two projects.
 
@@ -250,6 +259,11 @@ Per `tech.md`, each task writes the failing test first. Everything runs from the
 4. Assert no request to another origin and no failed request during the offline part.
 
 `smoke.spec.ts` stays in the dev-server project. Task 4.1 updates it if the page changes.
+
+`signoff.spec.ts` runs in the dev-server project and covers the sign-off fixes (tasks group 6):
+- Import and Backup: click the Import tab and see `oss-import`; click the empty state's "or import a list" link and see it again; click the Backup tab, trigger the download and assert a backup file arrives, then restore that file and assert the items return.
+- Storage switch: the control has `role="radiogroup"` semantics, exactly one segment is selected on open, and the text "Required." appears nowhere in the sheet or the item.
+- Toast at 390 x 844: select an item, switch storage so the Undo toast shows, then read `boundingBox()` of the toast, the bottom bar, "Add to calendar" and "Edit". The toast bottom is at or above the bar top, and the toast box does not intersect either action box.
 
 ## Decisions and alternatives
 

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Pantry Reaper is a thin food-expiry app built only on the public API of `packages/ossuary-core` (package `@ossuary/core`). It is one bone spec, one data snapshot and a little glue. It does not restate the skeleton contract, and changes it by one small generic addendum only (requirement 6). Requirements of that spec (`.kiro/specs/skeleton-contract/requirements.md`) are cited as **C1.1**, **C2.7** and so on.
+Pantry Reaper is a thin food-expiry app built only on the public API of `packages/ossuary-core` (package `@ossuary/core`). It is one bone spec, one data snapshot and a little glue. It does not restate the skeleton contract, and changes it by two small generic addenda only (requirements 6 and 7). Requirements of that spec (`.kiro/specs/skeleton-contract/requirements.md`) are cited as **C1.1**, **C2.7** and so on.
 
 Domain words (food, shelf life, FoodKeeper) are allowed here and forbidden in the core (C6.1).
 
@@ -16,7 +16,7 @@ Terms:
 - **Storage method**: `pantry`, `fridge` or `freezer`.
 - **Food spec**: the bone spec derived for one food (requirement 3.4).
 
-Scope: spec, data, theme and wiring, plus the one core addendum in requirement 6. Out of scope: custom foods that are not in the snapshot, recall data, accounts, sync, notifications other than ICS alarms, and any other change to `packages/ossuary-core`.
+Scope: spec, data, theme and wiring, plus the two core addenda in requirements 6 and 7. Out of scope: custom foods that are not in the snapshot, recall data, accounts, sync, notifications other than ICS alarms, and any other change to `packages/ossuary-core`.
 
 ## Requirement 1: Bone spec
 
@@ -94,6 +94,12 @@ Scope: spec, data, theme and wiring, plus the one core addendum in requirement 6
 
 3.12 WHERE a food has no value for a storage method THE SYSTEM SHALL NOT offer that method for the food.
 
+3.13 WHEN the user activates the Import tab THE SYSTEM SHALL show the core `oss-import` element for the app's spec and store, and WHEN the user activates the empty state's "or import a list" link THE SYSTEM SHALL open that same element. WHEN the user activates the Backup tab THE SYSTEM SHALL offer a backup download built by the core store export, and a restore control that reads a chosen backup file through the core store import and then refreshes the list. No tab or link SHALL be inert. The app SHALL NOT implement CSV, backup or restore logic of its own (requirement 5.3).
+
+3.14 WHILE the viewport is 390 px wide THE SYSTEM SHALL place the Undo toast above the bottom bar, and SHALL NOT let the toast overlap the bounding box of the selected item's actions ("Add to calendar" and "Edit").
+
+3.15 THE SYSTEM SHALL render the storage switch as a segmented control with one segment per method the food has. It SHALL always have exactly one selected value (the item's current method) and SHALL NOT show a "Required." hint or any other validation message for it.
+
 ## Requirement 4: Installable and offline
 
 **User story:** As a user, I want to install the app and use it in the kitchen without a connection, so that it works when my signal does not.
@@ -102,7 +108,7 @@ Scope: spec, data, theme and wiring, plus the one core addendum in requirement 6
 
 4.1 THE SYSTEM SHALL ship a web app manifest with `name`, `short_name`, `start_url`, `scope`, `display` `standalone`, `theme_color` `#b8460e`, `background_color` `#f2efea`, and 192 px and 512 px PNG icons (one maskable), linked from `index.html`.
 
-4.2 THE SYSTEM SHALL register a service worker that, on first load, precaches every file of the production build (HTML, JS, CSS, fonts, icons, manifest and `foods.json`) and serves them from the cache when the network is unavailable. The worker and its precache list are produced by the build step in `apps/pantry-reaper/vite.config.ts`, run by `bun run build:pantry`.
+4.2 THE SYSTEM SHALL register a service worker that, on first load, precaches every file of the production build except `sw.js` and source maps (HTML, JS, CSS, the Fraunces and Inter fonts, icons and manifest) and serves them from the cache when the network is unavailable. `foods.json` is imported as a module, so Vite bundles it into a JS file and the build emits no separate `foods.json`. The food data SHALL be inside a precached script. The worker and its precache list are produced by the build step in `apps/pantry-reaper/vite.config.ts`, run by `bun run build:pantry`.
 
 4.3 THE SYSTEM SHALL use a cache name that includes a build hash and delete caches from older builds on activation, and SHALL make requests to same-origin files only.
 
@@ -118,7 +124,7 @@ Scope: spec, data, theme and wiring, plus the one core addendum in requirement 6
 
 5.1 THE SYSTEM SHALL import from `@ossuary/core` only through its exports map (C6.3), and a test SHALL fail IF the app imports a path inside the core's `src`.
 
-5.2 THE SYSTEM SHALL NOT import from `apps/warranty-wraith` or `tools/*`, and SHALL NOT change any file outside `apps/pantry-reaper` except: the requirement 6 addendum in `packages/ossuary-core`, the new scripts in the root `package.json`, and the Pantry Reaper projects and `webServer` entry in the root `playwright.config.ts`.
+5.2 THE SYSTEM SHALL NOT import from `apps/warranty-wraith` or `tools/*`, and SHALL NOT change any file outside `apps/pantry-reaper` except: the requirement 6 and requirement 7 addenda in `packages/ossuary-core`, the new scripts in the root `package.json`, and the Pantry Reaper projects and `webServer` entry in the root `playwright.config.ts`.
 
 5.3 THE SYSTEM SHALL keep app glue (everything in `src` except `src/data`) small, with no engine, schema, store or ICS logic of its own. IF the app needs such logic THEN the core is missing something and the gap SHALL be recorded in the open questions of `design.md` instead of coded around.
 
@@ -139,3 +145,16 @@ This is one small generic addition to the skeleton contract. It names no domain.
 6.3 WHEN `oss-sheet` renders THE SYSTEM SHALL render no input for a hidden field. WHEN the sheet opens with a value for a hidden field (prefill or an item being edited) THE SYSTEM SHALL keep that value and include it on save.
 
 6.4 THE SYSTEM SHALL regenerate `packages/ossuary-core/bone-spec.schema.json` so it includes `hidden`, and the existing drift test (C1.21) SHALL pass.
+
+
+## Requirement 7: Contract addendum, list stage-group gap
+
+**User story:** As a user on a wide screen, I want cards in the same stage group to stay apart, so that they never touch.
+
+This is a second small generic fix in the core, found at sign-off. It names no domain.
+
+### Acceptance criteria
+
+7.1 WHILE `oss-list` shows its desktop stage-group layout THE SYSTEM SHALL give the stage-group subgrid a non-zero gap (a core spacing token, no new colour, radius or duration), so that two cards in one stage group never touch.
+
+7.2 THE SYSTEM SHALL change only the `oss-list` component, its CSS and its test in `packages/ossuary-core`, and SHALL use no domain word.
