@@ -64,7 +64,7 @@ describe('oss-field', () => {
     expect(input.required).toBe(true);
     expect(input.value).toBe('Blue');
     const help = el.shadowRoot?.getElementById(input.getAttribute('aria-describedby') ?? '');
-    expect(help?.textContent).toBe('Required.');
+    expect(help?.textContent).toBe('');
   });
 
   it('emits oss-change with typed values', () => {
@@ -128,7 +128,7 @@ describe('oss-field', () => {
     const input = q(el, 'input') as HTMLInputElement;
     expect(input.getAttribute('aria-invalid')).toBe('true');
     const help = el.shadowRoot?.getElementById(input.getAttribute('aria-describedby') ?? '');
-    expect(help?.textContent).toBe('This is required.');
+    expect(help?.textContent).toBe('Required.');
     expect(help?.classList.contains('error')).toBe(true);
     expect(help?.querySelector('svg')).toBeTruthy();
     el.focus();

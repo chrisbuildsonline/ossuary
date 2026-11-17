@@ -12,6 +12,7 @@ export const fieldCss = `
 label, .label { font: var(--t-label); color: var(--text); }
 .help { margin: 0; display: flex; align-items: center; gap: 6px; font: var(--t-caption); color: var(--text-3); }
 .help.error { color: var(--error); }
+.help:empty { display: none; }
 .control { position: relative; display: flex; gap: var(--s-2); }
 input, select {
   width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--r-sm);
@@ -79,7 +80,7 @@ export class OssField extends OssElement {
       return;
     }
     help.className = v ? 'help error' : 'help';
-    help.replaceChildren(...(v ? [svg(glyph('alert')), v] : [this.#field ? this.#helper(this.#field) : '']));
+    help.replaceChildren(...this.#help());
     if (v) control.setAttribute('aria-invalid', 'true');
     else control.removeAttribute('aria-invalid');
   }
@@ -91,7 +92,17 @@ export class OssField extends OssElement {
 
   #change(value: Value): void {
     this.#value = value;
+    if (value !== undefined) this.error = undefined;
     this.emit('oss-change', { key: this.#field?.key, value });
+  }
+
+  /** The error, or the quiet helper. A required field says "Required." only as an error, never on open. */
+  #help(): (Node | string)[] {
+    const f = this.#field;
+    const error = this.#error;
+    if (error) return [svg(glyph('alert')), f?.required && (this.#value === undefined || this.#value === '') ? 'Required.' : error];
+    const helper = f ? this.#helper(f) : '';
+    return helper ? [helper] : [];
   }
 
   protected render(): void {
@@ -105,7 +116,7 @@ export class OssField extends OssElement {
     const helpId = `${this.#id}-help`;
     const error = this.#error;
     const common = { id, 'aria-describedby': helpId, 'aria-invalid': error ? 'true' : null, required: f.required === true };
-    const help = h('p', { id: helpId, class: error ? 'help error' : 'help' }, error ? [svg(glyph('alert')), error] : [this.#helper(f)]);
+    const help = h('p', { id: helpId, class: error ? 'help error' : 'help' }, this.#help());
     let control: HTMLElement;
     let label: HTMLElement = h('label', { for: id, id: labelId }, f.label);
 
@@ -158,9 +169,9 @@ export class OssField extends OssElement {
   #helper(f: Field): string {
     if (f.kind === 'number' && (f.min !== undefined || f.max !== undefined)) {
       const range = f.min !== undefined && f.max !== undefined ? `${f.min} to ${f.max}` : f.min !== undefined ? `${f.min} or more` : `Up to ${f.max}`;
-      return `${f.required ? 'Required' : 'Optional'}, ${range}.`;
+      return f.required ? `${range}.` : `Optional, ${range}.`;
     }
-    return f.required ? 'Required.' : 'Optional.';
+    return f.required ? '' : 'Optional.';
   }
 
   #segmented(f: Extract<Field, { kind: 'enum' }>, attrs: Record<string, string | null>): HTMLElement {

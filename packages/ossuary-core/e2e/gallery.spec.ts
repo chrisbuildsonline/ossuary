@@ -245,7 +245,7 @@ test('flow: add, invalid save, import with a skipped row, backup restore and cal
   await page.locator('oss-button[data-action="add"]').click();
   await sheet.locator('oss-button[variant="primary"]').click();
   expect(await deepSheetOpen(page, 'oss-sheet')).toBe(true);
-  await expect(sheet.locator('oss-field[data-key="name"] .help.error')).toHaveText('This is required.');
+  await expect(sheet.locator('oss-field[data-key="name"] .help.error')).toHaveText('Required.');
   await sheet.locator('oss-field[data-key="name"] input').fill('New widget');
   await sheet.locator('oss-field[data-key="place"] [role="radio"]', { hasText: 'Cold' }).first().click();
   await expect(sheet.locator('.expires')).toHaveText('Expires in 14 days · Sat 28 Nov');
