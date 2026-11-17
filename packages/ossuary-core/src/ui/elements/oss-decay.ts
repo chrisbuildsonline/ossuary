@@ -7,11 +7,8 @@ const motifs: readonly Motif[] = ['hourglass', 'candle', 'ghost'];
 export const asMotif = (v: string | null | undefined): Motif => (motifs.includes(v as Motif) ? (v as Motif) : 'hourglass');
 const asSize = (v: string | null): MotifSize => (v && v in motifSizes ? (v as MotifSize) : 'm');
 
-export class OssDecay extends OssElement {
-  static observedAttributes = ['motif', 'fraction', 'tone', 'size'];
-  static override styles = `
-:host { display: inline-flex; flex: none; line-height: 0; }
-svg { overflow: visible; }
+/** Paint for the motif parts, shared with the empty-state art. */
+export const motifCss = `
 .motif * { stroke-linecap: round; stroke-linejoin: round; transition: all var(--dur-4) var(--ease-out); }
 .wax, .drip { fill: var(--motif-wax); stroke: var(--text); stroke-width: 2.5; }
 .dish { fill: var(--surface-sunken); stroke: var(--text); stroke-width: 2.5; }
@@ -27,6 +24,14 @@ svg { overflow: visible; }
 .sand { fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.5; }
 .stream { stroke: var(--accent); stroke-width: 1.5; }
 .cap { fill: var(--text); }
+`;
+
+export class OssDecay extends OssElement {
+  static observedAttributes = ['motif', 'fraction', 'tone', 'size'];
+  static override styles = `
+:host { display: inline-flex; flex: none; line-height: 0; }
+svg { overflow: visible; }
+${motifCss}
 :host([idle]) .flame path { transform-box: fill-box; transform-origin: 50% 100%; animation: sway 1.8s var(--ease-in-out) infinite alternate; }
 :host([idle]) .tone-urgent .flame path { animation: flicker .9s var(--ease-in-out) infinite; }
 :host([idle]) .float { animation: float 3.2s var(--ease-in-out) infinite alternate; }
@@ -65,3 +70,9 @@ svg { overflow: visible; }
 }
 
 define('oss-decay', OssDecay);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'oss-decay': OssDecay;
+  }
+}

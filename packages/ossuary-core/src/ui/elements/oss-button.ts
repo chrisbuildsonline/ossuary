@@ -63,3 +63,9 @@ export class OssButton extends OssElement {
 }
 
 define('oss-button', OssButton);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'oss-button': OssButton;
+  }
+}

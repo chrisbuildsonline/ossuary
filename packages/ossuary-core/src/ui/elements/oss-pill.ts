@@ -42,3 +42,9 @@ ${toneCss}
 }
 
 define('oss-pill', OssPill);
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'oss-pill': OssPill;
+  }
+}
