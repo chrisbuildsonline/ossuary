@@ -148,7 +148,7 @@ describe('pantry reaper app', () => {
     await openFirstItem();
     const expires = () => document.querySelector('.pr-detail time')?.getAttribute('datetime');
     expect(expires()).toBe('2026-11-24');
-    const radios = Array.from(document.querySelector('pr-storage-switch oss-field')?.shadowRoot?.querySelectorAll('[role="radio"]') ?? []);
+    const radios = Array.from(document.querySelector('pr-storage-switch')?.shadowRoot?.querySelectorAll('[role="radio"]') ?? []);
     expect(radios.map((r) => r.textContent)).toEqual(['Fridge', 'Freezer']);
     (radios[1] as HTMLElement).click();
 

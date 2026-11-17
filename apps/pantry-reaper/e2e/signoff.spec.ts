@@ -13,6 +13,37 @@ async function addFood(page: Page, query: string): Promise<void> {
   await expect(sheet).toBeHidden();
 }
 
+test('the storage switch is a segmented control with one selected segment and no required hint', async ({ page }) => {
+  const guard = watchPage(page);
+  await page.goto('/');
+  const search = page.getByRole('combobox', { name: 'Search foods' });
+  await search.fill('yogurt');
+  await search.press('Enter');
+  const sheet = page.locator('oss-sheet dialog');
+  await expect(sheet.getByRole('radiogroup', { name: 'Storage' }).getByRole('radio', { checked: true })).toHaveCount(1);
+  await sheet.getByRole('button', { name: 'Save item' }).click();
+  await page.locator('oss-item', { hasText: 'Yogurt' }).click();
+
+  const group = page.locator('pr-storage-switch').getByRole('radiogroup', { name: 'Storage' });
+  const checked = group.getByRole('radio', { checked: true });
+  await expect(checked).toHaveCount(1);
+  await expect(checked).toHaveText('Fridge');
+  for (const [name, toast] of [
+    ['Freezer', 'Moved to freezer'],
+    ['Fridge', 'Moved to fridge'],
+  ] as const) {
+    await group.getByRole('radio', { name }).click();
+    await expect(page.locator('oss-toast .toast')).toContainText(toast);
+    await expect(checked).toHaveCount(1);
+    await expect(checked).toHaveText(name);
+  }
+  await expect(page.locator('.pr-detail').getByText('Required.')).toHaveCount(0);
+  await expect(page.locator('oss-item').getByText('Required.')).toHaveCount(0);
+
+  guard.check();
+  expect(guard.errors).toEqual([]);
+});
+
 const tab = (page: Page, name: string) => page.locator('oss-shell nav[aria-label="Main"]').getByRole('button', { name });
 
 test('the Import tab, the import link and the Backup tab all work', async ({ page }) => {
