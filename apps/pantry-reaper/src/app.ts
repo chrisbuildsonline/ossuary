@@ -4,6 +4,7 @@ import { type Store, openStore } from '@ossuary/core/store';
 import {
   type Download,
   type ListEntry,
+  type OssImport,
   type OssList,
   type OssSheet,
   type OssToast,
@@ -83,6 +84,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
 
 const primaryOf = (e: Evaluation) => e.lifespans[e.primaryIndex];
 const days = (n: number) => `${n} ${Math.abs(n) === 1 ? 'day' : 'days'}`;
+const items = (n: number) => `${n} ${n === 1 ? 'item' : 'items'}`;
 
 /** Evaluates a stored item against its own food spec. */
 function evaluateItem(values: Item, now: Now): Evaluation | undefined {
@@ -120,22 +122,38 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
 
   const sheet = el('oss-sheet') as OssSheet;
   const toast = el('oss-toast') as OssToast;
-  shell.append(addButton, usedButton, home, detail, sheet, toast);
+  const importer = el('oss-import') as OssImport;
+  importer.spec = boneSpec;
+
+  // Backup: the core store export as a file, and the core store import from a chosen file.
+  const download = el('oss-button', { variant: 'primary', icon: 'archive' }, 'Download backup');
+  const restoreFile = el('input', { type: 'file', accept: '.json,application/json', hidden: '' });
+  const restore = el('oss-button', { variant: 'ghost', icon: 'upload' }, 'Restore from file');
+  const backup = el(
+    'div',
+    { class: 'pr-backup', hidden: '' },
+    el('section', { class: 'pr-hero' }, el('h1', { tabindex: '-1' }, 'Backup'), el('p', {}, 'Save everything in your kitchen to one file. Restore it here, on this or any other device.')),
+    el('section', { class: 'pr-card', 'aria-label': 'Backup' }, el('div', { class: 'pr-actions' }, download, restore, restoreFile)),
+  );
+  shell.append(addButton, usedButton, home, detail, backup, sheet, toast, importer);
   root.append(shell);
 
   let store: Store | undefined;
   let entries: ListEntry[] = [];
   let selected: string | undefined;
+  let view: 'items' | 'backup' = 'items';
 
   function render(): void {
     const entry = entries.find((e) => e.id === selected);
     const food = entry && foodOf(entry.values);
     if (!entry || !food) selected = undefined;
-    home.hidden = selected !== undefined;
-    detail.hidden = selected === undefined;
-    // One primary pill per screen: the empty state brings its own.
-    addButton.hidden = selected !== undefined || entries.length === 0;
-    usedButton.hidden = selected === undefined;
+    shell.setAttribute('current', view);
+    backup.hidden = view !== 'backup';
+    home.hidden = view !== 'items' || selected !== undefined;
+    detail.hidden = view !== 'items' || selected === undefined;
+    // One primary pill per screen: the empty state and the backup screen bring their own.
+    addButton.hidden = view !== 'items' || selected !== undefined || entries.length === 0;
+    usedButton.hidden = view !== 'items' || selected === undefined;
     renderHome();
     if (entry && food && selected) renderDetail(entry, food);
   }
@@ -236,6 +254,7 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
 
   function go(id: string | undefined): void {
     selected = id;
+    view = 'items';
     history.pushState(null, '', id ? `#item-${id}` : location.pathname + location.search);
     render();
     (selected ? detail.querySelector('h1') : headline)?.focus();
@@ -276,6 +295,7 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     const opened = await openStore(boneSpec, { newId: deps.newId, nowIso: () => deps.clock().toISOString(), indexedDB: deps.indexedDB });
     if (!opened.ok) return showError('message' in opened.error ? opened.error.message : 'Storage is not available. Try again.');
     store = opened.value;
+    importer.store = store;
     selected = /^#item-(.+)$/.exec(location.hash)?.[1];
     await reload();
   }
@@ -288,8 +308,45 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   addButton.addEventListener('click', focusSearch);
   shell.addEventListener('oss-add', focusSearch);
   shell.addEventListener('oss-retry', () => void start());
+
+  const openImport = () => {
+    importer.now = now();
+    importer.show();
+  };
+  shell.addEventListener('oss-import-open', openImport);
+  shell.addEventListener('oss-nav', (e) => {
+    const target = (e as CustomEvent<{ target: string }>).detail.target;
+    if (target === 'import') return openImport();
+    if (target === 'items') return go(undefined);
+    view = 'backup';
+    render();
+    backup.querySelector('h1')?.focus();
+  });
+  importer.addEventListener('oss-imported', async (e) => {
+    const { added, updated } = (e as CustomEvent<{ added: number; updated: number }>).detail;
+    await reload();
+    say(`Imported ${items(added + updated)}`);
+  });
+
+  download.addEventListener('click', async () => {
+    const r = await store?.exportBackup();
+    if (!r?.ok) return say('Could not make the backup. Try again.');
+    (deps.download ?? downloadText)(`${boneSpec.id}-backup.json`, JSON.stringify(r.value, null, 2), 'application/json');
+    say('Backup file saved');
+  });
+  restore.addEventListener('click', () => restoreFile.click());
+  restoreFile.addEventListener('change', async () => {
+    const file = restoreFile.files?.[0];
+    restoreFile.value = '';
+    if (!file || !store) return;
+    const r = await store.importBackup(await file.text(), 'merge');
+    if (!r.ok) return say(r.error.code === 'invalid' ? (r.error.issues[0]?.message ?? 'This backup cannot be read.') : 'This backup cannot be read.');
+    await reload();
+    say(`Restored ${items(r.value.added + r.value.updated)}`);
+  });
   list.addEventListener('oss-open', (e) => go((e as CustomEvent<{ id: string }>).detail.id));
   addEventListener('popstate', () => {
+    view = 'items';
     selected = /^#item-(.+)$/.exec(location.hash)?.[1];
     render();
   });
