@@ -131,6 +131,64 @@ test('layout: the list fills the desktop width, phone stays one column', async (
   }
 });
 
+test('lifespan cards and banners: every state in every theme, two cards side by side on phone', async ({ page }, info) => {
+  const motifs = { core: 'hourglass', warm: 'candle', cool: 'ghost' };
+  for (const theme of themes) {
+    await open(page, `theme=${theme}`);
+    const cards = page.locator('#lifespans oss-lifespan');
+    await expect(cards).toHaveCount(4);
+    const m = await cards.evaluateAll((els) =>
+      els.map((e) => {
+        const r = e.getBoundingClientRect();
+        const root = e.shadowRoot;
+        return {
+          left: Math.round(r.left),
+          top: Math.round(r.top),
+          width: r.width,
+          tone: root?.querySelector('oss-pill')?.getAttribute('tone'),
+          pills: root?.querySelectorAll('oss-pill').length,
+          motif: root?.querySelector('oss-decay')?.getAttribute('motif'),
+          size: root?.querySelector('oss-decay')?.getAttribute('size'),
+          name: root?.querySelector('section')?.getAttribute('aria-label'),
+          time: root?.querySelector('time')?.getAttribute('datetime'),
+        };
+      }),
+    );
+    expect(m.map((c) => c.tone).sort(), theme).toEqual(['dead', 'soon', 'steady', 'urgent']);
+    for (const c of m) {
+      expect(c.pills).toBe(1);
+      expect(c.motif).toBe(motifs[theme]);
+      expect(c.name).toMatch(/^(Trial|Cover): (expires in|expired) .+\.$/);
+      expect(c.time).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+    const [a, b] = m;
+    expect(a?.top).toBe(b?.top);
+    expect(b?.left ?? 0).toBeGreaterThan(a?.left ?? 0);
+    if (info.project.name === 'gallery-phone') {
+      expect(m.every((c) => c.size === 's' && c.width > 150 && c.width < 200)).toBe(true);
+    } else expect(m.every((c) => c.size === 'm')).toBe(true);
+
+    const banners = page.locator('#lifespans oss-banner');
+    await expect(banners).toHaveCount(3);
+    await expect(page.locator('#lifespans oss-banner:not([variant]) [role="status"]').first()).toContainText('Possible match');
+    const line = await page.locator('#lifespans oss-banner[variant="line"] button.line').boundingBox();
+    expect(line?.height).toBeGreaterThanOrEqual(44);
+    const link = await page.locator('#lifespans oss-banner a[slot="actions"]').boundingBox();
+    expect(link?.height).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test('keyboard: the line banner opens with Enter, the banner link and button are reachable', async ({ page }) => {
+  await open(page, 'theme=cool');
+  await page.locator('#lifespans oss-banner a[slot="actions"]').focus();
+  expect((await focused(page)).text).toBe('Read more');
+  await page.keyboard.press('Tab');
+  expect((await focused(page)).host).toBe('oss-button');
+  await page.locator('#lifespans oss-banner[variant="line"] button.line').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('oss-toast [role="status"]')).toContainText('Match opened');
+});
+
 test('keyboard: sheet traps and returns focus, arrows change the segmented control', async ({ page }) => {
   await open(page, 'theme=core');
   await page.locator('oss-button[data-action="add"]').focus();

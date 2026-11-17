@@ -5,7 +5,7 @@ import type { Item } from '../src/schema/item';
 import { tones } from '../src/schema/stages';
 import type { Store } from '../src/store/repo';
 import { openStore } from '../src/store/repo';
-import { downloadText, ensureDocumentTokens, saveCalendar, titleOf } from '../src/ui/index';
+import { downloadText, ensureDocumentTokens, orderLifespans, saveCalendar, titleOf } from '../src/ui/index';
 import type { ListEntry, OssImport, OssList, OssSheet, OssToast } from '../src/ui/index';
 import core from './fixtures/core.json';
 import multi from './fixtures/multi.json';
@@ -68,6 +68,9 @@ body { margin: 0; background: var(--canvas); font: var(--t-body); color: var(--t
 .motifs figcaption { font: var(--t-caption); color: var(--text-2); }
 .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s-5); align-items: start; }
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-5); }
+.notices { display: grid; gap: var(--s-3); }
+.lifespans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-5); }
+@media (max-width: 899px) { .lifespans { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); } }
 @media (max-width: 899px) { .hero { margin: var(--s-4) 0 var(--s-8); } .block { margin-top: var(--s-10); } }
 `);
 ensureDocumentTokens();
@@ -183,6 +186,27 @@ gizmoCalendar.addEventListener('click', () => saveCalendar(gizmos, gizmoEntries.
 const gizmoTrace = el('oss-trace', { mode: 'auto' });
 Object.assign(gizmoTrace, { now, evaluation: gizmoEntries[0]?.evaluation });
 
+// One card per lifespan (last days and live, then closing and lapsed) and the banner in block and line form.
+const lifespanCards = el(
+  'div',
+  { class: 'lifespans' },
+  ...[
+    { name: 'Desk gizmo', bought: '2026-10-17' },
+    { name: 'Old gizmo', bought: '2024-11-30' },
+  ]
+    .flatMap((v, i) => {
+      const e = evaluated(gizmos, `l${i}`, v);
+      return e ? orderLifespans(e.evaluation) : [];
+    })
+    .map((lifespan) => Object.assign(el('oss-lifespan'), { lifespan, now, motif: gizmos.theme?.motif ?? 'hourglass' })),
+);
+const notMine = el('oss-button', { variant: 'ghost', slot: 'actions' }, 'Not mine');
+const matchBanner = el('oss-banner', { heading: 'Possible match', text: 'Item 12: Blue widget, loose part' }, el('a', { slot: 'actions', href: '#lifespans' }, 'Read more'), notMine);
+const softBanner = el('oss-banner', { tone: 'soon', heading: 'Worth a look', text: 'A widget on this list may need a check.' });
+const lineBanner = el('oss-banner', { variant: 'line', text: '1 possible match · Blue widget' });
+notMine.addEventListener('click', () => toast.show('Match hidden'));
+lineBanner.addEventListener('oss-open', () => toast.show('Match opened'));
+
 // Primitives in every state.
 const pills = el('div', { class: 'row' }, ...tones.map((t) => el('oss-pill', { tone: t, label: t[0]?.toUpperCase() + t.slice(1) })));
 const motifs = el(
@@ -228,6 +252,7 @@ shell.append(
   el('div', { class: 'hero' }, headline, support),
   list,
   block('Two lifespans', 'multi', el('div', { class: 'row' }, gizmoCalendar), el('div', { class: 'duo' }, gizmoList, gizmoTrace)),
+  block('Lifespan cards and banners', 'lifespans', el('div', { class: 'notices' }, lineBanner, matchBanner, softBanner), lifespanCards),
   block(
     'Primitives',
     'primitives',
