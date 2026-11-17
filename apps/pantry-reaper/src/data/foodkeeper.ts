@@ -7,6 +7,8 @@ export interface Food {
   id: string;
   name: string;
   days: Partial<Record<StorageMethod, number>>;
+  /** Set only when `days.fridge` came from the Refrigerate_After_Opening fallback. */
+  afterOpening?: true;
 }
 export interface MapResult {
   foods: Food[];
@@ -26,16 +28,20 @@ const toDays: Record<string, (n: number) => number> = {
   years: (n) => n * 365,
 };
 
+/** Only fridge has an after-opening column the mapper reads, used when no other fridge value is usable. */
+const AFTER_OPENING = 'Refrigerate_After_Opening';
+
 const amount = z.number().nullish();
 const metric = z.string().nullish();
-const timeColumns = Object.fromEntries(
-  ['', 'DOP_'].flatMap((prefix) =>
-    Object.values(columns).flatMap((col) => [
-      [`${prefix}${col}_Min`, amount],
-      [`${prefix}${col}_Metric`, metric],
+const timeColumns = {
+  ...Object.fromEntries(
+    [...['', 'DOP_'].flatMap((prefix) => Object.values(columns).map((col) => `${prefix}${col}`)), AFTER_OPENING].flatMap((group) => [
+      [`${group}_Min`, amount],
+      [`${group}_Metric`, metric],
     ]),
   ),
-);
+  [`${AFTER_OPENING}_Max`]: amount,
+};
 
 /** Only the columns the mapper reads. Other columns are ignored. */
 const productRow = z.object({ ID: z.number().int(), Name: z.string(), Name_subtitle: z.string().nullish(), ...timeColumns });
@@ -86,9 +92,11 @@ export function mapFoodKeeper(raw: unknown): MapResult {
       const d = daysFor(row, `DOP_${columns[method]}`) ?? daysFor(row, columns[method]);
       if (d !== undefined) days[method] = d;
     }
+    const opened = days.fridge === undefined ? daysFor(row, AFTER_OPENING) : undefined;
+    if (opened !== undefined) days.fridge = opened;
     if (Object.keys(days).length === 0) return skip(`No usable storage time for "${name}".`);
     seen.add(id);
-    foods.push({ id, name, days });
+    foods.push(opened === undefined ? { id, name, days } : { id, name, days, afterOpening: true });
   });
   return { foods, skipped };
 }

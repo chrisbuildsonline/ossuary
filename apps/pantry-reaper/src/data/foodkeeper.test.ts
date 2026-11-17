@@ -66,6 +66,62 @@ describe('mapFoodKeeper', () => {
     ).toEqual({ fridge: 30 });
   });
 
+  describe('after-opening fridge fallback', () => {
+    const opened = (min: number | null, metric: string | null, max: number | null = null): Cells => ({
+      Refrigerate_After_Opening_Min: min,
+      Refrigerate_After_Opening_Max: max,
+      Refrigerate_After_Opening_Metric: metric,
+    });
+    const foodOf = (cells: Cells) => mapFoodKeeper(raw(product(cells))).foods[0];
+
+    it('uses Refrigerate_After_Opening when it is the only fridge value, and flags the food', () => {
+      expect(foodOf({ Refrigerate_Metric: 'Package use-by date', ...opened(7, 'Days', 10) })).toEqual({
+        id: '1', name: 'Thing', days: { fridge: 7 }, afterOpening: true,
+      });
+    });
+
+    it('applies the same conversion, rounding and range-minimum rules', () => {
+      expect(foodOf(opened(1, 'Weeks', 2))?.days).toEqual({ fridge: 7 });
+      expect(foodOf(opened(30, 'Hours', 48))?.days).toEqual({ fridge: 2 });
+      expect(foodOf(opened(2, 'Months', 3))?.days).toEqual({ fridge: 60 });
+    });
+
+    it('never overrides a usable Refrigerate or DOP_Refrigerate value, and then sets no flag', () => {
+      const general = foodOf({ Refrigerate_Min: 1, Refrigerate_Metric: 'Months', ...opened(7, 'Days') });
+      expect(general?.days).toEqual({ fridge: 30 });
+      expect(general).not.toHaveProperty('afterOpening');
+      const purchase = foodOf({ DOP_Refrigerate_Min: 2, DOP_Refrigerate_Metric: 'Weeks', ...opened(7, 'Days') });
+      expect(purchase?.days).toEqual({ fridge: 14 });
+      expect(purchase).not.toHaveProperty('afterOpening');
+    });
+
+    it('keeps the other methods next to the fallback', () => {
+      expect(foodOf({ DOP_Freeze_Min: 3, DOP_Freeze_Metric: 'Months', ...opened(4, 'Days', 5) })).toMatchObject({
+        days: { fridge: 4, freezer: 90 }, afterOpening: true,
+      });
+    });
+
+    it('skips a row whose after-opening value is not usable either, with a reason', () => {
+      for (const cells of [opened(null, null), opened(0, 'Days'), opened(3, 'When Ripe'), { Refrigerate_Metric: 'Package use-by date' }]) {
+        const r = mapFoodKeeper(raw(product(cells)));
+        expect(r.foods).toEqual([]);
+        expect(r.skipped[0]?.reason).toMatch(/no usable storage time/i);
+      }
+    });
+
+    it('never flags a food without a fridge value, for fuzzed rows', () => {
+      const cell = fc.oneof(fc.constant(null), fc.integer({ min: -5, max: 50 }), fc.double(), fc.string(), fc.constantFrom('Days', 'Weeks', 'Hours', 'When Ripe'));
+      const keys = ['ID', 'Name', 'Refrigerate_Min', 'Refrigerate_Metric', 'DOP_Refrigerate_Min', 'DOP_Refrigerate_Metric', 'Refrigerate_After_Opening_Min', 'Refrigerate_After_Opening_Max', 'Refrigerate_After_Opening_Metric'];
+      fc.assert(
+        fc.property(fc.array(fc.dictionary(fc.constantFrom(...keys), cell), { maxLength: 10 }), (rows) => {
+          const r = mapFoodKeeper({ sheets: [{ name: 'Product', data: rows.map((x) => row(x as Cells)) }] });
+          expect(r.foods.length + r.skipped.length).toBe(rows.length);
+          for (const food of r.foods) if (food.afterOpening) expect(food.days.fridge).toBeGreaterThan(0);
+        }),
+      );
+    });
+  });
+
   it('builds the name from the name and subtitle, and the id from the dataset id', () => {
     const { foods } = mapFoodKeeper(
       raw(

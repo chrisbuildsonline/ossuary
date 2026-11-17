@@ -149,6 +149,34 @@ describe('specForFood', () => {
     expect(freezer?.trace[0]?.text).not.toMatch(/Base: Base/);
   });
 
+  describe('after-opening fridge', () => {
+    const soyMilk: Food = { id: 'fixture-soy', name: 'Soy milk', days: { fridge: 7 }, afterOpening: true };
+    const label = (spec: BoneSpec, value: string) => {
+      const field = spec.entity.fields.find((f) => f.key === 'storage');
+      return field?.kind === 'enum' ? field.options.find((o) => o.value === value)?.label : undefined;
+    };
+
+    it('labels the fridge option "Fridge (after opening)", and other foods keep "Fridge"', () => {
+      expect(label(specForFood(soyMilk), 'fridge')).toBe('Fridge (after opening)');
+      expect(label(specForFood(yogurt), 'fridge')).toBe('Fridge');
+      expect(label(specForFood(bread), 'fridge')).toBe('Fridge');
+    });
+
+    it('still differs from bone.json only in the storage table and the storage options', () => {
+      expect(withoutFoodParts(specForFood(soyMilk))).toEqual(boneSpec);
+    });
+
+    it('names the after-opening fridge in the trace with Storage and USDA FoodKeeper', () => {
+      const r = evaluate(specForFood(soyMilk), { name: 'Soy milk', food_id: soyMilk.id, storage: 'fridge', bought: '2026-11-17' }, { day: '2026-11-17' });
+      if (!r.ok) throw new Error(JSON.stringify(r.error));
+      const line = r.value.lifespans[0]?.trace.find((t) => t.ruleId === 'storage_life');
+      expect(line?.text).toContain('Storage');
+      expect(line?.text).toContain('Fridge (after opening)');
+      expect(line?.text).toContain('USDA FoodKeeper');
+      expect(r.value.lifespans[0]?.expiresAt).toBe('2026-11-24');
+    });
+  });
+
   it('rejects a method the food does not have', () => {
     const r = evaluate(specForFood(bread), { name: 'Bread', food_id: bread.id, storage: 'freezer', bought: '2026-11-17' }, { day: '2026-11-17' });
     expect(r.ok).toBe(false);

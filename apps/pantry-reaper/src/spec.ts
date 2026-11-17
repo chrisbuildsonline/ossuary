@@ -29,7 +29,9 @@ export function specForFood(food: Food): BoneSpec {
   const spec = structuredClone(boneSpec);
   const days = new Map(Object.entries(food.days));
   for (const field of spec.entity.fields) {
-    if (field.key === STORAGE_FIELD && field.kind === 'enum') field.options = field.options.filter((o) => days.has(o.value));
+    if (field.key !== STORAGE_FIELD || field.kind !== 'enum') continue;
+    field.options = field.options.filter((o) => days.has(o.value));
+    for (const o of field.options) if (food.afterOpening && o.value === 'fridge') o.label = 'Fridge (after opening)';
   }
   for (const rule of spec.lifespans.flatMap((l) => l.rules ?? [])) {
     if (rule.id === STORAGE_RULE && rule.kind === 'lookup') {
