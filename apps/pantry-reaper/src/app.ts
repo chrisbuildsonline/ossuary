@@ -3,6 +3,7 @@ import { type BoneSpec, type Evaluation, type Item, type Now, evaluate, toDayNum
 import { type Store, openStore } from '@ossuary/core/store';
 import {
   type Download,
+  type GlyphName,
   type ListEntry,
   type OssImport,
   type OssList,
@@ -12,6 +13,7 @@ import {
   ensureDocumentTokens,
   fieldText,
   formatCountdown,
+  glyph,
   loadDisplayFont,
   longDay,
   saveCalendar,
@@ -64,7 +66,15 @@ pr-food-search { margin-bottom: var(--s-10); max-width: 640px; }
 .pr-when { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin-top: var(--s-3); font: var(--t-label); color: var(--text-3); }
 .pr-eyebrow { margin: 0 0 var(--s-2); font: var(--t-eyebrow); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
 .pr-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.pr-options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); }
+.pr-option { align-content: space-between; }
+.pr-option-head { display: grid; grid-template-columns: auto 1fr; gap: var(--s-4); align-items: start; }
+.pr-option h2 { margin: 0 0 var(--s-1); font: var(--t-heading); color: var(--text); }
+.pr-option p { margin: 0; font: var(--t-body); color: var(--text-2); }
+.pr-tile { display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--r-md); background: var(--accent-tint); color: var(--accent-ink); }
+.pr-tile svg { width: 24px; height: 24px; }
 @media (max-width: 899px) {
+  .pr-options { grid-template-columns: 1fr; gap: var(--s-4); }
   .pr-hero { margin: var(--s-4) 0 var(--s-5); }
   pr-food-search { margin-bottom: var(--s-8); }
   .pr-grid { grid-template-columns: 1fr; gap: var(--s-4); }
@@ -129,11 +139,28 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   const download = el('oss-button', { variant: 'primary', icon: 'archive' }, 'Download backup');
   const restoreFile = el('input', { type: 'file', accept: '.json,application/json', hidden: '' });
   const restore = el('oss-button', { variant: 'ghost', icon: 'upload' }, 'Restore from file');
+  // Import also lives here: on a phone with items the bottom bar has only Items and Backup.
+  const importList = el('oss-button', { variant: 'ghost', icon: 'import' }, 'Import a list');
+  const option = (label: string, icon: GlyphName, title: string, text: string, ...actions: Node[]) => {
+    const tile = el('span', { class: 'pr-tile' });
+    tile.innerHTML = glyph(icon);
+    return el(
+      'section',
+      { class: 'pr-card pr-option', 'aria-label': label },
+      el('div', { class: 'pr-option-head' }, tile, el('div', {}, el('h2', {}, title), el('p', {}, text))),
+      el('div', { class: 'pr-actions' }, ...actions),
+    );
+  };
   const backup = el(
     'div',
     { class: 'pr-backup', hidden: '' },
-    el('section', { class: 'pr-hero' }, el('h1', { tabindex: '-1' }, 'Backup'), el('p', {}, 'Save everything in your kitchen to one file. Restore it here, on this or any other device.')),
-    el('section', { class: 'pr-card', 'aria-label': 'Backup' }, el('div', { class: 'pr-actions' }, download, restore, restoreFile)),
+    el('section', { class: 'pr-hero' }, el('h1', { tabindex: '-1' }, 'Backup'), el('p', {}, 'Keep a copy of your kitchen, or bring food in from a list.')),
+    el(
+      'div',
+      { class: 'pr-options' },
+      option('Backup', 'archive', 'Your kitchen in one file', 'Save everything to one file. Restore it here, on this or any other device.', download, restore, restoreFile),
+      option('Import', 'import', 'From a spreadsheet', 'Paste a CSV or upload a file. You see a preview before anything is added.', importList),
+    ),
   );
   shell.append(addButton, usedButton, home, detail, backup, sheet, toast, importer);
   root.append(shell);
@@ -314,6 +341,7 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     importer.show();
   };
   shell.addEventListener('oss-import-open', openImport);
+  importList.addEventListener('click', openImport);
   shell.addEventListener('oss-nav', (e) => {
     const target = (e as CustomEvent<{ target: string }>).detail.target;
     if (target === 'import') return openImport();

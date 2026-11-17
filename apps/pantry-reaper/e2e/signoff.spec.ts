@@ -124,6 +124,20 @@ test('at 390 px the Undo toast sits above the bottom bar and clear of every butt
 
 const tab = (page: Page, name: string) => page.locator('oss-shell nav[aria-label="Main"]').getByRole('button', { name });
 
+test('at 390 px with items stored, the Backup screen opens Import', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const guard = watchPage(page);
+  await page.goto('/');
+  await addFood(page, 'yogurt');
+  const bar = page.locator('oss-shell nav[aria-label="Tabs"]');
+  await bar.getByRole('button', { name: 'Backup' }).click();
+  await page.locator('.pr-backup').getByRole('button', { name: 'Import a list' }).click();
+  await expect(page.locator('oss-import dialog')).toBeVisible();
+
+  guard.check();
+  expect(guard.errors).toEqual([]);
+});
+
 test('the Import tab, the import link and the Backup tab all work', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   const guard = watchPage(page);
