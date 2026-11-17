@@ -71,6 +71,14 @@ for (const theme of themes) {
 test('layout: no horizontal scroll, one primary pill, 44px targets', async ({ page }) => {
   for (const theme of themes) {
     await open(page, `theme=${theme}`);
+    // The real resting state: items loaded (the empty state while the store opens brings its own pill),
+    // no dialog open and no animation running in any shadow root.
+    await page.waitForFunction(() => {
+      const roots: (Document | ShadowRoot)[] = [document];
+      for (let i = 0; i < roots.length; i++) roots[i]?.querySelectorAll('*').forEach((e) => e.shadowRoot && roots.push(e.shadowRoot));
+      const list = document.querySelector('oss-list[data-list="items"]')?.shadowRoot;
+      return !!list?.querySelector('oss-item') && roots.every((r) => !r.querySelector('dialog[open]') && r.getAnimations().every((a) => a.playState !== 'running'));
+    });
     const m = await page.evaluate(() => {
       const all: Element[] = [];
       const walk = (root: Document | ShadowRoot) =>
