@@ -68,10 +68,10 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 8.1 Build `gallery/index.html` with neutral fixtures for the core, warm and cool themes (`?theme=`, one lifespan each), a `multi.json` fixture with two lifespans shown in its own section under every theme, a fixed `now` of `2026-11-14`, and every primitive in every state: five tones, three motifs, empty, error, loading, dead, sheet, drawer, import, and the multi-lifespan card, list and trace. _Requirements: 5.1, 5.23, 5.24, 6.1_
   - [x] 8.2 Wire the gallery to the store (browser IndexedDB), engine and ICS so the add, edit, import and calendar flows work end to end. _Requirements: 3.2, 4.8, 5.13_
 
-- [ ] 9. Playwright end-to-end (`e2e/`)
+- [x] 9. Playwright end-to-end (`e2e/`)
   - [x] 9.1 Configure projects at 1280 x 800 and 390 x 844, and a network guard that fails on non-local requests. _Requirements: 5.23, 6.4_
   - [x] 9.2 Axe tests for every gallery state in the core, warm and cool themes, tags `wcag2a`, `wcag2aa`, `wcag21aa`, zero violations. _Requirements: 5.8, 5.21, 5.23_
-  - [ ] 9.3 Keyboard flow tests: Tab reaches every action, visible focus, sheet, drawer and dialog trap focus, close on Escape and return focus; arrow keys on segmented controls. _Requirements: 5.15, 5.23_
+  - [x] 9.3 Keyboard flow tests: Tab reaches every action, visible focus, sheet, drawer and dialog trap focus, close on Escape and return focus; arrow keys on segmented controls. _Requirements: 5.15, 5.23_
   - [x] 9.4 Layout tests: no horizontal scroll at 390 px, one primary pill per screen, targets of at least 44 px, grid at 1280 and row groups at 390. _Requirements: 5.3, 5.4, 5.11, 5.23_
   - [x] 9.5 Reduced-motion test with `reducedMotion: 'reduce'`: no running animations, sheets open without sliding. _Requirements: 5.20_
   - [x] 9.6 Flow tests: add an item and see the preview and list update, invalid save shows errors, import CSV with a skipped row, backup restore, and download an ICS file that parses with the expected alarms (one event per lifespan for the multi-lifespan item). _Requirements: 3.10, 4.8, 5.13, 5.14, 5.18, 5.19_

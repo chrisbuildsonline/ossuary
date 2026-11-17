@@ -19,6 +19,8 @@ input, select {
 }
 input:focus, select:focus { background: var(--surface); }
 input:focus-visible, select:focus-visible { outline: var(--focus); outline-offset: 2px; }
+/* Tab can land on the date input's own picker button, which matches only :focus-within. */
+input[type="date"]:focus-within { outline: var(--focus); outline-offset: 2px; }
 input[aria-invalid="true"], select[aria-invalid="true"], .seg[aria-invalid="true"] { border-color: var(--error); box-shadow: inset 0 0 0 1px var(--error); }
 input[type="date"] { padding-right: 44px; }
 input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; width: 44px; height: 44px; position: absolute; right: 0; cursor: pointer; }

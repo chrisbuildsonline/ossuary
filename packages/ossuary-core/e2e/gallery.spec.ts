@@ -132,6 +132,55 @@ test('keyboard: sheet traps and returns focus, arrows change the segmented contr
   expect((await focused(page)).text).toBe('');
 });
 
+test('keyboard: Tab from the top reaches every visible action, each with a focus ring', async ({ page }) => {
+  for (const theme of themes) {
+    await open(page, `theme=${theme}`);
+    // Every visible, enabled, tabbable control on the page, looking inside shadow roots.
+    const total = await page.evaluate(() => {
+      const found: { el: Element; shadow: string }[] = [];
+      const walk = (root: Document | ShadowRoot) =>
+        root.querySelectorAll('*').forEach((e) => {
+          if (e.shadowRoot) walk(e.shadowRoot);
+          if (!e.matches('a[href], button, input, select, textarea, [tabindex]') || e.getAttribute('tabindex') === '-1') return;
+          if ((e as HTMLButtonElement).disabled || e.closest('dialog:not([open])') || !e.checkVisibility({ visibilityProperty: true })) return;
+          found.push({ el: e, shadow: getComputedStyle(e).boxShadow });
+        });
+      walk(document);
+      (window as unknown as { __tab: typeof found }).__tab = found;
+      return found.length;
+    });
+    expect(total).toBeGreaterThan(10);
+    const reached = new Set<number>();
+    const noRing: string[] = [];
+    for (let i = 0; i < total * 2 + 10 && reached.size < total; i++) {
+      await page.keyboard.press('Tab');
+      const r = await page.evaluate(() => {
+        let a = document.activeElement;
+        while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement;
+        const list = (window as unknown as { __tab: { el: Element; shadow: string }[] }).__tab;
+        const index = list.findIndex((t) => t.el === a);
+        if (!a || index < 0) return { index, ring: true, name: a?.tagName ?? '' };
+        const s = getComputedStyle(a);
+        const outline = s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0;
+        const shadow = s.boxShadow !== 'none' && s.boxShadow !== list[index]?.shadow;
+        const host = (a.getRootNode() as ShadowRoot).host?.tagName.toLowerCase() ?? '';
+        return { index, ring: outline || shadow, name: `${host} ${a.tagName.toLowerCase()}[type=${a.getAttribute('type')}] ${a.textContent?.trim().slice(0, 30)}` };
+      });
+      if (r.index >= 0) reached.add(r.index);
+      if (!r.ring) noRing.push(`${theme}: ${r.name}`);
+    }
+    const missed = await page.evaluate(
+      (seen) =>
+        (window as unknown as { __tab: { el: Element }[] }).__tab
+          .filter((_, i) => !seen.includes(i))
+          .map(({ el }) => `${(el.getRootNode() as ShadowRoot).host?.tagName.toLowerCase() ?? ''} ${el.tagName.toLowerCase()} ${el.textContent?.trim().slice(0, 30)}`),
+      [...reached],
+    );
+    expect(missed, `${theme}: not reached by Tab`).toEqual([]);
+    expect(noRing).toEqual([]);
+  }
+});
+
 test('keyboard: drawer and import dialog close on Escape and return focus', async ({ page }) => {
   await open(page, 'theme=core');
   const link = page.locator('#primitives oss-trace[mode="drawer"] button.open');
