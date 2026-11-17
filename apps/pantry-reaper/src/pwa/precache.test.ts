@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { precacheList } from './precache';
 
 const pub = new URL('../../public/', import.meta.url);
 const manifest = JSON.parse(readFileSync(new URL('manifest.webmanifest', pub), 'utf8')) as {
@@ -11,6 +12,42 @@ function pngSize(bytes: Buffer): [number, number] {
   expect(bytes.subarray(1, 4).toString('latin1')).toBe('PNG');
   return [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
 }
+
+describe('precacheList', () => {
+  const files = [
+    { name: 'index.html', content: '<!doctype html>' },
+    { name: 'assets/index-a1.js', content: 'console.log(1)' },
+    { name: 'assets/index-b2.css', content: 'body{}' },
+    { name: 'assets/fraunces-latin-wght-normal-c3.woff2', content: new Uint8Array([1, 2, 3]) },
+    { name: 'assets/index-a1.js.map', content: '{}' },
+    { name: 'manifest.webmanifest', content: '{}' },
+    { name: 'icon-192.png', content: new Uint8Array([9]) },
+    { name: 'foods.json', content: '[]' },
+    { name: 'sw.js', content: 'self' },
+  ];
+
+  it('lists the index, JS, CSS, fonts, icons, manifest and foods.json, but not the worker or source maps', () => {
+    expect(precacheList(files).urls).toEqual([
+      './assets/fraunces-latin-wght-normal-c3.woff2',
+      './assets/index-a1.js',
+      './assets/index-b2.css',
+      './foods.json',
+      './icon-192.png',
+      './index.html',
+      './manifest.webmanifest',
+    ]);
+  });
+
+  it('names the cache after a hash of the build, which changes when any file changes', () => {
+    const { cacheName } = precacheList(files);
+    expect(cacheName).toMatch(/^pantry-reaper-[0-9a-f]{8}$/);
+    expect(precacheList([...files].reverse()).cacheName).toBe(cacheName);
+    const changed = files.map((f) => (f.name === 'assets/index-b2.css' ? { ...f, content: 'body{color:red}' } : f));
+    expect(precacheList(changed).cacheName).not.toBe(cacheName);
+    const font = files.map((f) => (f.name.endsWith('.woff2') ? { ...f, content: new Uint8Array([1, 2, 4]) } : f));
+    expect(precacheList(font).cacheName).not.toBe(cacheName);
+  });
+});
 
 describe('web app manifest', () => {
   it('declares the installable app in the warm theme', () => {
