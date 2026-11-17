@@ -59,7 +59,8 @@
       "id": "cpsc_recalls",
       "name": "CPSC Recalls",
       "url": "https://www.saferproducts.gov/RestWebServices/Recall",
-      "license": "Public domain (US government work)"
+      "license": "Public domain (US government work)",
+      "retrievedOn": "2026-11-17"
     }
   ]
 }
