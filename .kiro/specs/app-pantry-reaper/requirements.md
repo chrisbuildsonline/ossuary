@@ -24,9 +24,9 @@ Scope: spec, data, theme and wiring, plus the one core addendum in requirement 6
 
 ### Acceptance criteria
 
-1.1 THE SYSTEM SHALL provide `apps/pantry-reaper/bone.json` that `parseBoneSpec` accepts with `ok: true` (C1.1), with `id` `pantry-reaper` and exactly one lifespan with `id` `best-by` and `label` "Best by" (C1.23).
+1.1 THE SYSTEM SHALL provide `apps/pantry-reaper/bone.json` that `parseBoneSpec` accepts with `ok: true` (C1.1), with `id` `pantry-reaper` and exactly one lifespan with `id` `best_by` and `label` "Best by" (C1.23).
 
-1.2 THE SYSTEM SHALL declare the item fields `name` (text, required, the `titleField`), `foodId` (text, required, label "FoodKeeper entry", `hidden: true` per requirement 6), `storage` (enum of `pantry`, `fridge`, `freezer`, required) and `bought` (date, required, label "Opened or bought"), and SHALL use `bought` as the lifespan's `startField` (C1.2, C1.5, C1.18).
+1.2 THE SYSTEM SHALL declare the item fields `name` (text, required, the `titleField`), `food_id` (text, required, label "FoodKeeper entry", `hidden: true` per requirement 6), `storage` (enum of `pantry`, `fridge`, `freezer`, required) and `bought` (date, required, label "Opened or bought"), and SHALL use `bought` as the lifespan's `startField` (C1.2, C1.5, C1.18).
 
 1.3 THE SYSTEM SHALL declare one `lookup` rule on `storage` with a table entry for every option and a `sourceId` for the FoodKeeper source, and no other rule (C1.6, C1.9). The table values in `bone.json` are template defaults only. Every evaluation uses the food spec from requirement 3.4.
 
@@ -36,7 +36,7 @@ Scope: spec, data, theme and wiring, plus the one core addendum in requirement 6
 
 1.6 THE SYSTEM SHALL declare the warm theme from `design/DESIGN.md` section 4: `accent` `#b8460e`, `accentInk` `#9a3a0b`, `accentTint` `#fbe9dc`, `canvas` `#f2efea`, `display` `fraunces`, `motif` `candle`, `emptyArt` `candle-jar-moon` and `wordmark` "Pantry Reaper", and no other theme key (C1.12, C1.13, C1.14, C1.15, C1.16).
 
-1.7 THE SYSTEM SHALL declare one source with id `usda-foodkeeper`, an `https` `url`, a `license` stating public domain (US government work) and `retrievedOn` set to the day the snapshot was downloaded (C1.17).
+1.7 THE SYSTEM SHALL declare one source with id `usda_foodkeeper`, an `https` `url`, a `license` stating public domain (US government work) and `retrievedOn` set to the day the snapshot was downloaded (C1.17).
 
 1.8 THE SYSTEM SHALL declare `copy` with `emptyTitle` "Nothing's dying yet." and `addLabel` "Add food".
 
@@ -70,7 +70,7 @@ Scope: spec, data, theme and wiring, plus the one core addendum in requirement 6
 
 3.1 WHEN the user types in the food search THE SYSTEM SHALL show matching foods from the snapshot as a keyboard-operable listbox, using only `searchFoods` on `foods.json` and making no network request (C6.4).
 
-3.2 WHEN the user picks a food THE SYSTEM SHALL open the core `oss-sheet` with `name` and `foodId` filled, `storage` set to `fridge` (or the first method the food has), and `bought` set to today's local day, and WHEN the user saves THE SYSTEM SHALL write the item through the core store (C3.2, C5.12, C5.13). The sheet SHALL show no input for `foodId`, in the add sheet and in the edit sheet, and saving an edit SHALL keep the stored `foodId` (requirement 6).
+3.2 WHEN the user picks a food THE SYSTEM SHALL open the core `oss-sheet` with `name` and `food_id` filled, `storage` set to `fridge` (or the first method the food has), and `bought` set to today's local day, and WHEN the user saves THE SYSTEM SHALL write the item through the core store (C3.2, C5.12, C5.13). The sheet SHALL show no input for `food_id`, in the add sheet and in the edit sheet, and saving an edit SHALL keep the stored `food_id` (requirement 6).
 
 3.3 THE SYSTEM SHALL use the namespace `ossuary:pantry-reaper` for its items (C3.1), and SHALL pass the clock and the id generator into the store from the app entry point.
 

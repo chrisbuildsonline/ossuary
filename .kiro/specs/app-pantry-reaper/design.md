@@ -68,7 +68,7 @@ The one change outside `apps/pantry-reaper` besides root scripts and Playwright 
 
 ### 1. `bone.json`
 
-One lifespan, one lookup rule. Values below are the real ones from DESIGN.md. The table numbers are template defaults that pass validation. Real numbers come from the food spec.
+One lifespan, one lookup rule. Ids follow the core id pattern `^[a-z][a-z0-9_]*$`. Values below are the real ones from DESIGN.md. The table numbers are template defaults that pass validation. Real numbers come from the food spec.
 
 ```json
 {
@@ -80,7 +80,7 @@ One lifespan, one lookup rule. Values below are the real ones from DESIGN.md. Th
     "summaryFields": ["storage"],
     "fields": [
       { "key": "name",    "kind": "text", "label": "Food", "required": true },
-      { "key": "foodId",  "kind": "text", "label": "FoodKeeper entry", "required": true, "hidden": true },
+      { "key": "food_id", "kind": "text", "label": "FoodKeeper entry", "required": true, "hidden": true },
       { "key": "storage", "kind": "enum", "label": "Storage", "required": true, "options": [
           { "value": "pantry", "label": "Pantry" },
           { "value": "fridge", "label": "Fridge" },
@@ -89,16 +89,16 @@ One lifespan, one lookup rule. Values below are the real ones from DESIGN.md. Th
     ]
   },
   "lifespans": [{
-    "id": "best-by",
+    "id": "best_by",
     "label": "Best by",
     "startField": "bought",
     "base": { "type": "duration", "amount": 7, "unit": "day", "label": "Typical shelf life" },
     "rules": [{
-      "id": "storage-life", "kind": "lookup", "field": "storage", "label": "Storage",
+      "id": "storage_life", "kind": "lookup", "field": "storage", "label": "Storage",
       "table": { "pantry": { "amount": 30, "unit": "day" },
                  "fridge": { "amount": 7,  "unit": "day" },
                  "freezer": { "amount": 180, "unit": "day" } },
-      "sourceId": "usda-foodkeeper"
+      "sourceId": "usda_foodkeeper"
     }],
     "stages": [
       { "id": "fresh",  "label": "Fresh",        "tone": "fresh" },
@@ -112,9 +112,9 @@ One lifespan, one lookup rule. Values below are the real ones from DESIGN.md. Th
              "canvas": "#f2efea", "display": "fraunces", "motif": "candle",
              "emptyArt": "candle-jar-moon", "wordmark": "Pantry Reaper" },
   "copy": { "emptyTitle": "Nothing's dying yet.", "addLabel": "Add food" },
-  "sources": [{ "id": "usda-foodkeeper", "name": "USDA FoodKeeper",
-                "url": "https://…", "license": "Public domain (US government work)",
-                "retrievedOn": "YYYY-MM-DD" }]
+  "sources": [{ "id": "usda_foodkeeper", "name": "USDA FoodKeeper",
+                "url": "https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json", "license": "Public domain (US government work)",
+                "retrievedOn": "2026-11-17" }]
 }
 ```
 
@@ -139,7 +139,7 @@ The snapshot is the FoodKeeper JSON from the real download (file name `FMA-Data-
 
 The mapper ignores the `*_tips` and `*_Tips` columns, the `*_After_Opening_*` columns and the `Refrigerate_After_Thawing_*` columns, and every other sheet. A zod schema describes only the columns the mapper reads and ignores the rest, so a changed column fails loudly in a test and not silently in the app.
 
-The maintainer downloaded the snapshot once and committed it as `data/foodkeeper.raw.json`. The repo has no fetch script. The dataset licence is CC0 1.0. The live FSIS URL (`https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`) returned HTTP 403 from the download environment, so the committed bytes come from the Internet Archive copy `https://web.archive.org/web/20250314020622id_/https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`, retrieved 2026-11-17. The `url` of the `usda-foodkeeper` source in `bone.json` is the official FSIS URL and `retrievedOn` is `2026-11-17`. `SOURCE.md` records the Internet Archive URL, the catalog page `https://catalog.data.gov/dataset/fsis-foodkeeper-data`, the retrieval day and the licence.
+The maintainer downloaded the snapshot once and committed it as `data/foodkeeper.raw.json`. The repo has no fetch script. The dataset licence is CC0 1.0. The live FSIS URL (`https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`) returned HTTP 403 from the download environment, so the committed bytes come from the Internet Archive copy `https://web.archive.org/web/20250314020622id_/https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`, retrieved 2026-11-17. The `url` of the `usda_foodkeeper` source in `bone.json` is the official FSIS URL and `retrievedOn` is `2026-11-17`. `SOURCE.md` records the Internet Archive URL, the catalog page `https://catalog.data.gov/dataset/fsis-foodkeeper-data`, the retrieval day and the licence.
 
 `scripts/build-foods.ts` reads `data/foodkeeper.raw.json`, calls `mapFoodKeeper`, and writes `src/data/foods.json`. The root script `data:pantry` runs it.
 
@@ -161,7 +161,7 @@ export function specForFood(food: Food): BoneSpec;     // cached by food id
 export function nowFromClock(d: Date): Now;            // the only place the app reads the clock
 ```
 
-The contract has one static lookup table per spec, but shelf life differs per food. The app handles that without touching the core: `specForFood` clones `boneSpec`, replaces the table of rule `storage-life` with `food.days` converted to `{ amount, unit: 'day' }`, removes `storage` options the food lacks, and runs `parseBoneSpec` on the result. Validation C1.9 then guarantees a table entry for every offered method. The clone differs from `bone.json` in those two places only, and a test proves it.
+The contract has one static lookup table per spec, but shelf life differs per food. The app handles that without touching the core: `specForFood` clones `boneSpec`, replaces the table of rule `storage_life` with `food.days` converted to `{ amount, unit: 'day' }`, removes `storage` options the food lacks, and runs `parseBoneSpec` on the result. Validation C1.9 then guarantees a table entry for every offered method. The clone differs from `bone.json` in those two places only, and a test proves it.
 
 Items are stored against `boneSpec` (all three options). Evaluation, ICS and the trace use `specForFood`. The list passes each item's own evaluation to `oss-list` (its `entries[].evaluation`), and `exportIcs` is called for the one item being exported, so one spec per call is enough.
 
@@ -172,8 +172,8 @@ Items are stored against `boneSpec` (all three options). Evaluation, ICS and the
 1. Parse the spec, `applyTheme` through `oss-shell`, `loadDisplayFont('fraunces')`.
 2. `openStore(boneSpec, { newId: crypto.randomUUID, nowIso })`.
 3. Render `oss-shell` with `oss-list` (or `oss-empty`), the primary pill "Add food" and the "Calendar" action.
-4. For each stored item, find the food by `foodId`, evaluate with `specForFood(food)` and `nowFromClock(new Date())`. An item whose food is no longer in the snapshot is shown with the evaluation error text and an action to remove it.
-5. `pr-food-search`: a text input with a listbox (`role="combobox"`, arrow keys, Enter to pick, Escape to close) over `searchFoods`. Picking opens `oss-sheet` with the prefilled values (3.2). The sheet shows `name`, `storage` and `bought`. `foodId` is hidden (requirement 6), so no raw id is ever shown, and edits keep it.
+4. For each stored item, find the food by `food_id`, evaluate with `specForFood(food)` and `nowFromClock(new Date())`. An item whose food is no longer in the snapshot is shown with the evaluation error text and an action to remove it.
+5. `pr-food-search`: a text input with a listbox (`role="combobox"`, arrow keys, Enter to pick, Escape to close) over `searchFoods`. Picking opens `oss-sheet` with the prefilled values (3.2). The sheet shows `name`, `storage` and `bought`. `food_id` is hidden (requirement 6), so no raw id is ever shown, and edits keep it.
 6. `pr-storage-switch`: a thin wrapper that renders `oss-field` for `storage` with only the food's methods. On change it calls `store.update`, re-evaluates, builds the toast text from the difference of the two `expiresAt` day numbers, and shows `oss-toast` with Undo.
 7. `oss-trace` on the detail view for the selected item.
 8. Calendar button: exports the selected item with `exportIcs`, then the core download helper and toast.
@@ -193,7 +193,7 @@ The two app elements use the core's tokens and the shared stylesheet helper. The
 ## Data models
 
 ```ts
-type PantryItem = { name: string; foodId: string; storage: 'pantry' | 'fridge' | 'freezer'; bought: IsoDay };
+type PantryItem = { name: string; food_id: string; storage: 'pantry' | 'fridge' | 'freezer'; bought: IsoDay };
 ```
 
 Stored through the core as `StoredItem.values` (C3.2). Backup format is the core's (C3.5).
@@ -222,7 +222,7 @@ Per `tech.md`, each task writes the failing test first. Everything runs from the
 - `foodkeeper.test.ts`: a small fixture of raw rows. Cases: days, weeks, months and years conversion, hours rounded up, "When ripe" dropped, minimum of a range, "from purchase" value preferred, name plus subtitle, skipped row with reason, fuzzed input (`fc.anything()`) never throws.
 - `foods-snapshot.test.ts`: `foods.json` equals `mapFoodKeeper(raw)`, has at least one food for each of yogurt, chicken, spinach and bread (real names, found by search), and every food has at least one method.
 - `search.test.ts`: case, accents, prefix before substring, limit 8, empty query.
-- `spec.test.ts`: `bone.json` parses; `foodId` is hidden; one lifespan, five stages with the five tones in order; theme values equal the DESIGN.md table; trace base label is not "Base"; the derived spec differs from `bone.json` only in the table and the options; a food without a freezer value has no freezer option; evaluating yogurt-like food with fixed `now` gives the expected `expiresAt` for fridge and freezer, and the trace line contains "Storage", the method and "USDA FoodKeeper".
+- `spec.test.ts`: `bone.json` parses; `food_id` is hidden; one lifespan, five stages with the five tones in order; theme values equal the DESIGN.md table; trace base label is not "Base"; the derived spec differs from `bone.json` only in the table and the options; a food without a freezer value has no freezer option; evaluating yogurt-like food with fixed `now` gives the expected `expiresAt` for fridge and freezer, and the trace line contains "Storage", the method and "USDA FoodKeeper".
 - `boundaries.test.ts`: imports only from the core exports map, no import of `warranty-wraith` or `tools`, runtime dependency allow-list (`@ossuary/core` only).
 - `precache.test.ts` and `sw.test.ts`: the file list includes the index, JS, CSS, fonts, manifest and `foods.json`, the cache name changes when a file changes, and the worker handles same-origin GET only.
 
@@ -248,7 +248,7 @@ Per `tech.md`, each task writes the failing test first. Everything runs from the
 ## Decisions and alternatives
 
 - **Per-food spec derived in the app (accepted for the hackathon).** The contract's lookup table is fixed in the spec, so per-food shelf life needs one spec per food. Alternative: put every food and method into `bone.json` under a composite text key. Rejected because it makes the spec huge and the trace unreadable. Alternative: ask the core for per-item lookup tables. Not done now. If the core later lets a lookup read its table from the item, `specForFood` can go.
-- **Hidden `foodId` through a generic core addendum.** The core sheet makes one input per spec field (C5.12), so `foodId` would show a raw id. Decision: add one optional boolean `hidden` to a field in the bone spec schema. Hidden fields are validated and stored, and the sheet renders no input for them. It is one task, test first, and `bone.json` marks `foodId` hidden. Alternative: a read-only field kind. Rejected because it still shows the id. Alternative: store the food id outside the item. Rejected because it splits one record in two.
+- **Hidden `food_id` through a generic core addendum.** The core sheet makes one input per spec field (C5.12), so `food_id` would show a raw id. Decision: add one optional boolean `hidden` to a field in the bone spec schema. Hidden fields are validated and stored, and the sheet renders no input for them. It is one task, test first, and `bone.json` marks `food_id` hidden. Alternative: a read-only field kind. Rejected because it still shows the id. Alternative: store the food id outside the item. Rejected because it splits one record in two.
 - **Calendar exports the selected item (accepted).** `exportIcs` takes one spec per call, and each item has its own food spec. A combined file of all items would need a spec per entry in the core. Not needed for the hackathon.
 - **Repo layout follows the root.** The app has no scripts and no test configs. Vite, vitest and Playwright run from the repo root, with `bun run` scripts for data, build and preview. A `vite.config.ts` in the app holds only the build and service-worker step. Alternative: per-app scripts and configs. Rejected because the repo already runs all apps from the root.
 - **Offline test on the built app.** The service worker exists only in the production build, so the offline test uses a separate Playwright project and a `webServer` that builds and previews the app on its own port. The dev-server project stays for everything else.
