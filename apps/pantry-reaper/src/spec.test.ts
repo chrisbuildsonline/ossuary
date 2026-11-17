@@ -62,6 +62,27 @@ describe('bone.json', () => {
     expect(rule?.kind === 'lookup' ? Object.keys(rule.table).sort() : []).toEqual(['freezer', 'fridge', 'pantry']);
   });
 
+  it('uses the warm theme from DESIGN.md section 4, and nothing else', () => {
+    // The raw JSON, so a key the schema would strip still fails here.
+    expect(bone.theme).toStrictEqual({
+      accent: '#b8460e',
+      accentInk: '#9a3a0b',
+      accentTint: '#fbe9dc',
+      canvas: '#f2efea',
+      display: 'fraunces',
+      motif: 'candle',
+      emptyArt: 'candle-jar-moon',
+      wordmark: 'Pantry Reaper',
+    });
+    expect(spec.theme).toEqual(bone.theme);
+  });
+
+  it('keeps the theme within the contrast and canvas rules', () => {
+    expect(parseBoneSpec({ ...bone, theme: { ...bone.theme, accent: '#f2a65a' } }).ok).toBe(false);
+    expect(parseBoneSpec({ ...bone, theme: { ...bone.theme, canvas: '#ffffff' } }).ok).toBe(false);
+    expect(parseBoneSpec(bone).ok).toBe(true);
+  });
+
   it('declares the USDA FoodKeeper source as public domain over https', () => {
     expect(spec.sources).toHaveLength(1);
     const source = spec.sources?.[0];

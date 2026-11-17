@@ -51,6 +51,16 @@
       ]
     }
   ],
+  "theme": {
+    "accent": "#b8460e",
+    "accentInk": "#9a3a0b",
+    "accentTint": "#fbe9dc",
+    "canvas": "#f2efea",
+    "display": "fraunces",
+    "motif": "candle",
+    "emptyArt": "candle-jar-moon",
+    "wordmark": "Pantry Reaper"
+  },
   "copy": { "emptyTitle": "Nothing's dying yet.", "addLabel": "Add food" },
   "sources": [
     {
