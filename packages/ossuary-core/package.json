@@ -10,6 +10,8 @@
     "./engine": "./src/engine/index.ts",
     "./store": "./src/store/index.ts",
     "./ics": "./src/ics/index.ts",
+    "./ui": "./src/ui/index.ts",
+    "./ui/tokens.css": "./src/ui/tokens.css",
     "./bone-spec.schema.json": "./bone-spec.schema.json"
   },
   "scripts": {

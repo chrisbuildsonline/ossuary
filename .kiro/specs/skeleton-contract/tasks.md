@@ -51,18 +51,18 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 6.4 Implement the countdown formatter and accessible-name builder (primary sentence, plus one sentence per other lifespan) with boundary tests (5 hrs, today, 59 and 60 days, 23 and 24 months, dead) and one- and two-lifespan names. _Requirements: 5.6, 5.7_
   - [x] 6.5 Implement `focus-trap.ts` and a shared constructable-stylesheet helper. _Requirements: 5.15_
 
-- [ ] 7. UI elements (each starts with a failing happy-dom test)
-  - [ ] 7.1 `oss-button` (primary, ghost, link; 44 px targets). _Requirements: 5.1, 5.4_
-  - [ ] 7.2 `oss-pill` and `oss-decay` (quantised fraction, `aria-hidden`, tone mood). _Requirements: 5.8, 5.9_
-  - [ ] 7.3 `oss-item` card and row variants with `<time>`, accessible name and hidden digits, driven by the primary lifespan, plus the compact countdown lines for other lifespans (label, countdown, glyph and stage label as text, one pill only). _Requirements: 5.5, 5.6, 5.7, 5.9, 5.24_
-  - [ ] 7.4 `oss-list` with grouping by primary tone, order, hidden empty groups, header pill and count, collapsed `dead` group, card grid and row layouts. _Requirements: 5.10, 5.11_
-  - [ ] 7.5 `oss-shell` with theme application, desktop top bar, phone app bar and bottom bar, one primary pill slot. _Requirements: 5.2, 5.3, 5.4_
-  - [ ] 7.6 `oss-field` for all four kinds (segmented radiogroup for 4 or fewer options, select above that) with label, helper and error wiring. _Requirements: 5.12_
-  - [ ] 7.7 `oss-sheet` generated from spec fields with live preview (primary plus other lifespans), validation errors, focus to first invalid field, and focus trap, Escape and focus return. _Requirements: 5.12, 5.13, 5.14, 5.15_
-  - [ ] 7.8 `oss-trace` card and drawer modes: one `<ol>` section per lifespan (label heading and primary marker when more than one), signed deltas and a total line. _Requirements: 5.16_
-  - [ ] 7.9 `oss-empty` with the three empty-state arts. _Requirements: 5.17_
-  - [ ] 7.10 `oss-import` with source step, mapping, five-row preview, skipped-row pills, confirm, backup restore, and the three-step phone layout. _Requirements: 5.18, 5.19_
-  - [ ] 7.11 `oss-toast` (`role="status"`, pause on hover and focus, undo) and the ICS download helper with the "Calendar file saved" toast. _Requirements: 4.8, 5.22_
+- [x] 7. UI elements (each starts with a failing happy-dom test)
+  - [x] 7.1 `oss-button` (primary, ghost, link; 44 px targets). _Requirements: 5.1, 5.4_
+  - [x] 7.2 `oss-pill` and `oss-decay` (quantised fraction, `aria-hidden`, tone mood). _Requirements: 5.8, 5.9_
+  - [x] 7.3 `oss-item` card and row variants with `<time>`, accessible name and hidden digits, driven by the primary lifespan, plus the compact countdown lines for other lifespans (label, countdown, glyph and stage label as text, one pill only). _Requirements: 5.5, 5.6, 5.7, 5.9, 5.24_
+  - [x] 7.4 `oss-list` with grouping by primary tone, order, hidden empty groups, header pill and count, collapsed `dead` group, card grid and row layouts. _Requirements: 5.10, 5.11_
+  - [x] 7.5 `oss-shell` with theme application, desktop top bar, phone app bar and bottom bar, one primary pill slot. _Requirements: 5.2, 5.3, 5.4_
+  - [x] 7.6 `oss-field` for all four kinds (segmented radiogroup for 4 or fewer options, select above that) with label, helper and error wiring. _Requirements: 5.12_
+  - [x] 7.7 `oss-sheet` generated from spec fields with live preview (primary plus other lifespans), validation errors, focus to first invalid field, and focus trap, Escape and focus return. _Requirements: 5.12, 5.13, 5.14, 5.15_
+  - [x] 7.8 `oss-trace` card and drawer modes: one `<ol>` section per lifespan (label heading and primary marker when more than one), signed deltas and a total line. _Requirements: 5.16_
+  - [x] 7.9 `oss-empty` with the three empty-state arts. _Requirements: 5.17_
+  - [x] 7.10 `oss-import` with source step, mapping, five-row preview, skipped-row pills, confirm, backup restore, and the three-step phone layout. _Requirements: 5.18, 5.19_
+  - [x] 7.11 `oss-toast` (`role="status"`, pause on hover and focus, undo) and the ICS download helper with the "Calendar file saved" toast. _Requirements: 4.8, 5.22_
 
 - [ ] 8. Gallery page
   - [ ] 8.1 Build `gallery/index.html` with neutral fixtures for the core, warm and cool themes (`?theme=`, one lifespan each), a `multi.json` fixture with two lifespans shown in its own section under every theme, a fixed `now` of `2026-11-14`, and every primitive in every state: five tones, three motifs, empty, error, loading, dead, sheet, drawer, import, and the multi-lifespan card, list and trace. _Requirements: 5.1, 5.23, 5.24, 6.1_
