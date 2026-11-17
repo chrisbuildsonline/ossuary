@@ -16,6 +16,10 @@
     "build:pantry": "vite build apps/pantry-reaper",
     "preview:pantry": "vite preview apps/pantry-reaper --port 4173 --strictPort",
     "dev:wraith": "vite apps/warranty-wraith --port 5174 --strictPort",
+    "data:wraith": "bun apps/warranty-wraith/scripts/build-recalls.ts",
+    "icons:wraith": "bun apps/warranty-wraith/scripts/draw-icons.ts",
+    "build:wraith": "vite build apps/warranty-wraith",
+    "preview:wraith": "vite preview apps/warranty-wraith --port 4174 --strictPort",
     "dev:gallery": "vite packages/ossuary-core/gallery --port 5180 --strictPort",
     "build":"vite build apps/pantry-reaper && vite build apps/warranty-wraith",
     "playwright:install": "playwright install chromium"
