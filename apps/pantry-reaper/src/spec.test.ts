@@ -1,6 +1,9 @@
-import { parseBoneSpec } from '@ossuary/core/schema';
+import { evaluate } from '@ossuary/core/engine';
+import { type BoneSpec, parseBoneSpec } from '@ossuary/core/schema';
 import { describe, expect, it } from 'vitest';
 import bone from '../bone.json';
+import type { Food } from './data/foodkeeper';
+import { boneSpec, nowFromClock, specForFood } from './spec';
 
 describe('bone.json', () => {
   const parsed = parseBoneSpec(bone);
@@ -66,5 +69,96 @@ describe('bone.json', () => {
     expect(source?.url).toMatch(/^https:\/\//);
     expect(source?.license).toMatch(/public domain/i);
     expect(source?.retrievedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+const storageOptions = (spec: BoneSpec) => {
+  const field = spec.entity.fields.find((f) => f.key === 'storage');
+  return field?.kind === 'enum' ? field.options.map((o) => o.value) : [];
+};
+const storageTable = (spec: BoneSpec) => {
+  const rule = spec.lifespans[0]?.rules?.find((r) => r.id === 'storage_life');
+  return rule?.kind === 'lookup' ? rule.table : undefined;
+};
+
+/** The derived spec with its two allowed differences put back to the bone.json values. */
+function withoutFoodParts(spec: BoneSpec): BoneSpec {
+  const copy = structuredClone(spec);
+  const field = copy.entity.fields.find((f) => f.key === 'storage');
+  const original = boneSpec.entity.fields.find((f) => f.key === 'storage');
+  if (field?.kind === 'enum' && original?.kind === 'enum') field.options = structuredClone(original.options);
+  const rule = copy.lifespans[0]?.rules?.find((r) => r.id === 'storage_life');
+  const table = storageTable(boneSpec);
+  if (rule?.kind === 'lookup' && table) rule.table = structuredClone(table);
+  return copy;
+}
+
+const yogurt: Food = { id: 'fixture-yogurt', name: 'Yogurt', days: { fridge: 7, freezer: 30 } };
+const bread: Food = { id: 'fixture-bread', name: 'Bread, homemade', days: { pantry: 3, fridge: 60 } };
+
+describe('boneSpec', () => {
+  it('is bone.json parsed', () => {
+    const r = parseBoneSpec(bone);
+    expect(r.ok && r.value).toEqual(boneSpec);
+  });
+});
+
+describe('specForFood', () => {
+  it('differs from bone.json only in the storage table and the storage options', () => {
+    const before = structuredClone(boneSpec);
+    const spec = specForFood(yogurt);
+    expect(spec).not.toEqual(boneSpec);
+    expect(withoutFoodParts(spec)).toEqual(boneSpec);
+    expect(storageOptions(spec)).toEqual(['fridge', 'freezer']);
+    expect(storageTable(spec)).toEqual({ fridge: { amount: 7, unit: 'day' }, freezer: { amount: 30, unit: 'day' } });
+    expect(boneSpec).toEqual(before);
+  });
+
+  it('offers no freezer for a food without a freezer value', () => {
+    const spec = specForFood(bread);
+    expect(storageOptions(spec)).toEqual(['pantry', 'fridge']);
+    expect(Object.keys(storageTable(spec) ?? {}).sort()).toEqual(['fridge', 'pantry']);
+    expect(parseBoneSpec(spec).ok).toBe(true);
+  });
+
+  it('returns the same spec for the same food', () => {
+    expect(specForFood(yogurt)).toBe(specForFood(yogurt));
+  });
+
+  it('throws for a food with no storage method', () => {
+    expect(() => specForFood({ id: 'fixture-none', name: 'Nothing', days: {} })).toThrow(/Nothing/);
+  });
+
+  it('gives the expected expiry for fridge and freezer, with a trace line naming Storage, the method and USDA FoodKeeper', () => {
+    const now = nowFromClock(new Date(2026, 10, 17, 9, 30));
+    const spec = specForFood(yogurt);
+    const at = (storage: string) => {
+      const r = evaluate(spec, { name: 'Yogurt', food_id: yogurt.id, storage, bought: '2026-11-17' }, now);
+      if (!r.ok) throw new Error(JSON.stringify(r.error));
+      return r.value.lifespans[0];
+    };
+    const fridge = at('fridge');
+    const freezer = at('freezer');
+    expect(fridge?.expiresAt).toBe('2026-11-24');
+    expect(freezer?.expiresAt).toBe('2026-12-17');
+    const line = freezer?.trace.find((t) => t.ruleId === 'storage_life');
+    expect(line?.text).toContain('Storage');
+    expect(line?.text).toContain('Freezer');
+    expect(line?.text).toContain('30 days');
+    expect(line?.text).toContain('USDA FoodKeeper');
+    expect(freezer?.trace[0]?.text).not.toMatch(/Base: Base/);
+  });
+
+  it('rejects a method the food does not have', () => {
+    const r = evaluate(specForFood(bread), { name: 'Bread', food_id: bread.id, storage: 'freezer', bought: '2026-11-17' }, { day: '2026-11-17' });
+    expect(r.ok).toBe(false);
+  });
+});
+
+describe('nowFromClock', () => {
+  it('reads the local day and minute of the day', () => {
+    expect(nowFromClock(new Date(2026, 10, 17, 9, 30))).toEqual({ day: '2026-11-17', minuteOfDay: 570 });
+    expect(nowFromClock(new Date(2026, 0, 1, 0, 0))).toEqual({ day: '2026-01-01', minuteOfDay: 0 });
+    expect(nowFromClock(new Date(2026, 11, 31, 23, 59, 59))).toEqual({ day: '2026-12-31', minuteOfDay: 1439 });
   });
 });
