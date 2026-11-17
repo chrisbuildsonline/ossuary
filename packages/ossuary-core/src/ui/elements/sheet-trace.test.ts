@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { parseBoneSpec } from '../../schema/bone-spec';
+import { copyOf, widgetSpec } from '../../testing/fixtures';
 import { gizmo, gizmoEntry, now, widget, widgets } from '../../testing/ui-fixtures';
 import type { Entry } from '../../testing/ui-fixtures';
 import { deepActiveElement } from '../a11y/focus-trap';
@@ -93,6 +95,43 @@ describe('oss-sheet', () => {
     expect(cancel).toHaveBeenCalledTimes(1);
     expect((q(el, 'dialog') as HTMLDialogElement).open).toBe(false);
     expect(document.activeElement).toBe(opener);
+  });
+});
+
+describe('oss-sheet hidden fields', () => {
+  const withRef = (() => {
+    const spec = copyOf(widgetSpec);
+    spec.entity.fields.splice(1, 0, { key: 'ref', kind: 'text', label: 'Ref', required: true, hidden: true } as (typeof spec.entity.fields)[number]);
+    const r = parseBoneSpec(spec);
+    if (!r.ok) throw new Error(JSON.stringify(r.error));
+    return r.value;
+  })();
+  const saves = (el: OssSheet) => {
+    const saved: unknown[] = [];
+    el.addEventListener('oss-save', (e) => saved.push((e as CustomEvent).detail));
+    return saved;
+  };
+
+  it('renders no input for a hidden field and saves its prefilled value', () => {
+    const { el } = sheet(withRef);
+    const saved = saves(el);
+    el.show({ ref: 'r-7', place: 'cold' });
+    expect((qa(el, 'oss-field') as OssField[]).map((f) => f.field?.key)).toEqual(['name', 'place', 'made', 'opened', 'count']);
+    expect(el.shadowRoot?.textContent).not.toContain('Ref');
+    const fields = qa(el, 'oss-field') as OssField[];
+    type(fields[0] as OssField, 'Blue widget');
+    type(fields[2] as OssField, '2026-11-04');
+    (q(el, 'oss-button[variant="primary"]') as HTMLElement).click();
+    expect(saved).toEqual([{ values: { ref: 'r-7', place: 'cold', name: 'Blue widget', made: '2026-11-04' } }]);
+  });
+
+  it('keeps the hidden value of an edited item on save', () => {
+    const { el } = sheet(withRef);
+    const saved = saves(el);
+    el.show({ name: 'Blue widget', ref: 'r-9', place: 'cold', made: '2026-11-04' }, 'w1');
+    type((qa(el, 'oss-field') as OssField[])[0] as OssField, 'Renamed widget');
+    (q(el, 'oss-button[variant="primary"]') as HTMLElement).click();
+    expect(saved).toEqual([{ id: 'w1', values: { name: 'Renamed widget', ref: 'r-9', place: 'cold', made: '2026-11-04' } }]);
   });
 });
 

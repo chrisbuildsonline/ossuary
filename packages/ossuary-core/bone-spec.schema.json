@@ -56,6 +56,9 @@
                   "required": {
                     "type": "boolean"
                   },
+                  "hidden": {
+                    "type": "boolean"
+                  },
                   "kind": {
                     "type": "string",
                     "const": "text"
@@ -84,6 +87,9 @@
                   "required": {
                     "type": "boolean"
                   },
+                  "hidden": {
+                    "type": "boolean"
+                  },
                   "kind": {
                     "type": "string",
                     "const": "date"
@@ -110,6 +116,9 @@
                     "maxLength": 80
                   },
                   "required": {
+                    "type": "boolean"
+                  },
+                  "hidden": {
                     "type": "boolean"
                   },
                   "kind": {
@@ -148,6 +157,9 @@
                     "maxLength": 80
                   },
                   "required": {
+                    "type": "boolean"
+                  },
+                  "hidden": {
                     "type": "boolean"
                   },
                   "kind": {

@@ -3,7 +3,8 @@ import { checkUnique, identifier, text } from './common';
 
 export const MAX_FIELDS = 40;
 
-const shared = { key: identifier, label: text, required: z.boolean().optional() };
+// `hidden`: validated and stored like any field, but the sheet renders no input for it.
+const shared = { key: identifier, label: text, required: z.boolean().optional(), hidden: z.boolean().optional() };
 
 const textField = z.object({ ...shared, kind: z.literal('text') }).strict();
 const dateField = z.object({ ...shared, kind: z.literal('date') }).strict();

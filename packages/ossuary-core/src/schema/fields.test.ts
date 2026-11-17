@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { copyOf, widgetSpec } from '../testing/fixtures';
+import { parseBoneSpec } from './bone-spec';
 import { fieldsSchema } from './fields';
 import { parseWith } from './issues';
+import { validateItem } from './item';
 
 const parse = (input: unknown) => parseWith(fieldsSchema, input);
 const issuesOf = (input: unknown) => {
@@ -57,6 +60,29 @@ describe('fieldsSchema', () => {
   it('rejects keys that do not belong to the kind', () => {
     expect(issuesOf([{ ...name, options: [] }])).toEqual([{ path: '[0].options', message: 'Unknown key "options".' }]);
     expect(issuesOf([{ ...made, min: 1 }])).toEqual([{ path: '[0].min', message: 'Unknown key "min".' }]);
+  });
+
+  it('accepts an optional boolean hidden on any kind', () => {
+    const fields = [{ ...name, hidden: true }, { ...made, hidden: false }, { ...count, hidden: true }, { ...place, hidden: true }];
+    expect(parse(fields)).toEqual({ ok: true, value: fields });
+  });
+
+  it('rejects a non-boolean hidden with the field path', () => {
+    expect(issuesOf([name, { ...made, hidden: 'yes' }]).map((i) => i.path)).toEqual(['[1].hidden']);
+    expect(issuesOf([{ ...place, hidden: 1 }]).map((i) => i.path)).toEqual(['[0].hidden']);
+  });
+
+  it('still validates a hidden required field on items', () => {
+    const spec = copyOf(widgetSpec);
+    spec.entity.fields.push({ key: 'ref', kind: 'text', label: 'Ref', required: true, hidden: true } as (typeof spec.entity.fields)[number]);
+    const parsed = parseBoneSpec(spec);
+    if (!parsed.ok) throw new Error(JSON.stringify(parsed.error));
+    const values = { name: 'Blue widget', place: 'cold', made: '2026-11-04' };
+    const missing = validateItem(parsed.value, values);
+    expect(missing.ok).toBe(false);
+    expect(missing.ok ? [] : missing.error.map((i) => i.path)).toEqual(['ref']);
+    expect(validateItem(parsed.value, { ...values, ref: '' }).ok).toBe(false);
+    expect(validateItem(parsed.value, { ...values, ref: 'r-1' })).toEqual({ ok: true, value: { ...values, ref: 'r-1' } });
   });
 
   it('needs one to 40 fields', () => {

@@ -9,6 +9,18 @@ describe('boneSpecJsonSchema', () => {
     expect(JSON.parse(readFileSync(checkedIn, 'utf8'))).toEqual(boneSpecJsonSchema);
   });
 
+  it('lets every field kind carry an optional boolean hidden', () => {
+    const fieldVariants = (boneSpecJsonSchema as {
+      properties: { entity: { properties: { fields: { items: { oneOf?: unknown[]; anyOf?: unknown[] } } } } };
+    }).properties.entity.properties.fields.items;
+    const variants = (fieldVariants.oneOf ?? fieldVariants.anyOf ?? []) as { properties: Record<string, unknown>; required: string[] }[];
+    expect(variants).toHaveLength(4);
+    for (const v of variants) {
+      expect(v.properties.hidden).toEqual({ type: 'boolean' });
+      expect(v.required).not.toContain('hidden');
+    }
+  });
+
   it('describes the structure and says the cross-field checks are not in it', () => {
     const schema = boneSpecJsonSchema as {
       title: string;

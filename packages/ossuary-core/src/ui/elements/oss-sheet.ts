@@ -1,4 +1,4 @@
-// <oss-sheet>: add/edit sheet generated from spec fields, with a live preview. Emits oss-save { id?, values } and oss-cancel.
+// <oss-sheet>: add/edit sheet generated from spec fields (hidden ones skipped), with a live preview. Emits oss-save { id?, values } and oss-cancel.
 import { type Now, evaluate } from '../../engine/evaluate';
 import type { BoneSpec } from '../../schema/bone-spec';
 import type { Item } from '../../schema/item';
@@ -67,7 +67,8 @@ form { display: grid; gap: var(--s-5); }
     close.addEventListener('click', () => this.cancel());
     const save = h('oss-button', { variant: 'primary' }, 'Save item');
     save.addEventListener('click', () => this.save());
-    const fields = spec.entity.fields.map((f) => {
+    // Hidden fields get no input; their values stay in #values and are saved.
+    const fields = spec.entity.fields.filter((f) => !f.hidden).map((f) => {
       const el = h('oss-field', { 'data-key': f.key });
       Object.assign(el, { field: f, value: this.#values[f.key] });
       return el;
