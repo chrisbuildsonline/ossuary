@@ -1,13 +1,15 @@
 // UI entry: importing it registers every oss-* element.
 export { deepActiveElement, tabbables, trapFocus } from './a11y/focus-trap';
-export { type Countdown, accessibleName, formatCountdown, longDay, shortDay } from './countdown';
+export { type Countdown, accessibleName, expirySentence, formatCountdown, longDay, shortDay } from './countdown';
 export { type Download, downloadText, saveCalendar } from './download';
+export { OssBanner } from './elements/oss-banner';
 export { OssButton } from './elements/oss-button';
 export { OssDecay } from './elements/oss-decay';
 export { OssEmpty } from './elements/oss-empty';
 export { OssField } from './elements/oss-field';
 export { OssImport } from './elements/oss-import';
 export { OssItem } from './elements/oss-item';
+export { OssLifespan } from './elements/oss-lifespan';
 export { type ListEntry, OssList, groupEntries } from './elements/oss-list';
 export { OssPill } from './elements/oss-pill';
 export { OssSheet } from './elements/oss-sheet';
@@ -17,6 +19,7 @@ export { OssTrace } from './elements/oss-trace';
 export { type DisplayFont, displayFamilies, loadDisplayFont } from './fonts';
 export { type GlyphName, glyph, toneGlyph } from './glyphs';
 export { fieldText, shortLine, titleOf } from './item-text';
+export { orderLifespans } from './lifespans';
 export { type Motif, type MotifSize, motifSvg, quantise } from './motifs/index';
 export { ensureDocumentTokens } from './styles';
 export { applyTheme, themeProperties } from './theme';
