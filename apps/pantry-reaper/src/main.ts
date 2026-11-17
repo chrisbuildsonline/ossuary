@@ -1,4 +1,4 @@
-import { coreName } from '@ossuary/core';
+// Entry point: the only place that reads the real clock and makes ids.
+import { mountApp } from './app';
 
-const el = document.querySelector('[data-testid="core"]');
-if (el) el.textContent = coreName;
+void mountApp(document.body, { clock: () => new Date(), newId: () => crypto.randomUUID() });
