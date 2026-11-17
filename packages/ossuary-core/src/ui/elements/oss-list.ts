@@ -45,9 +45,9 @@ export class OssList extends OssElement {
 section { display: grid; gap: var(--s-3); }
 /* Card mode: groups share one column grid, so small groups sit side by side and cards line up across them. */
 .groups.cards { grid-template-columns: minmax(0, 1fr); column-gap: var(--s-5); align-items: start; }
-.cards > section { grid-template-columns: subgrid; gap: 0; row-gap: var(--s-3); }
+.cards > section { grid-template-columns: subgrid; column-gap: var(--s-5); row-gap: var(--s-3); }
 .cards > section > h2, .cards > section > .grid { grid-column: 1 / -1; }
-.cards > section > .grid { grid-template-columns: subgrid; gap: 0; row-gap: var(--s-5); }
+.cards > section > .grid { grid-template-columns: subgrid; column-gap: var(--s-5); row-gap: var(--s-5); }
 .cards > section[data-span="all"] { grid-column: 1 / -1; }
 @container (min-width: 680px) {
   .groups.cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
