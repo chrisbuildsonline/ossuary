@@ -80,7 +80,7 @@ test('the add sheet, edit sheet and Import screen show no "Required." until an i
 type Box = { x: number; y: number; width: number; height: number };
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-test('at 390 px the Undo toast sits above the bottom bar and clear of the item actions', async ({ page }) => {
+test('at 390 px the Undo toast sits above the bottom bar and clear of every button and link', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const guard = watchPage(page);
   await page.goto('/');
@@ -89,8 +89,8 @@ test('at 390 px the Undo toast sits above the bottom bar and clear of the item a
   await page.locator('pr-storage-switch').getByRole('radio', { name: 'Freezer' }).click();
   const toast = page.locator('oss-toast .toast');
   await expect(toast.getByRole('button', { name: 'Undo' })).toBeVisible();
-  // Let the enter animation finish so the box is the resting one.
-  await page.waitForTimeout(400);
+  // Wait for the enter animation to finish so the box is the resting one.
+  await toast.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
 
   const box = async (l: ReturnType<Page['locator']>) => {
     const b = await l.boundingBox();
@@ -99,11 +99,24 @@ test('at 390 px the Undo toast sits above the bottom bar and clear of the item a
   };
   const t = await box(toast);
   const bar = await box(page.locator('oss-shell nav[aria-label="Tabs"]'));
-  const calendar = await box(page.getByRole('button', { name: 'Add to calendar' }));
-  const edit = await box(page.getByRole('button', { name: 'Edit' }));
   expect(t.y + t.height).toBeLessThanOrEqual(bar.y);
-  expect(overlaps(t, calendar), 'toast covers "Add to calendar"').toBe(false);
-  expect(overlaps(t, edit), 'toast covers "Edit"').toBe(false);
+
+  const detail = page.locator('.pr-detail');
+  await expect(detail.getByRole('button', { name: 'Why this date?' })).toBeVisible();
+  const targets = [
+    ...(await detail.getByRole('button').all()),
+    ...(await detail.getByRole('link').all()),
+    ...(await page.locator('oss-shell').getByRole('button', { name: 'Used it' }).all()),
+  ];
+  let checked = 0;
+  for (const target of targets) {
+    if (!(await target.isVisible())) continue;
+    const b = await box(target);
+    const name = (await target.getAttribute('aria-label')) ?? (await target.innerText());
+    expect(overlaps(t, b), `toast covers "${name.trim()}"`).toBe(false);
+    checked++;
+  }
+  expect(checked).toBeGreaterThanOrEqual(5);
 
   guard.check();
   expect(guard.errors).toEqual([]);

@@ -69,8 +69,8 @@ pr-food-search { margin-bottom: var(--s-10); max-width: 640px; }
   pr-food-search { margin-bottom: var(--s-8); }
   .pr-grid { grid-template-columns: 1fr; gap: var(--s-4); }
   .pr-card { padding: var(--s-5) var(--s-4); gap: var(--s-5); }
-  .pr-life { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: var(--s-3); }
-  .pr-count, .pr-when { justify-content: center; }
+  /* Candle beside the countdown, so the whole item view fits one phone screen above the toast. */
+  .pr-life { gap: var(--s-5); }
   .pr-detail oss-trace { justify-self: center; }
 }
 `;
