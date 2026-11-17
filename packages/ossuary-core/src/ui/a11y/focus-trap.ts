@@ -42,11 +42,13 @@ export interface TrapOptions {
   /** Where focus goes first. Defaults to the first tabbable element. */
   initial?: HTMLElement | null;
   onEscape?: () => void;
+  /** Where focus returns on release. Defaults to the element focused when the trap starts. */
+  opener?: Element | null;
 }
 
 /** Traps focus in `container` until the returned release function is called, which restores focus to the opener. */
 export function trapFocus(container: HTMLElement, opts: TrapOptions = {}): () => void {
-  const opener = deepActiveElement(container.ownerDocument);
+  const opener = opts.opener ?? deepActiveElement(container.ownerDocument);
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && opts.onEscape) {
       e.preventDefault();

@@ -66,9 +66,20 @@ export class OssField extends OssElement {
   get error() {
     return this.#error;
   }
+  /** Updates the helper and invalid state in place, so a focused control keeps focus. */
   set error(v: string | undefined) {
+    if (v === this.#error) return;
     this.#error = v;
-    this.update();
+    const help = this.root.querySelector('.help');
+    const control = this.root.querySelector('[aria-describedby]');
+    if (!help || !control) {
+      this.update();
+      return;
+    }
+    help.className = v ? 'help error' : 'help';
+    help.replaceChildren(...(v ? [svg(glyph('alert')), v] : [this.#field ? this.#helper(this.#field) : '']));
+    if (v) control.setAttribute('aria-invalid', 'true');
+    else control.removeAttribute('aria-invalid');
   }
 
   /** Focuses the control (the checked segment for a radiogroup). */
