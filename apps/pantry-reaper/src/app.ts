@@ -1,5 +1,5 @@
 // The app glue: store, evaluation per food spec, and the core elements. No engine, schema, store or ICS logic here.
-import { type Evaluation, type Item, type Now, evaluate } from '@ossuary/core';
+import { type BoneSpec, type Evaluation, type Item, type Now, evaluate, toDayNumber } from '@ossuary/core';
 import { type Store, openStore } from '@ossuary/core/store';
 import {
   type Download,
@@ -18,6 +18,7 @@ import {
 import type { Food } from './data/foodkeeper';
 import { foods } from './data/foods';
 import './elements/pr-food-search';
+import './elements/pr-storage-switch';
 import { boneSpec, nowFromClock, specForFood } from './spec';
 
 export interface AppDeps {
@@ -185,9 +186,47 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
         el('div', { class: 'pr-when' }, el('oss-pill', { tone: l.stage.tone, label: l.stage.label }), el('time', { datetime: l.expiresAt }, longDay(l.expiresAt, today))),
       ),
     );
-    const card = el('section', { class: 'pr-card', 'aria-label': 'Best by' }, life, el('div', { class: 'pr-actions' }, edit));
-    detail.replaceChildren(back, el('header', {}, title, meta), el('div', { class: 'pr-grid' }, card));
+    const storage = el('pr-storage-switch');
+    storage.show(spec, String(entry.values.storage));
+    storage.addEventListener('pr-storage', (e) => void moveTo(entry, spec, (e as CustomEvent<{ value: string }>).detail.value));
+    const trace = el('oss-trace');
+    Object.assign(trace, { now: today, evaluation: entry.evaluation });
+    const card = el('section', { class: 'pr-card', 'aria-label': 'Best by' }, life, storage, el('div', { class: 'pr-actions' }, edit));
+    detail.replaceChildren(back, el('header', {}, title, meta), el('div', { class: 'pr-grid' }, card, trace));
   }
+
+  /** Switches storage, then says how far the date jumped, with Undo. */
+  async function moveTo(entry: ListEntry, spec: BoneSpec, to: string): Promise<void> {
+    const from = entry.values.storage;
+    const before = primaryOf(entry.evaluation)?.expiresAt;
+    const r = await store?.update(entry.id, { ...entry.values, storage: to });
+    if (!r?.ok) {
+      render();
+      return say('Could not move it. Try again.');
+    }
+    await reload();
+    detail.querySelector('pr-storage-switch')?.focus();
+    const moved = entries.find((x) => x.id === entry.id);
+    const after = moved && primaryOf(moved.evaluation)?.expiresAt;
+    if (!before || !after) return;
+    const jump = toDayNumber(after) - toDayNumber(before);
+    say(`Moved to ${fieldText(spec, 'storage', to).toLowerCase()}: ${jump < 0 ? '-' : '+'}${days(Math.abs(jump))}`, async () => {
+      await store?.update(entry.id, { ...entry.values, storage: from });
+      await reload();
+    });
+  }
+
+  /** One toast at a time; `undo` belongs to the toast on screen. */
+  let undo: (() => Promise<void>) | undefined;
+  function say(message: string, onUndo?: () => Promise<void>): void {
+    undo = onUndo;
+    toast.show(message, onUndo ? { undoLabel: 'Undo' } : {});
+  }
+  toast.addEventListener('oss-undo', () => {
+    const run = undo;
+    undo = undefined;
+    void run?.();
+  });
 
   function go(id: string | undefined): void {
     selected = id;
@@ -260,24 +299,22 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     const { id, values } = (e as CustomEvent<{ id?: string; values: Item }>).detail;
     if (!store) return;
     const r = id ? await store.update(id, values) : await store.create(values);
-    if (!r.ok) return toast.show(`Could not save ${titleOf(boneSpec, values)}. Try again.`);
+    if (!r.ok) return say(`Could not save ${titleOf(boneSpec, values)}. Try again.`);
     await reload();
-    toast.show(id ? 'Saved' : `Added ${titleOf(boneSpec, values)}`);
+    say(id ? 'Saved' : `Added ${titleOf(boneSpec, values)}`);
   });
 
   usedButton.addEventListener('click', async () => {
     const entry = entries.find((x) => x.id === selected);
     if (!store || !entry) return;
     const r = await store.remove(entry.id);
-    if (!r.ok) return toast.show('Could not remove it. Try again.');
+    if (!r.ok) return say('Could not remove it. Try again.');
     go(undefined);
     await reload();
-    const name = titleOf(boneSpec, entry.values);
-    toast.show(`${name} used up`, { undoLabel: 'Undo' });
-    toast.addEventListener('oss-undo', async () => {
+    say(`${titleOf(boneSpec, entry.values)} used up`, async () => {
       await store?.create(entry.values);
       await reload();
-    }, { once: true });
+    });
   });
 
   renderHome();

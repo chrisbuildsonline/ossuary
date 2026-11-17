@@ -142,6 +142,27 @@ describe('pantry reaper app', () => {
     expect(list()?.entries[0]?.values).toEqual({ name: 'Greek yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' });
   });
 
+  it('moves an item to the freezer with a date-jump toast, a trace line and Undo', async () => {
+    app = await mountApp(document.body, deps(await seeded({ name: 'Yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' })));
+    await openFirstItem();
+    const expires = () => document.querySelector('.pr-detail time')?.getAttribute('datetime');
+    expect(expires()).toBe('2026-11-24');
+    const radios = Array.from(document.querySelector('pr-storage-switch oss-field')?.shadowRoot?.querySelectorAll('[role="radio"]') ?? []);
+    expect(radios.map((r) => r.textContent)).toEqual(['Fridge', 'Freezer']);
+    (radios[1] as HTMLElement).click();
+
+    await vi.waitFor(() => expect(expires()).toBe('2026-12-17'));
+    const toast = document.querySelector('oss-toast');
+    expect(shadow(toast, '.toast span')?.textContent).toBe('Moved to freezer: +23 days');
+    expect(document.querySelector('oss-trace')?.shadowRoot?.textContent).toContain('Storage is Freezer: 30 days (USDA FoodKeeper)');
+    expect(list()?.entries[0]?.values.storage).toBe('freezer');
+
+    (shadow(toast, '.toast button') as HTMLElement).click();
+    await vi.waitFor(() => expect(expires()).toBe('2026-11-24'));
+    expect(list()?.entries[0]?.values).toEqual({ name: 'Yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' });
+    expect(document.querySelector('oss-trace')?.shadowRoot?.textContent).toContain('Storage is Fridge: 7 days (USDA FoodKeeper)');
+  });
+
   it('shows a store error as one line and one action, without throwing', async () => {
     const broken = { open: () => { throw new Error('blocked by the browser'); } } as unknown as IDBFactory;
     app = await mountApp(document.body, deps(broken));
