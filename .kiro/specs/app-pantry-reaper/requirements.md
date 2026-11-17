@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Pantry Reaper is a thin food-expiry app built only on the public API of `packages/ossuary-core` (package `@ossuary/core`). It is one bone spec, one data snapshot and a little glue. It does not restate the skeleton contract, and changes it by two small generic addenda only (requirements 6 and 7). Requirements of that spec (`.kiro/specs/skeleton-contract/requirements.md`) are cited as **C1.1**, **C2.7** and so on.
+Pantry Reaper is a thin food-expiry app built only on the public API of `packages/ossuary-core` (package `@ossuary/core`). It is one bone spec, one data snapshot and a little glue. It does not restate the skeleton contract, and changes it by three small generic addenda only (requirements 6, 7 and 8). Requirements of that spec (`.kiro/specs/skeleton-contract/requirements.md`) are cited as **C1.1**, **C2.7** and so on.
 
 Domain words (food, shelf life, FoodKeeper) are allowed here and forbidden in the core (C6.1).
 
@@ -16,7 +16,7 @@ Terms:
 - **Storage method**: `pantry`, `fridge` or `freezer`.
 - **Food spec**: the bone spec derived for one food (requirement 3.4).
 
-Scope: spec, data, theme and wiring, plus the two core addenda in requirements 6 and 7. Out of scope: custom foods that are not in the snapshot, recall data, accounts, sync, notifications other than ICS alarms, and any other change to `packages/ossuary-core`.
+Scope: spec, data, theme and wiring, plus the three core addenda in requirements 6, 7 and 8, and one fix to a core gallery test (requirement 9). Out of scope: custom foods that are not in the snapshot, recall data, accounts, sync, notifications other than ICS alarms, and any other change to `packages/ossuary-core`.
 
 ## Requirement 1: Bone spec
 
@@ -96,9 +96,13 @@ Scope: spec, data, theme and wiring, plus the two core addenda in requirements 6
 
 3.13 WHEN the user activates the Import tab THE SYSTEM SHALL show the core `oss-import` element for the app's spec and store, and WHEN the user activates the empty state's "or import a list" link THE SYSTEM SHALL open that same element. WHEN the user activates the Backup tab THE SYSTEM SHALL offer a backup download built by the core store export, and a restore control that reads a chosen backup file through the core store import and then refreshes the list. No tab or link SHALL be inert. The app SHALL NOT implement CSV, backup or restore logic of its own (requirement 5.3).
 
-3.14 WHILE the viewport is 390 px wide THE SYSTEM SHALL place the Undo toast above the bottom bar, and SHALL NOT let the toast overlap the bounding box of the selected item's actions ("Add to calendar" and "Edit").
+3.14 WHILE the viewport is 390 px wide THE SYSTEM SHALL place the Undo toast above the bottom bar, and SHALL NOT let the toast overlap the bounding box of any visible button or link in the selected item view, including "Add to calendar", "Edit" and "Why this date?".
 
 3.15 THE SYSTEM SHALL render the storage switch as a segmented control with one segment per method the food has. It SHALL always have exactly one selected value (the item's current method) and SHALL NOT show a "Required." hint or any other validation message for it.
+
+3.16 WHILE the viewport is 390 px wide and the store has items, THE SYSTEM SHALL still let the user reach the core `oss-import` element. The bottom bar then has only Items and Backup, so the Backup screen SHALL have an Import action that opens `oss-import`. The app SHALL NOT implement import logic of its own (requirement 5.3).
+
+3.17 THE SYSTEM SHALL show no "Required." text in the add sheet, the edit sheet or the Import screen when they open. A required field shows "Required." only as an error after a save or submit with that field empty or invalid (requirement 8).
 
 ## Requirement 4: Installable and offline
 
@@ -124,9 +128,9 @@ Scope: spec, data, theme and wiring, plus the two core addenda in requirements 6
 
 5.1 THE SYSTEM SHALL import from `@ossuary/core` only through its exports map (C6.3), and a test SHALL fail IF the app imports a path inside the core's `src`.
 
-5.2 THE SYSTEM SHALL NOT import from `apps/warranty-wraith` or `tools/*`, and SHALL NOT change any file outside `apps/pantry-reaper` except: the requirement 6 and requirement 7 addenda in `packages/ossuary-core`, the new scripts in the root `package.json`, and the Pantry Reaper projects and `webServer` entry in the root `playwright.config.ts`.
+5.2 THE SYSTEM SHALL NOT import from `apps/warranty-wraith` or `tools/*`, and SHALL NOT change any file outside `apps/pantry-reaper` except: the requirement 6, 7 and 8 addenda in `packages/ossuary-core`, the requirement 9 fix to the core gallery test, the new scripts in the root `package.json`, and the Pantry Reaper projects and `webServer` entry in the root `playwright.config.ts`.
 
-5.3 THE SYSTEM SHALL keep app glue (everything in `src` except `src/data`) small, with no engine, schema, store or ICS logic of its own. IF the app needs such logic THEN the core is missing something and the gap SHALL be recorded in the open questions of `design.md` instead of coded around.
+5.3 THE SYSTEM SHALL keep app glue (everything in `src` except `src/data`) small, with no engine, schema, store or ICS logic of its own. IF the app needs such logic THEN the core is missing something and the gap SHALL be recorded in the open questions of `design.md` instead of coded around. A gap that needs a core change is recorded as a generic core addendum in this spec (requirements 6, 7 and 8), not coded around in the app. The standing "Required." hint in `oss-field` is such a gap (requirement 8).
 
 5.4 THE SYSTEM SHALL have no scripts and no vitest or Playwright config in `apps/pantry-reaper`. The root `package.json` SHALL hold `build:pantry`, `preview:pantry` and `data:pantry` next to the existing `dev:pantry`, and every command in this spec and its tasks SHALL be written as `bun run <script>`.
 
@@ -158,3 +162,31 @@ This is a second small generic fix in the core, found at sign-off. It names no d
 7.1 WHILE `oss-list` shows its desktop stage-group layout THE SYSTEM SHALL give the stage-group subgrid a non-zero gap (a core spacing token, no new colour, radius or duration), so that two cards in one stage group never touch.
 
 7.2 THE SYSTEM SHALL change only the `oss-list` component, its CSS and its test in `packages/ossuary-core`, and SHALL use no domain word.
+
+## Requirement 8: Contract addendum, no standing required hint
+
+**User story:** As a user, I want a form to be quiet until I make a mistake, so that fields that always have a value do not say "Required.".
+
+This is a third small generic fix in the core, found at sign-off. It names no domain.
+
+### Acceptance criteria
+
+8.1 THE SYSTEM SHALL render no standing "Required." hint under a field in the core field component `oss-field` (`packages/ossuary-core/src/ui`), and the same in the core import dialog `oss-import` if it shows one.
+
+8.2 WHEN a save or submit happens with a required field empty or invalid THE SYSTEM SHALL show "Required." as an error on that field.
+
+8.3 WHEN the user gives that field a value THE SYSTEM SHALL clear the error.
+
+8.4 THE SYSTEM SHALL therefore never show "Required." on open for a field that always has a value, such as a choice, a segmented control or a prefilled date.
+
+8.5 THE SYSTEM SHALL change only `oss-field` and, if needed, `oss-import`, their CSS and their tests in `packages/ossuary-core`, and SHALL use no domain word.
+
+## Requirement 9: Core gallery test is stable
+
+**User story:** As the maintainer, I want the core gallery layout test to pass every time, so that the gate is not flaky.
+
+### Acceptance criteria
+
+9.1 THE SYSTEM SHALL make the core gallery test "layout: no horizontal scroll, one primary pill, 44px targets" (project `gallery-desktop`) wait on the real page state (no sheet or dialog visible or still in transition), not on a fixed timeout.
+
+9.2 THE SYSTEM SHALL pass that test in 10 repeated runs, and SHALL change only that test, and the core code that causes the flake if the cause is in the core.

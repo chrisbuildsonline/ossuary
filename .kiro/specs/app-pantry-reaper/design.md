@@ -2,7 +2,7 @@
 
 ## Overview
 
-Pantry Reaper is `bone.json`, a FoodKeeper snapshot, one mapping module and glue that connects the public API of `@ossuary/core` (`packages/ossuary-core`: schema, engine, store, ICS, UI elements). The contract is in `.kiro/specs/skeleton-contract/`. This design records what the app adds, plus one small generic addendum to the core (optional `hidden` on a field) and a generic `oss-list` gap fix found at sign-off.
+Pantry Reaper is `bone.json`, a FoodKeeper snapshot, one mapping module and glue that connects the public API of `@ossuary/core` (`packages/ossuary-core`: schema, engine, store, ICS, UI elements). The contract is in `.kiro/specs/skeleton-contract/`. This design records what the app adds, plus one small generic addendum to the core (optional `hidden` on a field), a generic `oss-list` gap fix and a generic `oss-field` fix (no standing "Required." hint), found at sign-off.
 
 ```
 data/foodkeeper.raw.json --mapFoodKeeper--> src/data/foods.json   (bun run data:pantry)
@@ -67,6 +67,10 @@ The one change outside `apps/pantry-reaper` besides root scripts and Playwright 
 - `packages/ossuary-core/bone-spec.schema.json`: regenerated with the existing generator. The existing drift test keeps it in sync.
 
 Sign-off addendum (requirement 7): the `oss-list` desktop stage-group subgrid has no gap, so two cards in one stage group touch. The fix is a non-zero `gap` (a core spacing token) on that subgrid, in the `oss-list` component and its CSS under `packages/ossuary-core/src/ui`, with a core test next to the list test. It needs no domain word and changes nothing else in the core.
+
+Sign-off addendum (requirement 8): `oss-field` shows a standing "Required." hint under every required field, even choice and prefilled fields that always have a value. The fix is in `oss-field` (and `oss-import` if it shows the hint) under `packages/ossuary-core/src/ui`. The hint is removed. A required field shows "Required." only as an error after a save or submit with that field empty or invalid, and the error clears once the field has a value. Fields that always have a value therefore never show it on open. The core test is a happy-dom test for `oss-field`. It needs no domain word and changes nothing else in the core. Requirement 5.3 records this as a core addendum, not as app logic.
+
+Sign-off fix (requirement 9): the core gallery test "layout: no horizontal scroll, one primary pill, 44px targets" (project `gallery-desktop`) once counted 2 primary pills in a full parallel run. The likely cause is a sheet or dialog still visible mid-transition. The test waits on the real state (no open sheet or dialog, transition finished) and not on a fixed timeout. If the cause is in a core component, that component is fixed too.
 
 ### 1. `bone.json`
 
@@ -186,7 +190,8 @@ Items are stored against `boneSpec` (all three options). Evaluation, ICS and the
 7. `oss-trace` on the detail view for the selected item.
 8. Calendar button: exports the selected item with `exportIcs`, then the core download helper and toast.
 9. Import and Backup (requirement 3.13): the Import tab and the empty state's "or import a list" link open the core `oss-import` element, bound to `boneSpec` and the store. The Backup tab offers a download from the core store export and a restore control that uses the core store import, then refreshes the list. The glue only connects events to these core calls. It has no parsing or file-format code.
-10. Toast placement (requirement 3.14): at 390 px the toast host is offset above the bottom bar by the bar's height, using core tokens only, so it never covers the selected item's actions.
+10. Toast placement (requirement 3.14): at 390 px the toast host is offset above the bottom bar by the bar's height, using core tokens only, so it never covers any visible button or link of the selected item view, including "Why this date?". If core tokens are not enough, the app layout adds space under the item view.
+11. Import on phone (requirement 3.16): once items exist the bottom bar has only Items and Backup. The Backup screen has an Import action that opens the same core `oss-import` element as the Import tab.
 
 `pr-storage-switch` is a segmented control (requirement 3.15): one segment per method the food has, always one selected, no required marker and no "Required." hint.
 
@@ -231,6 +236,7 @@ Per `tech.md`, each task writes the failing test first. Everything runs from the
 - Schema test next to `fields.ts`: `hidden: true` and `hidden: false` parse, a non-boolean `hidden` is rejected with the field path, and an item with a hidden required field still fails validation when the value is missing.
 - `json-schema.test.ts`: the checked-in `bone-spec.schema.json` equals the generated one and contains `hidden`.
 - Sheet test next to `oss-sheet.ts`: a hidden field renders no input, a prefilled or edited hidden value is kept and saved.
+- `oss-field` happy-dom test (task 6.5): no "Required." on render, "Required." as an error after an invalid save, error cleared once the field has a value. No domain word.
 
 **Unit (vitest, in `apps/pantry-reaper/src`).**
 - `foodkeeper.test.ts`: a small fixture of raw rows. Cases: days, weeks, months and years conversion, hours rounded up, "When ripe" dropped, minimum of a range, "from purchase" value preferred, name plus subtitle, skipped row with reason, fuzzed input (`fc.anything()`) never throws. After-opening fallback: a row with only `Refrigerate_After_Opening` gets `days.fridge` and `afterOpening: true`; the same unit, rounding and range-minimum rules apply; a row with a usable `Refrigerate` or `DOP_Refrigerate` value ignores the after-opening value and has no `afterOpening` flag; a row with an unusable after-opening value and nothing else is skipped with a reason.
@@ -263,7 +269,11 @@ Per `tech.md`, each task writes the failing test first. Everything runs from the
 `signoff.spec.ts` runs in the dev-server project and covers the sign-off fixes (tasks group 6):
 - Import and Backup: click the Import tab and see `oss-import`; click the empty state's "or import a list" link and see it again; click the Backup tab, trigger the download and assert a backup file arrives, then restore that file and assert the items return.
 - Storage switch: the control has `role="radiogroup"` semantics, exactly one segment is selected on open, and the text "Required." appears nowhere in the sheet or the item.
-- Toast at 390 x 844: select an item, switch storage so the Undo toast shows, then read `boundingBox()` of the toast, the bottom bar, "Add to calendar" and "Edit". The toast bottom is at or above the bar top, and the toast box does not intersect either action box.
+- Toast at 390 x 844: select an item, switch storage so the Undo toast shows, then read `boundingBox()` of the toast, the bottom bar and every visible button and link in the selected item view (including "Add to calendar", "Edit" and "Why this date?"). The toast bottom is at or above the bar top, and the toast box intersects none of those boxes.
+- No standing "Required.": open the add sheet, the edit sheet and the Import screen and find no "Required." text anywhere until an invalid save (task 6.5).
+- Import on phone: at 390 x 844 with one item stored, open the Backup screen, activate Import and see `oss-import` (task 6.7).
+
+The core gallery e2e (task 6.8) is fixed in `packages/ossuary-core` and must pass 10 repeated runs.
 
 ## Decisions and alternatives
 
