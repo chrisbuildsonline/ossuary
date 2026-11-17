@@ -7,11 +7,13 @@ import {
   type OssList,
   type OssSheet,
   type OssToast,
+  downloadText,
   ensureDocumentTokens,
   fieldText,
   formatCountdown,
   loadDisplayFont,
   longDay,
+  saveCalendar,
   shortDay,
   titleOf,
 } from '@ossuary/core/ui';
@@ -191,7 +193,11 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     storage.addEventListener('pr-storage', (e) => void moveTo(entry, spec, (e as CustomEvent<{ value: string }>).detail.value));
     const trace = el('oss-trace');
     Object.assign(trace, { now: today, evaluation: entry.evaluation });
-    const card = el('section', { class: 'pr-card', 'aria-label': 'Best by' }, life, storage, el('div', { class: 'pr-actions' }, edit));
+    const calendar = el('oss-button', { variant: 'ghost', icon: 'calendar', 'data-action': 'calendar' }, 'Add to calendar');
+    calendar.addEventListener('click', () => {
+      saveCalendar(spec, [{ id: entry.id, values: entry.values }], now(), { show: (m) => say(m) }, deps.download ?? downloadText);
+    });
+    const card = el('section', { class: 'pr-card', 'aria-label': 'Best by' }, life, storage, el('div', { class: 'pr-actions' }, calendar, edit));
     detail.replaceChildren(back, el('header', {}, title, meta), el('div', { class: 'pr-grid' }, card, trace));
   }
 

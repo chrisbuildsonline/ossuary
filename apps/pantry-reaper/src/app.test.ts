@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto';
 import { openStore } from '@ossuary/core/store';
 import type { OssField } from '@ossuary/core/ui';
 import { IDBFactory } from 'fake-indexeddb';
+import ICAL from 'ical.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type App, type AppDeps, mountApp } from './app';
 import { foods } from './data/foods';
@@ -161,6 +162,26 @@ describe('pantry reaper app', () => {
     await vi.waitFor(() => expect(expires()).toBe('2026-11-24'));
     expect(list()?.entries[0]?.values).toEqual({ name: 'Yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' });
     expect(document.querySelector('oss-trace')?.shadowRoot?.textContent).toContain('Storage is Fridge: 7 days (USDA FoodKeeper)');
+  });
+
+  it('exports the selected item as a calendar file with the alarms still ahead', async () => {
+    const d = deps(await seeded({ name: 'Yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' }));
+    app = await mountApp(document.body, d);
+    await openFirstItem();
+    (document.querySelector('[data-action="calendar"]') as HTMLElement).click();
+
+    expect(d.download).toHaveBeenCalledTimes(1);
+    const [filename, text, mime] = vi.mocked(d.download as NonNullable<AppDeps['download']>).mock.calls[0] ?? [];
+    expect([filename, mime]).toEqual(['pantry-reaper.ics', 'text/calendar']);
+    const events = new ICAL.Component(ICAL.parse(String(text))).getAllSubcomponents('vevent');
+    expect(events).toHaveLength(1);
+    const event = events[0] as ICAL.Component;
+    expect(String(event.getFirstPropertyValue('summary'))).toBe('Yogurt');
+    expect(String(event.getFirstPropertyValue('dtstart'))).toBe('2026-11-24');
+    // Expires in 7 days, so the 14-day alarm is already past; the 3-day and same-day ones remain.
+    const triggers = event.getAllSubcomponents('valarm').map((a) => String(a.getFirstPropertyValue('trigger')));
+    expect(triggers).toEqual(['-P2DT15H', 'PT9H']);
+    expect(shadow(document.querySelector('oss-toast'), '.toast span')?.textContent).toBe('Calendar file saved');
   });
 
   it('shows a store error as one line and one action, without throwing', async () => {
