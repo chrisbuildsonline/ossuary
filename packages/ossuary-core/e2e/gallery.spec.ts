@@ -282,6 +282,44 @@ test('keyboard: drawer and import dialog close on Escape and return focus', asyn
   expect(await deepSheetOpen(page, 'oss-import')).toBe(false);
 });
 
+test.describe('short phone', () => {
+  test.use({ viewport: { width: 390, height: 664 } });
+  test('the held Undo toast sits above the bottom bar and clear of every visible control at the scroll end', async ({ page }) => {
+    await open(page, 'theme=core');
+    await page.evaluate(() => (document.querySelector('oss-toast') as unknown as { show(m: string, o: object): void }).show('Moved to another shelf: +58 days', { undoLabel: 'Undo' }));
+    const toast = page.locator('oss-toast .toast');
+    // Focus on Undo pauses the timer, so the toast stays while the boxes are read.
+    await toast.getByRole('button', { name: 'Undo' }).focus();
+    await toast.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await page.waitForFunction(() => Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight);
+    await expect(page.locator('oss-button[data-action="top"]')).toBeInViewport();
+    const m = await page.evaluate(() => {
+      const toastBox = document.querySelector('oss-toast')?.shadowRoot?.querySelector('.toast')?.getBoundingClientRect();
+      const bar = document.querySelector('oss-shell')?.shadowRoot?.querySelector('nav.bottom')?.getBoundingClientRect();
+      const hits: string[] = [];
+      let checked = 0;
+      const walk = (root: Document | ShadowRoot) =>
+        root.querySelectorAll('*').forEach((e) => {
+          if (e.shadowRoot) walk(e.shadowRoot);
+          if (!e.matches('button, a[href], input, select, textarea, [role="radio"]')) return;
+          const host = (e.getRootNode() as ShadowRoot).host;
+          if (host?.matches('oss-toast') || e.closest('dialog:not([open])')) return;
+          const r = e.getBoundingClientRect();
+          if (r.width === 0 || r.height === 0 || r.bottom <= 0 || r.top >= innerHeight || !toastBox) return;
+          checked++;
+          const covered = r.left < toastBox.right && toastBox.left < r.right && r.top < toastBox.bottom && toastBox.top < r.bottom;
+          if (covered) hits.push(`${host?.tagName.toLowerCase() ?? ''} ${e.tagName.toLowerCase()} ${(e.textContent?.trim() || host?.textContent?.trim() || '').slice(0, 30)}`);
+        });
+      walk(document);
+      return { toastBottom: toastBox?.bottom ?? Infinity, barTop: bar?.top ?? 0, hits, checked };
+    });
+    expect(m.toastBottom).toBeLessThanOrEqual(m.barTop);
+    expect(m.checked).toBeGreaterThanOrEqual(3);
+    expect(m.hits).toEqual([]);
+  });
+});
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
   test('no running animations, the sheet opens without sliding', async ({ page }) => {

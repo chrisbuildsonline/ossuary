@@ -69,6 +69,7 @@ body { margin: 0; background: var(--canvas); font: var(--t-body); color: var(--t
 .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s-5); align-items: start; }
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-5); }
 .notices { display: grid; gap: var(--s-3); }
+.end { justify-content: center; margin-top: var(--s-10); }
 .lifespans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-5); }
 @media (max-width: 899px) { .lifespans { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); } }
 @media (max-width: 899px) { .hero { margin: var(--s-4) 0 var(--s-8); } .block { margin-top: var(--s-10); } }
@@ -244,6 +245,10 @@ for (const [variant, entry] of [['card', firstEntry], ['card', deadItem], ['row'
   items.append(item);
 }
 
+// The page ends on a control, so a toast that hides the last row shows up in the short-phone test.
+const toTop = el('oss-button', { variant: 'ghost', 'data-action': 'top' }, 'Back to top');
+toTop.addEventListener('click', () => window.scrollTo({ top: 0 }));
+
 const block = (title: string, id: string, ...kids: Node[]) => el('section', { class: 'block', id, 'aria-labelledby': `${id}-title` }, el('h2', { id: `${id}-title` }, title), ...kids);
 
 shell.append(
@@ -261,6 +266,7 @@ shell.append(
     items,
     el('div', { class: 'duo' }, singleTrace, el('div', { class: 'panel' }, fields)),
   ),
+  el('div', { class: 'row end' }, toTop),
 );
 if (state === 'empty') add.remove();
 document.body.append(shell, sheet, importer, toast);

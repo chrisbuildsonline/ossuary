@@ -80,8 +80,8 @@ test('the add sheet, edit sheet and Import screen show no "Required." until an i
 type Box = { x: number; y: number; width: number; height: number };
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-test('at 390 px the Undo toast sits above the bottom bar and clear of every button and link', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+for (const height of [664, 844]) test(`at 390 by ${height} the held Undo toast sits above the bottom bar and clear of every button and link`, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height });
   const guard = watchPage(page);
   await page.goto('/');
   await addFood(page, 'yogurt');
@@ -89,8 +89,12 @@ test('at 390 px the Undo toast sits above the bottom bar and clear of every butt
   await page.locator('pr-storage-switch').getByRole('radio', { name: 'Freezer' }).click();
   const toast = page.locator('oss-toast .toast');
   await expect(toast.getByRole('button', { name: 'Undo' })).toBeVisible();
+  // Focus on Undo pauses the timer, so the toast stays open while the page scrolls to its end.
+  await toast.getByRole('button', { name: 'Undo' }).focus();
   // Wait for the enter animation to finish so the box is the resting one.
   await toast.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForFunction(() => Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight);
 
   const box = async (l: ReturnType<Page['locator']>) => {
     const b = await l.boundingBox();
