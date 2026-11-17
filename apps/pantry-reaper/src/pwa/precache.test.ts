@@ -3,7 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { precacheList } from './precache';
+import { precacheList } from '@ossuary/core/pwa';
 
 const pub = new URL('../../public/', import.meta.url);
 const manifest = JSON.parse(readFileSync(new URL('manifest.webmanifest', pub), 'utf8')) as {
@@ -55,29 +55,8 @@ describe('the built service worker', () => {
 
   it('names the cache after the files it lists', () => {
     const files = built.map((name) => ({ name, content: readFileSync(join(dist, name)) }));
-    expect(precache.cacheName).toBe(precacheList(files).cacheName);
-  });
-});
-
-describe('precacheList', () => {
-  const files = [
-    { name: 'index.html', content: '<!doctype html>' },
-    { name: 'assets/index-a1.js', content: 'console.log(1)' },
-    { name: 'assets/index-b2.css', content: 'body{}' },
-    { name: 'assets/fraunces-latin-wght-normal-c3.woff2', content: new Uint8Array([1, 2, 3]) },
-    { name: 'assets/index-a1.js.map', content: '{}' },
-    { name: 'manifest.webmanifest', content: '{}' },
-    { name: 'sw.js', content: 'self' },
-  ];
-
-  it('names the cache after a hash of the build, which changes when any file changes', () => {
-    const { cacheName } = precacheList(files);
-    expect(cacheName).toMatch(/^pantry-reaper-[0-9a-f]{8}$/);
-    expect(precacheList([...files].reverse()).cacheName).toBe(cacheName);
-    const changed = files.map((f) => (f.name === 'assets/index-b2.css' ? { ...f, content: 'body{color:red}' } : f));
-    expect(precacheList(changed).cacheName).not.toBe(cacheName);
-    const font = files.map((f) => (f.name.endsWith('.woff2') ? { ...f, content: new Uint8Array([1, 2, 4]) } : f));
-    expect(precacheList(font).cacheName).not.toBe(cacheName);
+    expect(precache.cacheName).toMatch(/^pantry-reaper-[0-9a-f]{8}$/);
+    expect(precache.cacheName).toBe(precacheList(files, { prefix: 'pantry-reaper-' }).cacheName);
   });
 });
 

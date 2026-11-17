@@ -4,13 +4,16 @@ export interface Precache {
   urls: string[];
 }
 
-export const CACHE_PREFIX = 'pantry-reaper-';
+export interface PrecacheFile {
+  name: string;
+  content: string | Uint8Array;
+}
 
 const skip = (name: string) => name === 'sw.js' || name.endsWith('.map');
 const encoder = new TextEncoder();
 
 /** FNV-1a over every file name and its bytes, in name order. */
-function hash(files: { name: string; content: string | Uint8Array }[]): string {
+function hash(files: PrecacheFile[]): string {
   let h = 0x811c9dc5;
   const eat = (bytes: Uint8Array) => {
     for (const b of bytes) h = Math.imul(h ^ b, 0x01000193) >>> 0;
@@ -22,7 +25,8 @@ function hash(files: { name: string; content: string | Uint8Array }[]): string {
   return h.toString(16).padStart(8, '0');
 }
 
-export function precacheList(files: { name: string; content: string | Uint8Array }[]): Precache {
+/** The cache name is `prefix` plus 8 hex digits of the hash, so `startWorker` can recover the prefix. */
+export function precacheList(files: PrecacheFile[], { prefix }: { prefix: string }): Precache {
   const kept = files.filter((f) => !skip(f.name)).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-  return { cacheName: `${CACHE_PREFIX}${hash(kept)}`, urls: kept.map((f) => `./${f.name}`) };
+  return { cacheName: `${prefix}${hash(kept)}`, urls: kept.map((f) => `./${f.name}`) };
 }

@@ -12,6 +12,7 @@
     "./ics": "./src/ics/index.ts",
     "./ui": "./src/ui/index.ts",
     "./ui/tokens.css": "./src/ui/tokens.css",
+    "./pwa": "./src/pwa/index.ts",
     "./bone-spec.schema.json": "./bone-spec.schema.json"
   },
   "scripts": {
@@ -31,6 +32,7 @@
     "fake-indexeddb": "^6.2.8",
     "fast-check": "^4.10.2",
     "happy-dom": "^21.0.4",
-    "ical.js": "^2.2.1"
+    "ical.js": "^2.2.1",
+    "vite": "^8.3.8"
   }
 }

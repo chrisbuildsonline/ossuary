@@ -4,6 +4,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["node"],
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "rootDir": ".",
     "outDir": "node_modules/.tmp/tsc"
   },
