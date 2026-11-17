@@ -221,13 +221,22 @@ Defaults come from the spec, not from code: `spec.ts` reads `lifespans[i].base.a
 
 The maintainer downloads once, with `format=json` and a date window (for example `RecallDateStart` five years back) chosen so the mapped file stays under 1 MB, and commits the bytes as `data/cpsc-recalls.raw.json`. There is no fetch script. `SOURCE.md` records the exact request URL, the retrieval day and the licence note as read on the CPSC API page that day.
 
-#### Raw fields (the one open question)
+#### Raw fields
 
-CPSC publishes a flat array of recall objects. These field names are the ones the API documentation described when this spec was written. They are not yet checked against the real download, and task 2.2 replaces this list with the real names and the real example row (see Open questions):
+The snapshot `data/cpsc-recalls.raw.json` (request `https://www.saferproducts.gov/RestWebServices/Recall?format=json&RecallDateStart=2026-06-01`, retrieved 2026-11-17, 264 recalls, 816,658 bytes, recall days 2026-06-04 to 2026-11-12) is a flat JSON array. Every row has these 22 keys: `RecallID`, `RecallNumber`, `RecallDate`, `Description`, `URL`, `Title`, `ConsumerContact`, `LastPublishDate`, `Products`, `Inconjunctions`, `Images`, `Injuries`, `Manufacturers`, `Retailers`, `Importers`, `Distributors`, `SoldAtLabel`, `ManufacturerCountries`, `ProductUPCs`, `Hazards`, `Remedies`, `RemedyOptions`.
 
-```
-RecallID, RecallNumber, RecallDate, Title, URL, Description,
-Products[ { Name, Model } ], Manufacturers[ { Name } ], Hazards[ { Name } ]
+The mapper reads only `RecallNumber` (a string such as "27054", no dash), `RecallDate` ("YYYY-MM-DDT00:00:00"; the day is the first 10 characters), `Title`, `URL`, `Products[].Name`, `Products[].Model`, `Manufacturers[].Name`, `Importers[].Name`, `Distributors[].Name` and `Hazards[].Name`.
+
+Facts of the real download:
+
+- `Products[].Model` is an empty string in all 264 rows. A model, when given, is inside the product name, so a model hit cannot fire on this snapshot, and the self-match property of requirement 2.10 is tested on fixture rows.
+- `Manufacturers` is non-empty in 49 rows, `Importers` in 145 and `Distributors` in 83. Their names read like "Allstar Marketing Group, LLC, of Winston-Salem, North Carolina" or "Hesung Innovation Corp, dba DREO, of Clifton, New Jerse".
+- `URL` is `https://www.cpsc.gov/Recalls/...` in 173 rows and `https://cpsc.gov/Recalls/...` in 91 rows.
+
+One real example row, trimmed to the fields the mapper reads:
+
+```json
+{"RecallNumber": "27054", "RecallDate": "2026-10-29T00:00:00", "Title": "DREO Recalls DR-HSH015 Space Heaters Due to Fire and Burn Hazards", "URL": "https://cpsc.gov/Recalls/2027/DREO-Recalls-DR-HSH015-Space-Heaters-Due-to-Fire-and-Burn-Hazards", "Products": [{"Name": "DREO Space Heaters, model DR-HSH015", "Model": ""}], "Manufacturers": [], "Importers": [{"Name": "Hesung Innovation Corp, dba DREO, of Clifton, New Jerse"}], "Distributors": [], "Hazards": [{"Name": "The recalled space heaters can overheat and ignite, posing fire and burn hazards."}]}
 ```
 
 The zod row schema describes only the fields the mapper reads and ignores the rest, so a renamed field fails in a test and not silently in the app.
@@ -236,13 +245,13 @@ The zod row schema describes only the fields the mapper reads and ignores the re
 
 ```ts
 export interface Recall {
-  id: string;          // RecallNumber, e.g. "24-117"
+  id: string;          // RecallNumber, e.g. "27054"
   date: string;        // ISO day of the recall
   title: string;       // cut to 160 characters
   hazard: string;      // first hazard name, cut to 160 characters, "" when none
-  url: string;         // https://www.cpsc.gov/... only
+  url: string;         // https://www.cpsc.gov/... only; a https://cpsc.gov/ URL is rewritten to the www host
   names: string[];     // product names, trimmed, de-duplicated
-  brands: string[];    // manufacturer names, trimmed, de-duplicated
+  brands: string[];    // from Manufacturers, Importers and Distributors: the first comma-separated part with any text in parentheses removed, plus any part that starts with 'dba ' or 'doing business as ' without that prefix; trimmed, de-duplicated
   models: string[];    // product model strings, split on , ; and "and", trimmed, de-duplicated
 }
 export interface MapResult { recalls: Recall[]; skipped: { row: number; reason: string }[] }
@@ -387,4 +396,4 @@ Pantry Reaper's `signoff.spec.ts` toast test is extended to 390 by 664 (scroll t
 
 ## Open questions
 
-1. **Exact CPSC field names. Open until task 2.2.** The raw field list in section 2 (`RecallID`, `RecallNumber`, `RecallDate`, `Title`, `URL`, `Products[].Name`, `Products[].Model`, `Manufacturers[].Name`, `Hazards[].Name`) is from the API documentation and is not yet checked against a real download. Task 2.2 downloads the snapshot, replaces this list and the mapped-shape comments with the real names and one real example row, records the request URL in `SOURCE.md`, and then deletes this question.
+None.
