@@ -2,7 +2,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { type Plugin, defineConfig } from 'vite';
-import { precacheList } from './src/pwa/precache';
+import { precacheList } from './src/pwa/precache.ts';
 
 const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 

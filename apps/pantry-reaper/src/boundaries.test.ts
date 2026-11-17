@@ -47,6 +47,11 @@ describe('pantry-reaper boundaries', () => {
     expect(bad.map(show)).toEqual([]);
   });
 
+  it('imports local files in vite.config.ts with their extension, as the native config loader needs', () => {
+    const bad = imports.filter(({ file, spec }) => file.endsWith('vite.config.ts') && spec.startsWith('.') && !/\.[a-z]+$/.test(spec));
+    expect(bad.map(show)).toEqual([]);
+  });
+
   it('has @ossuary/core as its only runtime dependency, no scripts, and ical.js for tests', () => {
     const pkg = readJson(join(app, 'package.json'));
     expect(Object.keys(pkg.dependencies ?? {})).toEqual(['@ossuary/core']);
