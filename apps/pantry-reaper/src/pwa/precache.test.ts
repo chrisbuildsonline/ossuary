@@ -1,5 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { precacheList } from './precache';
 
 const pub = new URL('../../public/', import.meta.url);
@@ -13,6 +16,49 @@ function pngSize(bytes: Buffer): [number, number] {
   return [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
 }
 
+describe('the built service worker', () => {
+  const dist = fileURLToPath(new URL('../../dist/', import.meta.url));
+  const repo = fileURLToPath(new URL('../../../../', import.meta.url));
+  let precache: { cacheName: string; urls: string[] };
+  let built: string[];
+
+  beforeAll(() => {
+    execFileSync('bun', ['run', 'build:pantry'], { cwd: repo, stdio: 'pipe' });
+    const sw = readFileSync(join(dist, 'sw.js'), 'utf8');
+    const found = /\((\{"cacheName":"[^"]+","urls":\[[^\]]*\]\})\)/.exec(sw);
+    expect(found, 'sw.js carries its precache list').not.toBeNull();
+    precache = JSON.parse(found?.[1] ?? '{}');
+    built = (readdirSync(dist, { recursive: true }) as string[]).filter((f) => statSync(join(dist, f)).isFile()).map((f) => f.split(sep).join('/'));
+  }, 60_000);
+
+  it('precaches only files that exist in dist, and every built file but the worker and source maps', () => {
+    for (const url of precache.urls) expect(existsSync(join(dist, url)), url).toBe(true);
+    const expected = built.filter((f) => f !== 'sw.js' && !f.endsWith('.map')).map((f) => `./${f}`);
+    expect([...precache.urls].sort()).toEqual(expected.sort());
+  });
+
+  it('includes the index, JS, CSS, the Fraunces and Inter fonts, the manifest and the icons', () => {
+    const urls = precache.urls;
+    expect(urls).toContain('./index.html');
+    expect(urls).toContain('./manifest.webmanifest');
+    for (const icon of manifest.icons) expect(urls).toContain(`./${icon.src.replace(/^\.\//, '')}`);
+    expect(urls.some((u) => /^\.\/assets\/index-.+\.js$/.test(u))).toBe(true);
+    expect(urls.some((u) => u.endsWith('.css'))).toBe(true);
+    expect(urls.some((u) => /fraunces-latin-.+\.woff2$/.test(u))).toBe(true);
+    expect(urls.some((u) => /inter-latin-.+\.woff2$/.test(u))).toBe(true);
+  });
+
+  it('carries the food data inside a precached script, so search works offline', () => {
+    const scripts = precache.urls.filter((u) => u.endsWith('.js')).map((u) => readFileSync(join(dist, u), 'utf8'));
+    expect(scripts.some((s) => s.includes('Yogurt'))).toBe(true);
+  });
+
+  it('names the cache after the files it lists', () => {
+    const files = built.map((name) => ({ name, content: readFileSync(join(dist, name)) }));
+    expect(precache.cacheName).toBe(precacheList(files).cacheName);
+  });
+});
+
 describe('precacheList', () => {
   const files = [
     { name: 'index.html', content: '<!doctype html>' },
@@ -21,22 +67,8 @@ describe('precacheList', () => {
     { name: 'assets/fraunces-latin-wght-normal-c3.woff2', content: new Uint8Array([1, 2, 3]) },
     { name: 'assets/index-a1.js.map', content: '{}' },
     { name: 'manifest.webmanifest', content: '{}' },
-    { name: 'icon-192.png', content: new Uint8Array([9]) },
-    { name: 'foods.json', content: '[]' },
     { name: 'sw.js', content: 'self' },
   ];
-
-  it('lists the index, JS, CSS, fonts, icons, manifest and foods.json, but not the worker or source maps', () => {
-    expect(precacheList(files).urls).toEqual([
-      './assets/fraunces-latin-wght-normal-c3.woff2',
-      './assets/index-a1.js',
-      './assets/index-b2.css',
-      './foods.json',
-      './icon-192.png',
-      './index.html',
-      './manifest.webmanifest',
-    ]);
-  });
 
   it('names the cache after a hash of the build, which changes when any file changes', () => {
     const { cacheName } = precacheList(files);
