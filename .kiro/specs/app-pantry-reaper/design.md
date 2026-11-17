@@ -131,9 +131,15 @@ export interface MapResult { foods: Food[]; skipped: { row: number; reason: stri
 export function mapFoodKeeper(raw: unknown): MapResult;   // never throws
 ```
 
-The snapshot is the FoodKeeper JSON, whose product rows hold, per storage method, a minimum, a maximum and a metric, with separate "from purchase" columns (for example `Refrigerate_Min`, `Refrigerate_Max`, `Refrigerate_Metric`, `DOP_Refrigerate_Min`). Exact sheet and column names are taken from the real download in task 2.1. A zod schema describes only the columns the mapper reads and ignores the rest, so a changed column fails loudly in a test and not silently in the app.
+The snapshot is the FoodKeeper JSON from the real download (file name `FMA-Data-v128.xlsx`, 631,800 bytes). Its shape is `{ fileName, sheets: [{ name, data, maxRows, maxCols }] }`, with the sheets `Version`, `Category`, `Product`, `CookingTips`, `CookingMethods` and `Data Dictionary`. The mapper reads only the `Product` sheet, which has 661 rows. Its columns are:
 
-The maintainer downloads the snapshot once and commits it. The repo has no fetch script. `SOURCE.md` records the URL and the day.
+- Identity: `ID`, `Category_ID`, `Name`, `Name_subtitle`, `Keywords`.
+- Per storage method, a minimum, a maximum and a metric, for pantry, refrigerate and freeze: `Pantry_Min`, `Pantry_Max`, `Pantry_Metric`, `Refrigerate_Min`, `Refrigerate_Max`, `Refrigerate_Metric`, `Freeze_Min`, `Freeze_Max`, `Freeze_Metric`.
+- The separate "from purchase" (date of purchase) variants of the same nine columns, prefixed `DOP_`: `DOP_Pantry_Min`, `DOP_Pantry_Max`, `DOP_Pantry_Metric`, `DOP_Refrigerate_Min`, `DOP_Refrigerate_Max`, `DOP_Refrigerate_Metric`, `DOP_Freeze_Min`, `DOP_Freeze_Max`, `DOP_Freeze_Metric`.
+
+The mapper ignores the `*_tips` and `*_Tips` columns, the `*_After_Opening_*` columns and the `Refrigerate_After_Thawing_*` columns, and every other sheet. A zod schema describes only the columns the mapper reads and ignores the rest, so a changed column fails loudly in a test and not silently in the app.
+
+The maintainer downloaded the snapshot once and committed it as `data/foodkeeper.raw.json`. The repo has no fetch script. The dataset licence is CC0 1.0. The live FSIS URL (`https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`) returned HTTP 403 from the download environment, so the committed bytes come from the Internet Archive copy `https://web.archive.org/web/20250314020622id_/https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`, retrieved 2026-11-17. The `url` of the `usda-foodkeeper` source in `bone.json` is the official FSIS URL and `retrievedOn` is `2026-11-17`. `SOURCE.md` records the Internet Archive URL, the catalog page `https://catalog.data.gov/dataset/fsis-foodkeeper-data`, the retrieval day and the licence.
 
 `scripts/build-foods.ts` reads `data/foodkeeper.raw.json`, calls `mapFoodKeeper`, and writes `src/data/foods.json`. The root script `data:pantry` runs it.
 
@@ -254,4 +260,4 @@ Per `tech.md`, each task writes the failing test first. Everything runs from the
 
 ## Open questions
 
-1. **Exact FoodKeeper columns and URL.** The names above are from memory of the public dataset. Task 2.1 confirms them against the real download before the mapper is written.
+1. **Exact FoodKeeper columns and URL. Resolved (2026-11-17).** Confirmed against the real download: the sheets, the 661-row `Product` sheet and its columns are listed in section 2. The official FSIS URL is `https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json` (also listed as `http://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`). It returned HTTP 403 (Akamai "Access Denied") from the download environment, so the snapshot came from the Internet Archive copy `https://web.archive.org/web/20250314020622id_/https://www.fsis.usda.gov/shared/data/EN/foodkeeper.json`. Licence: CC0 1.0 (`https://catalog.data.gov/dataset/fsis-foodkeeper-data`). `bone.json` cites the official URL, and `SOURCE.md` holds the archive URL.
