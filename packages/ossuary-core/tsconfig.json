@@ -3,8 +3,9 @@
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["node"],
-    "rootDir": "src",
+    "resolveJsonModule": true,
+    "rootDir": ".",
     "outDir": "node_modules/.tmp/tsc"
   },
-  "include": ["src"]
+  "include": ["src", "gallery", "gallery/fixtures/*.json", "e2e"]
 }
