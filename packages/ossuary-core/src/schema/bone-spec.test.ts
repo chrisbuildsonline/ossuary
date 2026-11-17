@@ -110,6 +110,17 @@ describe('parseBoneSpec: lifespans', () => {
     ]);
   });
 
+  it('needs a duration amountField to reference a number field', () => {
+    const withAmountField = (key: string) => (s: Loose) => (s.lifespans[0].base.amountField = key);
+    expect(edit(gizmoSpec, withAmountField('price'))).toEqual([]);
+    expect(edit(gizmoSpec, withAmountField('maker'))).toEqual([
+      { path: 'lifespans[0].base.amountField', message: 'Field "maker" is text; it must be a number field.' },
+    ]);
+    expect(edit(gizmoSpec, withAmountField('gone'))).toEqual([
+      { path: 'lifespans[0].base.amountField', message: 'No field named "gone".' },
+    ]);
+  });
+
   it('needs a lookup on an existing enum or text field', () => {
     expect(edit(widgetSpec, (s) => (s.lifespans[0].rules[0].field = 'count'))).toEqual([
       { path: 'lifespans[0].rules[0].field', message: 'Field "count" is number; it must be an enum or text field.' },

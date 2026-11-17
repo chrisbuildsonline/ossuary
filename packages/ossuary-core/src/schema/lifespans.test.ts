@@ -70,6 +70,13 @@ describe('lifespansSchema', () => {
     ]);
   });
 
+  it('accepts amountField on a duration base and rejects it on a field base', () => {
+    expect(issuesOf([{ ...lifespan('main'), base: { type: 'duration', amount: 30, unit: 'day', amountField: 'count' } }])).toEqual([]);
+    expect(issuesOf([{ ...lifespan('main'), base: { type: 'field', field: 'ends', amountField: 'count' } }])).toEqual([
+      { path: '[0].base.amountField', message: 'Unknown key "amountField".' },
+    ]);
+  });
+
   it('allows a zero-length duration base but not a negative one', () => {
     expect(issuesOf([{ ...lifespan('main'), base: { type: 'duration', amount: 0, unit: 'day' } }])).toEqual([]);
     expect(issuesOf([{ ...lifespan('main'), base: { type: 'duration', amount: -1, unit: 'day' } }])[0]?.path).toBe(

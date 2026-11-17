@@ -4,7 +4,7 @@ import type { Issue, IsoDay, Result } from '../schema/issues';
 import { type Item, validateItem } from '../schema/item';
 import { fromDayNumber, isRealDay, toDayNumber } from './iso-day';
 import { pickPrimary } from './primary';
-import { runLifespan, valueOf } from './rules';
+import { badAmount, runLifespan, valueOf } from './rules';
 import { type Remaining, type StageRef, fractionOf, remainingOf, selectStage } from './stage';
 import { type TraceLine, traceLines } from './trace';
 
@@ -51,12 +51,21 @@ function checkLifespanDays(spec: BoneSpec, item: Item): Issue[] {
   return [...missing].map((path) => ({ path, message: 'This is required.' }));
 }
 
+/** A duration base's `amountField` value, when set, must be a whole number from 0 to 9999. */
+function checkAmounts(spec: BoneSpec, item: Item): Issue[] {
+  const bad = new Set<string>();
+  for (const { base } of spec.lifespans) {
+    if (base.type === 'duration' && base.amountField !== undefined && badAmount(valueOf(item, base.amountField))) bad.add(base.amountField);
+  }
+  return [...bad].map((path) => ({ path, message: 'Use a whole number from 0 to 9999.' }));
+}
+
 export function evaluate(spec: BoneSpec, item: unknown, now: Now): Result<Evaluation> {
   const nowIssues = checkNow(now);
   if (nowIssues.length > 0) return { ok: false, error: nowIssues };
   const valid = validateItem(spec, item);
   if (!valid.ok) return valid;
-  const dayIssues = checkLifespanDays(spec, valid.value);
+  const dayIssues = [...checkLifespanDays(spec, valid.value), ...checkAmounts(spec, valid.value)];
   if (dayIssues.length > 0) return { ok: false, error: dayIssues };
 
   const nowDay = toDayNumber(now.day);

@@ -31,7 +31,7 @@ const entitySchema = z
 
 const copySchema = z.object({ emptyTitle: text.optional(), emptyBody: text.optional(), addLabel: text.optional() }).strict();
 
-const kindNeeds = { date: 'a date field', lookup: 'an enum or text field' } as const;
+const kindNeeds = { date: 'a date field', number: 'a number field', lookup: 'an enum or text field' } as const;
 
 export const boneSpecSchema = z
   .object({
@@ -57,7 +57,7 @@ export const boneSpecSchema = z
     const field = (key: string, path: PropertyKey[], needs?: keyof typeof kindNeeds) => {
       const f = fields.get(key);
       if (!f) return issue(path, `No field named "${key}".`);
-      const allowed: FieldKind[] = needs === 'date' ? ['date'] : needs === 'lookup' ? ['enum', 'text'] : [f.kind];
+      const allowed: FieldKind[] = needs === 'lookup' ? ['enum', 'text'] : needs ? [needs] : [f.kind];
       if (needs && !allowed.includes(f.kind)) return issue(path, `Field "${key}" is ${f.kind}; it must be ${kindNeeds[needs]}.`);
       return f;
     };
@@ -73,6 +73,9 @@ export const boneSpecSchema = z
       const at = (...path: PropertyKey[]) => ['lifespans', li, ...path];
       field(lifespan.startField, at('startField'), 'date');
       if (lifespan.base.type === 'field') field(lifespan.base.field, at('base', 'field'), 'date');
+      if (lifespan.base.type === 'duration' && lifespan.base.amountField !== undefined) {
+        field(lifespan.base.amountField, at('base', 'amountField'), 'number');
+      }
       source(lifespan.base.sourceId, at('base', 'sourceId'));
 
       (lifespan.rules ?? []).forEach((rule, ri) => {

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { parseBoneSpec } from '../../schema/bone-spec';
-import { copyOf, widgetSpec } from '../../testing/fixtures';
+import { copyOf, gizmoSpec, widgetSpec } from '../../testing/fixtures';
 import { gizmo, gizmoEntry, now, widget, widgets } from '../../testing/ui-fixtures';
 import type { Entry } from '../../testing/ui-fixtures';
 import { deepActiveElement } from '../a11y/focus-trap';
@@ -61,6 +61,19 @@ describe('oss-sheet', () => {
     el.show(gizmoEntry().values);
     expect(q(el, '.expires')?.textContent).toBe('Return window: expires in 2 days · Mon 16 Nov');
     expect(qa(el, '.preview .other').map((o) => o.textContent)).toEqual(['Cover23 moCovered']);
+  });
+
+  it('moves the preview date when the number field behind amountField changes', () => {
+    const spec = copyOf(gizmoSpec);
+    Object.assign(spec.lifespans[0]?.base ?? {}, { amountField: 'price' });
+    const r = parseBoneSpec(spec);
+    if (!r.ok) throw new Error(JSON.stringify(r.error));
+    const { el } = sheet(r.value);
+    el.show(gizmoEntry().values);
+    expect(q(el, '.expires')?.textContent).toBe('Return window: expires in 2 days · Mon 16 Nov');
+    const price = (qa(el, 'oss-field') as OssField[]).find((f) => f.field?.key === 'price') as OssField;
+    type(price, '40');
+    expect(q(el, '.expires')?.textContent).toBe('Return window: expires in 12 days · Thu 26 Nov');
   });
 
   it('keeps the sheet open on an invalid save, shows errors and focuses the first invalid field', () => {

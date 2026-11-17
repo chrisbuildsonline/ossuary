@@ -8,7 +8,7 @@ export const MAX_LIFESPANS = 4;
 const baseShared = { label: text.optional(), sourceId: ref.optional() };
 
 export const baseSchema = z.discriminatedUnion('type', [
-  z.object({ ...baseShared, type: z.literal('duration'), ...durationSchema.shape }).strict(),
+  z.object({ ...baseShared, type: z.literal('duration'), ...durationSchema.shape, amountField: ref.optional() }).strict(),
   z.object({ ...baseShared, type: z.literal('field'), field: ref }).strict(),
 ]);
 

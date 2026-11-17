@@ -55,11 +55,21 @@ function applyRule(rule: Rule, expiry: number, start: number, item: Item): Step 
   }
 }
 
+/** The base as used for this item: a duration's `amountField` value, when the item has one, replaces `amount`. */
+function baseFor(base: Base, item: Item): Base {
+  if (base.type !== 'duration' || base.amountField === undefined) return base;
+  const value = valueOf(item, base.amountField);
+  return value === undefined ? base : { ...base, amount: Number(value) };
+}
+
+/** An `amountField` value the engine cannot use: anything but a whole number from 0 to 9999. */
+export const badAmount = (value: unknown) => value !== undefined && !(Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 9999);
+
 /** Evaluates one lifespan on a validated item whose start field (and date base) are present. */
 export function runLifespan(lifespan: Lifespan, item: Item): LifespanRun {
   const dayOf = (key: string) => toDayNumber(String(valueOf(item, key)));
   const start = dayOf(lifespan.startField);
-  const { base } = lifespan;
+  const base = baseFor(lifespan.base, item);
   let expiry = base.type === 'duration' ? addDuration(start, base) : dayOf(base.field);
   const steps: Step[] = [{ kind: 'base', base, before: start, after: expiry }];
   for (const rule of lifespan.rules ?? []) {

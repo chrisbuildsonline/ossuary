@@ -21,6 +21,11 @@ describe('boneSpecJsonSchema', () => {
     }
   });
 
+  it('lets a duration base carry an optional amountField', () => {
+    const text = JSON.stringify(boneSpecJsonSchema);
+    expect(text).toContain('"amountField"');
+  });
+
   it('describes the structure and says the cross-field checks are not in it', () => {
     const schema = boneSpecJsonSchema as {
       title: string;
