@@ -2,6 +2,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { toolError } from './result';
+import { previewCountdownInput, previewCountdownOutput, previewCountdownTool } from './tools/preview-countdown';
 import { validateSpecInput, validateSpecOutput, validateSpecTool } from './tools/validate-spec';
 
 const specInput = z.union([z.record(z.string(), z.unknown()), z.string()]).describe('A bone spec, as a JSON object or as JSON text.');
@@ -33,9 +34,10 @@ export function createServer({ root }: { root: string }): McpServer {
     'preview_countdown',
     {
       description: 'Evaluate one example item against a bone spec on a given day and show every lifespan, its stage and its trace.',
-      inputSchema: { spec: specInput },
+      inputSchema: previewCountdownInput,
+      outputSchema: previewCountdownOutput,
     },
-    () => toolError('preview_countdown is not ready.'),
+    previewCountdownTool,
   );
 
   return server;
