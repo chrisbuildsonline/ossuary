@@ -1,21 +1,26 @@
 // The app glue: store, evaluation against bone.json, and the core elements. No engine, schema, store or ICS logic here.
-import { type Evaluation, type Item, evaluate } from '@ossuary/core';
+import { type Item, evaluate } from '@ossuary/core';
 import { type Store, openStore } from '@ossuary/core/store';
 import {
   type Download,
   type ListEntry,
+  type OssBanner,
   type OssLifespan,
   type OssList,
   type OssSheet,
   type OssToast,
   downloadText,
   ensureDocumentTokens,
+  groupEntries,
   loadDisplayFont,
   orderLifespans,
   saveCalendar,
   shortDay,
   titleOf,
 } from '@ossuary/core/ui';
+import type { Recall } from './data/cpsc';
+import { type RecallMatch, matchRecalls } from './data/match';
+import bundledRecalls from './data/recalls.json';
 import { boneSpec, defaults, nowFromClock } from './spec';
 
 export interface AppDeps {
@@ -23,6 +28,8 @@ export interface AppDeps {
   newId(): string;
   indexedDB?: IDBFactory;
   download?: Download;
+  /** The recall list to match against; the bundled CPSC snapshot by default. */
+  recalls?: readonly Recall[];
 }
 
 export interface App {
@@ -42,6 +49,8 @@ h1:focus { outline: none; }
 .ww-meta { margin: 0; font: var(--t-body); color: var(--text-2); }
 .ww-meta span { white-space: nowrap; }
 .ww-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.ww-line { margin: calc(-1 * var(--s-2)) 0 var(--s-8); max-width: 720px; }
+.ww-banners { display: grid; gap: var(--s-3); margin-bottom: var(--s-6); }
 /* Detail: two equal countdown cards, then the trace. 12 columns from 900 px: cards 1-4 and 5-8, trace 9-12. */
 .ww-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto 1fr; gap: var(--s-6); align-items: stretch; }
 .ww-card:nth-of-type(1) { grid-column: 1 / span 4; grid-row: 1; }
@@ -68,6 +77,16 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string,
 }
 
 const DONE_LABEL = 'Done with it';
+const idsOf = (v: Item) => String(v.recalls_dismissed ?? '').split(/\s+/).filter(Boolean);
+
+/** The item's values with the dismissed recall ids set to `ids`; the field is left out when there are none. */
+function withDismissed(values: Item, ids: string[]): Item {
+  const { recalls_dismissed: _, ...rest } = values;
+  return ids.length ? { ...rest, recalls_dismissed: ids.join(' ') } : rest;
+}
+
+/** "CPSC 27054: DREO Space Heaters, model DR-HSH015, The recalled space heaters can overheat ..." */
+const noticeText = (r: Recall) => `CPSC ${r.id}: ${[r.names[0] ?? r.title, r.hazard].filter(Boolean).join(', ')}`;
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const when = (d: number) => (d === 0 ? 'today' : d === 1 ? 'tomorrow' : `in ${d} days`);
 
@@ -103,11 +122,13 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   const addButton = el('oss-button', { variant: 'primary', slot: 'primary', hidden: '' }, boneSpec.copy?.addLabel ?? 'Add purchase');
   const doneButton = el('oss-button', { variant: 'primary', slot: 'primary', hidden: '' }, DONE_LABEL);
 
+  const recalls = deps.recalls ?? (bundledRecalls as readonly Recall[]);
   const headline = el('h1', { tabindex: '-1' });
   const support = el('p');
+  const recallLine = el('oss-banner', { variant: 'line', tone: 'urgent', class: 'ww-line', hidden: '' }) as OssBanner;
   const list = el('oss-list', { layout: 'auto' }) as OssList;
   Object.assign(list, { spec: boneSpec, now: now() });
-  const home = el('div', { class: 'ww-home' }, el('section', { class: 'ww-hero' }, headline, support), list);
+  const home = el('div', { class: 'ww-home' }, el('section', { class: 'ww-hero' }, headline, support), recallLine, list);
   const detail = el('div', { class: 'ww-detail', hidden: '' });
 
   const sheet = el('oss-sheet') as OssSheet;
@@ -118,6 +139,14 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   let store: Store | undefined;
   let entries: ListEntry[] = [];
   let selected: string | undefined;
+  /** Open (not dismissed) recall matches per purchase id, worked out on every reload. */
+  let matches = new Map<string, RecallMatch[]>();
+
+  function openMatches(values: Item): RecallMatch[] {
+    const dismissed = new Set(idsOf(values));
+    const model = values.model === undefined ? undefined : String(values.model);
+    return matchRecalls({ name: titleOf(boneSpec, values), model }, recalls).filter((m) => !dismissed.has(m.recall.id));
+  }
 
   function render(): void {
     const entry = entries.find((e) => e.id === selected);
@@ -135,6 +164,12 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     list.now = now();
     list.removeAttribute('state');
     list.entries = entries;
+    // One line for every open match, in list order; nothing at all when there is none.
+    const affected = groupEntries(entries).flatMap((g) => g.entries).filter((e) => matches.get(e.id)?.length);
+    const total = affected.reduce((n, e) => n + (matches.get(e.id)?.length ?? 0), 0);
+    recallLine.hidden = total === 0;
+    recallLine.text = total ? `${count(total, 'possible recall', 'possible recalls')} · ${affected.map((e) => titleOf(boneSpec, e.values)).join(', ')}` : '';
+    recallLine.dataset.open = affected[0]?.id ?? '';
     if (entries.length === 0) {
       headline.textContent = 'What did you buy?';
       support.textContent = 'Add a purchase to watch its return window and warranty count down, and to check it against US CPSC recalls.';
@@ -175,11 +210,33 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     });
     const trace = el('oss-trace', { class: 'ww-trace' });
     Object.assign(trace, { now: today, evaluation: entry.evaluation });
+    const banners = (matches.get(entry.id) ?? []).map(({ recall }) => {
+      const read = el('a', { slot: 'actions', href: recall.url, target: '_blank', rel: 'noopener noreferrer' }, 'Read notice');
+      const notMine = el('oss-button', { slot: 'actions', variant: 'ghost', 'data-action': 'dismiss' }, 'Not my model');
+      notMine.addEventListener('click', () => void dismiss(entry, recall.id));
+      return el('oss-banner', { tone: 'urgent', heading: 'Possible recall match', text: noticeText(recall) }, read, notMine);
+    });
     detail.replaceChildren(
       back,
       el('header', {}, title, el('p', { class: 'ww-meta' }, ...meta.flatMap((m, i) => [i ? ' · ' : '', el('span', {}, m)]))),
+      ...(banners.length ? [el('div', { class: 'ww-banners' }, ...banners)] : []),
       el('div', { class: 'ww-grid' }, ...cards, trace, el('div', { class: 'ww-actions' }, calendar, edit)),
     );
+  }
+
+  /** "Not my model": stores the recall id on the purchase, then offers Undo, which takes that id off again. */
+  async function dismiss(entry: ListEntry, recallId: string): Promise<void> {
+    const r = await store?.update(entry.id, withDismissed(entry.values, [...idsOf(entry.values), recallId]));
+    if (!r?.ok) return say('Could not hide the notice. Try again.');
+    await reload();
+    detail.querySelector('h1')?.focus();
+    say('Recall notice hidden', async () => {
+      const current = entries.find((e) => e.id === entry.id);
+      if (!current) return;
+      const u = await store?.update(entry.id, withDismissed(current.values, idsOf(current.values).filter((id) => id !== recallId)));
+      if (!u?.ok) return say('Could not show the notice again. Try again.');
+      await reload();
+    });
   }
 
   /** One toast at a time; `undo` belongs to the toast on screen. */
@@ -213,9 +270,12 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     if (!r.ok) return showError('message' in r.error ? r.error.message : 'Your purchases could not be read. Try again.');
     const today = now();
     entries = [];
+    matches = new Map();
     for (const item of r.value) {
       const e = evaluate(boneSpec, item.values, today);
-      if (e.ok) entries.push({ id: item.id, values: item.values, evaluation: e.value as Evaluation });
+      if (!e.ok) continue;
+      entries.push({ id: item.id, values: item.values, evaluation: e.value });
+      matches.set(item.id, openMatches(item.values));
     }
     render();
   }
@@ -240,6 +300,9 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     if ((e as CustomEvent<{ target: string }>).detail.target === 'items') go(undefined);
   });
   list.addEventListener('oss-open', (e) => go((e as CustomEvent<{ id: string }>).detail.id));
+  recallLine.addEventListener('oss-open', () => {
+    if (recallLine.dataset.open) go(recallLine.dataset.open);
+  });
   addEventListener('popstate', () => {
     selected = /^#item-(.+)$/.exec(location.hash)?.[1];
     render();

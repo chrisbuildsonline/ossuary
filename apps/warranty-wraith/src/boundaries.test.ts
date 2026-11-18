@@ -27,13 +27,17 @@ const importsOf = (file: string) => [...readFileSync(file, 'utf8').matchAll(spec
 const imports = code.flatMap((file) => importsOf(file).map((spec) => ({ file, spec })));
 const show = ({ file, spec }: { file: string; spec: string }) => `${relative(app, file)}: ${spec}`;
 
+/** Imports that survive compilation: `import type` and `export type ... from` are erased, so the browser never loads them. */
+const typeOnly = /^\s*(?:import|export)\s+type\s[^;]*;/gm;
+const runtimeImportsOf = (file: string) => [...readFileSync(file, 'utf8').replace(typeOnly, '').matchAll(specifier)].map((m) => m[1] ?? '');
+
 /** Every app file the browser bundle loads: main.ts and the local modules it imports, transitively. */
 function runtimeFiles(): string[] {
   const seen = new Set<string>();
   const visit = (file: string) => {
     if (seen.has(file) || !existsSync(file)) return;
     seen.add(file);
-    for (const spec of importsOf(file)) {
+    for (const spec of runtimeImportsOf(file)) {
       if (!spec.startsWith('.')) continue;
       const base = resolve(dirname(file), spec);
       const hit = [base, `${base}.ts`, join(base, 'index.ts')].find((p) => existsSync(p) && statSync(p).isFile());
@@ -96,7 +100,10 @@ describe('warranty-wraith boundaries', () => {
   it('keeps zod out of every file the browser loads', () => {
     const runtime = runtimeFiles();
     expect(runtime.map((f) => relative(app, f))).toContain('src/main.ts');
-    const bad = runtime.flatMap((file) => importsOf(file).filter((spec) => spec === 'zod' || spec.startsWith('zod/')).map((spec) => ({ file, spec })));
+    // The matcher runs in the browser; the zod mapper is only reached through a type import, which is erased.
+    expect(runtime.map((f) => relative(app, f))).toContain('src/data/match.ts');
+    expect(runtime.map((f) => relative(app, f))).not.toContain('src/data/cpsc.ts');
+    const bad = runtime.flatMap((file) => runtimeImportsOf(file).filter((spec) => spec === 'zod' || spec.startsWith('zod/')).map((spec) => ({ file, spec })));
     expect(bad.map(show)).toEqual([]);
   });
 

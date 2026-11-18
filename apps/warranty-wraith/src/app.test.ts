@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import 'fake-indexeddb/auto';
 import { openStore } from '@ossuary/core/store';
-import type { OssField, OssLifespan, OssTrace } from '@ossuary/core/ui';
+import type { OssBanner, OssField, OssLifespan, OssTrace } from '@ossuary/core/ui';
 import { IDBFactory } from 'fake-indexeddb';
 import ICAL from 'ical.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type App, type AppDeps, mountApp } from './app';
+import type { Recall } from './data/cpsc';
 import { boneSpec, defaults } from './spec';
 
 let app: App | undefined;
@@ -279,5 +280,163 @@ describe('warranty wraith app: detail view and calendar', () => {
       ['2026-11-21', ['-P1DT15H']],
       ['2027-10-22', ['-P89DT15H', '-P29DT15H', '-P6DT15H']],
     ]);
+  });
+});
+
+describe('warranty wraith app: recall banner, dismissal and home line', () => {
+  // Two rows copied from the committed recalls.json, and one more in the same shape.
+  const dreo: Recall = {
+    id: '27054',
+    date: '2026-10-29',
+    title: 'DREO Recalls DR-HSH015 Space Heaters Due to Fire and Burn Hazards',
+    hazard: 'The recalled space heaters can overheat and ignite, posing fire and burn hazards.',
+    url: 'https://www.cpsc.gov/Recalls/2027/DREO-Recalls-DR-HSH015-Space-Heaters-Due-to-Fire-and-Burn-Hazards',
+    names: ['DREO Space Heaters, model DR-HSH015'],
+    brands: ['Hesung Innovation Corp', 'DREO'],
+    models: [],
+  };
+  const vornado: Recall = {
+    id: '26532',
+    date: '2026-06-04',
+    title: 'Vornado Air Recalls SRTH Small Room Tower Heaters Due to Fire Hazard',
+    hazard: "The recalled heater's fan blade can detach from the motor shaft, which can cause the fan to slow or stop, leading to overheating and melting of the enclosure an",
+    url: 'https://www.cpsc.gov/Recalls/2026/Vornado-Air-Recalls-SRTH-Small-Room-Tower-Heaters-Due-to-Fire-Hazard',
+    names: ['SRTH Small Room Tower Heaters'],
+    brands: ['Vornado Air'],
+    models: [],
+  };
+  const dreoOther: Recall = { ...dreo, id: '27101', date: '2026-11-05', names: ['DREO Space Heaters, model DR-HSH004'], url: 'https://www.cpsc.gov/Recalls/2027/DREO-Recalls-DR-HSH004' };
+  const heater: Values = { name: 'DREO space heater', retailer: 'Target', bought: '2026-11-06', model: 'DR-HSH015' };
+  const recalls = [dreo, vornado];
+
+  const banners = () => Array.from(document.querySelectorAll<OssBanner>('.ww-detail oss-banner'));
+  const homeLine = () => document.querySelector<OssBanner>('.ww-home oss-banner[variant="line"]:not([hidden])');
+  const notMine = (b: Element | undefined) => b?.querySelector('[data-action="dismiss"]') as HTMLElement;
+  const dismissedOf = () => list()?.entries.find((e) => e.values.name === heater.name)?.values.recalls_dismissed;
+
+  it('shows one status banner per match with the notice link and "Not my model"', async () => {
+    app = await mountApp(document.body, deps(await seeded(heater), { recalls: [dreo, vornado, dreoOther] }));
+    await openItem('DREO space heater');
+    expect(banners()).toHaveLength(2);
+    expect(banners().map((b) => b.getAttribute('tone'))).toEqual(['urgent', 'urgent']);
+    expect(banners().map((b) => b.heading)).toEqual(['Possible recall match', 'Possible recall match']);
+    expect(banners().map((b) => b.text)).toEqual([
+      'CPSC 27101: DREO Space Heaters, model DR-HSH004, The recalled space heaters can overheat and ignite, posing fire and burn hazards.',
+      'CPSC 27054: DREO Space Heaters, model DR-HSH015, The recalled space heaters can overheat and ignite, posing fire and burn hazards.',
+    ]);
+    expect(shadow(banners()[0], '[role="status"]')).not.toBeNull();
+    const link = banners()[1]?.querySelector('a[slot="actions"]');
+    expect(link?.textContent).toBe('Read notice');
+    expect(link?.getAttribute('href')).toBe(dreo.url);
+    expect(link?.getAttribute('target')).toBe('_blank');
+    expect(link?.getAttribute('rel')).toBe('noopener noreferrer');
+    expect(notMine(banners()[1])?.textContent).toBe('Not my model');
+    expect(notMine(banners()[1])?.getAttribute('slot')).toBe('actions');
+    // The banners sit above the countdown cards.
+    const first = document.querySelector('.ww-detail oss-banner');
+    const card = document.querySelector('.ww-detail oss-lifespan');
+    expect(first && card && first.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('hides a dismissed notice, keeps it hidden after a remount, and brings it back with Undo', async () => {
+    const indexedDB = await seeded(heater);
+    app = await mountApp(document.body, deps(indexedDB, { recalls }));
+    await openItem('DREO space heater');
+    expect(banners()).toHaveLength(1);
+    notMine(banners()[0]).click();
+    await vi.waitFor(() => expect(banners()).toHaveLength(0));
+    expect(dismissedOf()).toBe('27054');
+    expect(toastText()).toBe('Recall notice hidden');
+
+    app.close();
+    document.body.replaceChildren();
+    app = await mountApp(document.body, deps(indexedDB, { recalls }));
+    await openItem('DREO space heater');
+    expect(banners()).toHaveLength(0);
+    expect(homeLine()).toBeNull();
+
+    // A second notice is added to the list, and Undo takes only that one back off.
+    app.close();
+    document.body.replaceChildren();
+    app = await mountApp(document.body, deps(indexedDB, { recalls: [dreo, dreoOther] }));
+    await openItem('DREO space heater');
+    notMine(banners()[0]).click();
+    await vi.waitFor(() => expect(dismissedOf()).toBe('27054 27101'));
+    toastUndo()?.click();
+    await vi.waitFor(() => expect(dismissedOf()).toBe('27054'));
+    expect(banners().map((b) => b.text.slice(0, 10))).toEqual(['CPSC 27101']);
+  });
+
+  it('removes the dismissed field again when Undo leaves it empty', async () => {
+    app = await mountApp(document.body, deps(await seeded(heater), { recalls }));
+    await openItem('DREO space heater');
+    notMine(banners()[0]).click();
+    await vi.waitFor(() => expect(dismissedOf()).toBe('27054'));
+    toastUndo()?.click();
+    await vi.waitFor(() => expect(banners()).toHaveLength(1));
+    expect(list()?.entries[0]?.values).toEqual(heater);
+  });
+
+  it('keeps a dismissal through a backup and restore', async () => {
+    const indexedDB = await seeded({ ...heater, recalls_dismissed: '27054' });
+    const from = await openStore(boneSpec, { newId: () => 'x', nowIso: () => '2026-11-17T08:00:00.000Z', indexedDB });
+    if (!from.ok) throw new Error('store did not open');
+    const backup = await from.value.exportBackup();
+    from.value.close();
+    if (!backup.ok) throw new Error('no backup');
+    const fresh = new IDBFactory();
+    const to = await openStore(boneSpec, { newId: () => 'y', nowIso: () => '2026-11-17T08:00:00.000Z', indexedDB: fresh });
+    if (!to.ok) throw new Error('store did not open');
+    expect((await to.value.importBackup(JSON.stringify(backup.value), 'merge')).ok).toBe(true);
+    to.value.close();
+
+    app = await mountApp(document.body, deps(fresh, { recalls }));
+    await openItem('DREO space heater');
+    expect(banners()).toHaveLength(0);
+    expect(dismissedOf()).toBe('27054');
+  });
+
+  it('shows one home line that counts the open matches, names the purchases and opens the first one', async () => {
+    const lamp: Values = { name: 'Desk lamp', retailer: 'Lamp Co', bought: '2026-10-22' };
+    app = await mountApp(document.body, deps(await seeded(lamp, heater), { recalls }));
+    const line = await waitFor(() => homeLine());
+    expect(document.querySelectorAll('.ww-home oss-banner:not([hidden])')).toHaveLength(1);
+    expect(line.text).toBe('1 possible recall · DREO space heater');
+    expect(shadow(line, 'button')).not.toBeNull();
+    (shadow(line, 'button') as HTMLElement).click();
+    await vi.waitFor(() => expect(document.querySelector('.ww-detail:not([hidden]) h1')?.textContent).toBe('DREO space heater'));
+  });
+
+  it('counts every open match across purchases in the home line', async () => {
+    const tower: Values = { name: 'Vornado Air small room tower heater', retailer: 'Walmart', bought: '2026-11-01' };
+    app = await mountApp(document.body, deps(await seeded(heater, tower), { recalls: [dreo, vornado, dreoOther] }));
+    const line = await waitFor(() => homeLine());
+    expect(line.text).toMatch(/^3 possible recalls · /);
+    expect(line.text).toContain('DREO space heater');
+    expect(line.text).toContain('Vornado Air small room tower heater');
+  });
+
+  it('shows no line and no "0" when nothing matches or every match is dismissed', async () => {
+    const lamp: Values = { name: 'Desk lamp', retailer: 'Lamp Co', bought: '2026-10-22' };
+    app = await mountApp(document.body, deps(await seeded(lamp, { ...heater, recalls_dismissed: '27054' }), { recalls }));
+    await vi.waitFor(() => expect(shadowAll(list(), 'oss-item')).toHaveLength(2));
+    expect(homeLine()).toBeNull();
+    expect(document.querySelector('.ww-home')?.textContent).not.toMatch(/\b0 possible/);
+    await openItem('DREO space heater');
+    expect(banners()).toHaveLength(0);
+  });
+
+  it('keeps the banner and says so when hiding the notice fails', async () => {
+    const indexedDB = await seeded(heater);
+    app = await mountApp(document.body, deps(indexedDB, { recalls }));
+    await openItem('DREO space heater');
+    // Another tab removes the purchase, so the update fails.
+    const other = await openStore(boneSpec, { newId: () => 'z', nowIso: () => '2026-11-17T08:00:00.000Z', indexedDB });
+    if (!other.ok) throw new Error('store did not open');
+    await other.value.remove('seed-1');
+    other.value.close();
+    notMine(banners()[0]).click();
+    await vi.waitFor(() => expect(toastText()).toBe('Could not hide the notice. Try again.'));
+    expect(banners()).toHaveLength(1);
   });
 });
