@@ -27,7 +27,8 @@ describe('the built app and its service worker', () => {
   const read = (url: string) => readFileSync(join(dist, url), 'utf8');
 
   beforeAll(() => {
-    execFileSync('bun', ['run', 'build:wraith'], { cwd: repo, stdio: 'pipe' });
+    // Vitest sets NODE_ENV=test, which would build without import.meta.env.PROD and so without the worker registration.
+    execFileSync('bun', ['run', 'build:wraith'], { cwd: repo, stdio: 'pipe', env: { ...process.env, NODE_ENV: 'production' } });
     const found = /\((\{"cacheName":"[^"]+","urls":\[[^\]]*\]\})\)/.exec(read('sw.js'));
     expect(found, 'sw.js carries its precache list').not.toBeNull();
     precache = JSON.parse(found?.[1] ?? '{}');
@@ -49,6 +50,16 @@ describe('the built app and its service worker', () => {
     expect(urls.some((u) => u.endsWith('.css'))).toBe(true);
     expect(urls.some((u) => /space-grotesk-latin-.+\.woff2$/.test(u))).toBe(true);
     expect(urls.some((u) => /inter-latin-.+\.woff2$/.test(u))).toBe(true);
+  });
+
+  it('registers ./sw.js from the page script', () => {
+    const entry = /<script type="module"[^>]* src="\.?\/(assets\/index-[^"]+\.js)"/.exec(read('index.html'))?.[1];
+    expect(entry, 'index.html loads the built entry').toBeDefined();
+    expect(read(entry ?? '')).toMatch(/serviceWorker\.register\(\s*[`'"]\.\/sw\.js[`'"]/);
+  });
+
+  it('ships no TypeScript source', () => {
+    expect(built.filter((f) => f.endsWith('.ts'))).toEqual([]);
   });
 
   it('carries the recall data inside a listed script, so matching works offline', () => {

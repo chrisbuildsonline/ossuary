@@ -9,12 +9,14 @@ export function ossuaryPwa({ prefix }: { prefix: string }): Plugin {
     apply: 'build',
     enforce: 'post',
     async config(config) {
-      const { resolve } = await import('node:path');
+      const { dirname, join, resolve } = await import('node:path');
       const { fileURLToPath } = await import('node:url');
+      // Not new URL('./sw-entry.ts', import.meta.url): Vite would copy that file into every app's assets.
+      const swEntry = join(dirname(fileURLToPath(import.meta.url)), 'sw-entry.ts');
       return {
         build: {
           rolldownOptions: {
-            input: { index: resolve(config.root ?? '.', 'index.html'), sw: fileURLToPath(new URL('./sw-entry.ts', import.meta.url)) },
+            input: { index: resolve(config.root ?? '.', 'index.html'), sw: swEntry },
             // The worker is a classic script, so entries keep no exports.
             preserveEntrySignatures: false,
             output: { entryFileNames: (chunk: { name: string }) => (chunk.name === 'sw' ? 'sw.js' : 'assets/[name]-[hash].js') },
