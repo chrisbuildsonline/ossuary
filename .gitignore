@@ -11,5 +11,6 @@ CLAUDE.md
 .omc/
 .claude/
 design/refs/
+.backups/
 # never ignore .kiro/: the hackathon requires it in the repo
 .claude/settings.local.json

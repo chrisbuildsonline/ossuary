@@ -13,6 +13,8 @@
     "hook:spec": "bun scripts/check-specs.ts",
     "typecheck": "tsc -b",
     "bone-forge": "bun tools/bone-forge/src/main.ts",
+    "preview:forge": "bun tools/bone-forge/scripts/preview.ts",
+    "shots:forge": "playwright test -c tools/bone-forge/scripts/shots.config.ts",
     "e2e": "playwright test",
     "dev": "bun run dev:pantry",
     "dev:pantry": "vite apps/pantry-reaper --port 5173 --strictPort",

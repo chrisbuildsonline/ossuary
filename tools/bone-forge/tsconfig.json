@@ -2,9 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node"],
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "node_modules/.tmp/tsc"
   },
-  "include": ["src"],
+  "include": ["src", "scripts"],
   "references": [{ "path": "../../packages/ossuary-core" }, { "path": "../../scripts" }]
 }
