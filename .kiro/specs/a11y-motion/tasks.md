@@ -2,9 +2,9 @@
 
 Rules for every task: write the failing test first, then the code, and keep the whole suite green before the next task. Requirement numbers refer to `requirements.md`. Do not touch `packages/ossuary-core/src/engine`. Add no domain word to `packages/ossuary-core`.
 
-- [ ] 1. Shared test helpers
-  - [ ] 1.1 Write a failing vitest for the pure parts of `packages/ossuary-core/src/testing/a11y.ts` (the formatter that turns axe results into a message with rule id, selector and summary, and the `WIDTHS` constant). Then add the module with `checkAxe`, `settle`, `runningMotion` and `tabThrough`, generic and with no domain words. _Requirements: 5.2, 7.2, 8.2_
-  - [ ] 1.2 Change `packages/ossuary-core/e2e/gallery.spec.ts` to use `tabThrough` and `settle` in place of its inlined copies, with the same assertions. Run the gallery project and confirm it still passes. _Requirements: 3.3, 6.5_
+- [x] 1. Shared test helpers
+  - [x] 1.1 Write a failing vitest for the pure parts of `packages/ossuary-core/src/testing/a11y.ts` (the formatter that turns axe results into a message with rule id, selector and summary, and the `WIDTHS` constant). Then add the module with `checkAxe`, `settle`, `runningMotion` and `tabThrough`, generic and with no domain words. _Requirements: 5.2, 7.2, 8.2_
+  - [x] 1.2 Change `packages/ossuary-core/e2e/gallery.spec.ts` to use `tabThrough` and `settle` in place of its inlined copies, with the same assertions. Run the gallery project and confirm it still passes. _Requirements: 3.3, 6.5_
 
 - [ ] 2. Contrast
   - [ ] 2.1 Write a failing vitest `contrast-tokens.test.ts` that reads `tokens.css`, the two app `bone.json` themes, the template theme, the launcher card themes and the gallery warm and cool themes, and checks every pair in the design table (tone text 4.5, tone glyph 3, text tokens, accent text, focus ring 3, `--line-strong` 3, `--on-ink` on `--ink`). Run it and record the failing pairs in the task notes before changing anything. _Requirements: 2.1, 2.2, 2.3, 2.4, 8.1_

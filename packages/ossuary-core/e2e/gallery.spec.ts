@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { type Page, expect, test } from '@playwright/test';
 import ICAL from 'ical.js';
+import { settle, tabThrough } from '../src/testing/a11y';
 import { guardNetwork } from '../src/testing/network-guard';
 
 const themes = ['core', 'warm', 'cool'] as const;
@@ -73,12 +74,9 @@ test('layout: no horizontal scroll, one primary pill, 44px targets', async ({ pa
     await open(page, `theme=${theme}`);
     // The real resting state: items loaded (the empty state while the store opens brings its own pill),
     // no dialog open and no animation running in any shadow root.
-    await page.waitForFunction(() => {
-      const roots: (Document | ShadowRoot)[] = [document];
-      for (let i = 0; i < roots.length; i++) roots[i]?.querySelectorAll('*').forEach((e) => e.shadowRoot && roots.push(e.shadowRoot));
-      const list = document.querySelector('oss-list[data-list="items"]')?.shadowRoot;
-      return !!list?.querySelector('oss-item') && roots.every((r) => !r.querySelector('dialog[open]') && r.getAnimations().every((a) => a.playState !== 'running'));
-    });
+    await page.waitForFunction(() => !!document.querySelector('oss-list[data-list="items"]')?.shadowRoot?.querySelector('oss-item'));
+    await settle(page);
+    expect(await page.evaluate(() => [...document.querySelectorAll('*')].some((e) => !!e.shadowRoot?.querySelector('dialog[open]')))).toBe(false);
     const m = await page.evaluate(() => {
       const all: Element[] = [];
       const walk = (root: Document | ShadowRoot) =>
@@ -262,49 +260,11 @@ test('keyboard: sheet traps and returns focus, arrows change the segmented contr
 test('keyboard: Tab from the top reaches every visible action, each with a focus ring', async ({ page }) => {
   for (const theme of themes) {
     await open(page, `theme=${theme}`);
-    // Every visible, enabled, tabbable control on the page, looking inside shadow roots.
-    const total = await page.evaluate(() => {
-      const found: { el: Element; shadow: string }[] = [];
-      const walk = (root: Document | ShadowRoot) =>
-        root.querySelectorAll('*').forEach((e) => {
-          if (e.shadowRoot) walk(e.shadowRoot);
-          if (!e.matches('a[href], button, input, select, textarea, [tabindex]') || e.getAttribute('tabindex') === '-1') return;
-          if ((e as HTMLButtonElement).disabled || e.closest('dialog:not([open])') || !e.checkVisibility({ visibilityProperty: true })) return;
-          found.push({ el: e, shadow: getComputedStyle(e).boxShadow });
-        });
-      walk(document);
-      (window as unknown as { __tab: typeof found }).__tab = found;
-      return found.length;
-    });
-    expect(total).toBeGreaterThan(10);
-    const reached = new Set<number>();
-    const noRing: string[] = [];
-    for (let i = 0; i < total * 2 + 10 && reached.size < total; i++) {
-      await page.keyboard.press('Tab');
-      const r = await page.evaluate(() => {
-        let a = document.activeElement;
-        while (a?.shadowRoot?.activeElement) a = a.shadowRoot.activeElement;
-        const list = (window as unknown as { __tab: { el: Element; shadow: string }[] }).__tab;
-        const index = list.findIndex((t) => t.el === a);
-        if (!a || index < 0) return { index, ring: true, name: a?.tagName ?? '' };
-        const s = getComputedStyle(a);
-        const outline = s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0;
-        const shadow = s.boxShadow !== 'none' && s.boxShadow !== list[index]?.shadow;
-        const host = (a.getRootNode() as ShadowRoot).host?.tagName.toLowerCase() ?? '';
-        return { index, ring: outline || shadow, name: `${host} ${a.tagName.toLowerCase()}[type=${a.getAttribute('type')}] ${a.textContent?.trim().slice(0, 30)}` };
-      });
-      if (r.index >= 0) reached.add(r.index);
-      if (!r.ring) noRing.push(`${theme}: ${r.name}`);
-    }
-    const missed = await page.evaluate(
-      (seen) =>
-        (window as unknown as { __tab: { el: Element }[] }).__tab
-          .filter((_, i) => !seen.includes(i))
-          .map(({ el }) => `${(el.getRootNode() as ShadowRoot).host?.tagName.toLowerCase() ?? ''} ${el.tagName.toLowerCase()} ${el.textContent?.trim().slice(0, 30)}`),
-      [...reached],
-    );
-    expect(missed, `${theme}: not reached by Tab`).toEqual([]);
-    expect(noRing).toEqual([]);
+    // Every visible, enabled, tabbable control on the page, looking inside shadow roots, by Tab and Shift+Tab.
+    const walk = await tabThrough(page);
+    expect(walk.total).toBeGreaterThan(10);
+    expect(walk.missed, `${theme}: not reached by Tab`).toEqual([]);
+    expect(walk.noRing, `${theme}: no focus ring`).toEqual([]);
   }
 });
 
