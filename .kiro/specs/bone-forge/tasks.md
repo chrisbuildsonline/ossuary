@@ -16,10 +16,10 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 3.2 Write failing tests for a two-lifespan spec: `primaryIndex`, one text line per lifespan with the primary marked, and structured content equal to `evaluate`. Then add the output schema and text lines. _Requirements: 4.2, 4.3_
   - [x] 3.3 Write failing tests for an invalid spec, an invalid item, a bad `now.day` and `minuteOfDay` 1440: each is a tool error listing `path: message`. Add determinism and the three-`TZ` check, and a no-throw check. Then implement the error mapping. _Requirements: 4.4, 4.5, 4.6_
 
-- [ ] 4. Template and generated files
+- [x] 4. Template and generated files
   - [x] 4.1 Write failing tests for the template (files exist, no domain word, only `main.ts` reads the clock or makes ids). Then add `tools/bone-forge/template` with `tsconfig.json`, a placeholder `bone.json`, and `src/main.ts`, `src/spec.ts`, `src/spec.test.ts`. Reference the template tsconfig from the root `tsconfig.json` so `tsc -b` checks it. _Requirements: 3.7, 3.9, 5.4_
   - [x] 4.2 Write failing tests, then add the generic `template/src/app.ts` built only from core elements and functions: shell, list, add sheet, detail with a card per lifespan, trace, calendar export, done and remove. Make `bun run typecheck` pass. _Requirements: 3.8, 3.9_
-  - [ ] 4.3 Write failing tests for `renderFiles` (the exact path list, `bone.json` pretty printed, `package.json` fields and dependency `workspace:*`, manifest name and colours, `index.html` escaping, `vite.config.ts` prefix, template files copied byte for byte, same output twice). Then implement `scaffold/files.ts`. _Requirements: 3.6, 3.7, 3.12, 5.4_
+  - [x] 4.3 Write failing tests for `renderFiles` (the exact path list, `bone.json` pretty printed, `package.json` fields and dependency `workspace:*`, manifest name and colours, `index.html` escaping, `vite.config.ts` prefix, template files copied byte for byte, same output twice). Then implement `scaffold/files.ts`. _Requirements: 3.6, 3.7, 3.12, 5.4_
 
 - [ ] 5. scaffold_app
   - [ ] 5.1 Write failing tests for `parseAppName` (valid names; `Bad`, `a/b`, `..`, `1x`, `-x`, empty, 41 characters refused; a spec id with `_` and no name refused). Then implement `scaffold/app-name.ts`. _Requirements: 3.1, 3.3_
