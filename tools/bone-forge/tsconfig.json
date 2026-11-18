@@ -1,8 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "types": ["node"],
     "rootDir": "src",
     "outDir": "node_modules/.tmp/tsc"
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "../../packages/ossuary-core" }]
 }
