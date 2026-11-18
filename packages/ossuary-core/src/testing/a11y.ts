@@ -104,6 +104,10 @@ export interface TabWalk {
  */
 export async function tabThrough(page: Page): Promise<TabWalk> {
   const total = await page.evaluate(() => {
+    // Start from nothing focused, so every resting ring is read at rest.
+    let active = document.activeElement;
+    while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+    (active as HTMLElement | null)?.blur?.();
     const ring = (e: Element) => {
       const s = getComputedStyle(e);
       return s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2;
