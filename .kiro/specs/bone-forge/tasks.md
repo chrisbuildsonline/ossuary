@@ -21,12 +21,12 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 4.2 Write failing tests, then add the generic `template/src/app.ts` built only from core elements and functions: shell, list, add sheet, detail with a card per lifespan, trace, calendar export, done and remove. Make `bun run typecheck` pass. _Requirements: 3.8, 3.9_
   - [x] 4.3 Write failing tests for `renderFiles` (the exact path list, `bone.json` pretty printed, `package.json` fields and dependency `workspace:*`, manifest name and colours, `index.html` escaping, `vite.config.ts` prefix, template files copied byte for byte, same output twice). Then implement `scaffold/files.ts`. _Requirements: 3.6, 3.7, 3.12, 5.4_
 
-- [ ] 5. scaffold_app
+- [x] 5. scaffold_app
   - [x] 5.1 Write failing tests for `parseAppName` (valid names; `Bad`, `a/b`, `..`, `1x`, `-x`, empty, 41 characters refused; a spec id with `_` and no name refused). Then implement `scaffold/app-name.ts`. _Requirements: 3.1, 3.3_
   - [x] 5.2 Write failing tests for `resolveAppDir` (direct child of `<root>/apps` only; `../x`, absolute path, nested path and `apps` as a symlink to another folder refused). Then implement `scaffold/safe-path.ts`. _Requirements: 3.5, 7.3_
   - [x] 5.3 Write failing tests in a temporary directory: written file list, `bone.json` reparses equal to the parsed spec, existing folder, file and symlink refused and untouched, invalid spec leaves the root empty, returned `{ dir, files }` and next-steps text, no root file edited. Then implement `tools/scaffold-app.ts` and `scaffold/write.ts` (`mkdir` then `wx` writes) and register the tool. _Requirements: 3.1, 3.2, 3.4, 3.6, 3.10, 7.3_
-  - [ ] 5.4 Write a failing test that a forced write failure removes everything the call created and returns a tool error. Then add the rollback. _Requirements: 3.11_
-  - [ ] 5.5 Write a failing test that a scaffolded app's `bone.json` passes `checkSpecs` from `scripts/check-specs.ts`, and that a scan of the generated files finds no banned domain word. Then fix any gap. _Requirements: 5.4_
+  - [x] 5.4 Write a failing test that a forced write failure removes everything the call created and returns a tool error. Then add the rollback. _Requirements: 3.11_
+  - [x] 5.5 Write a failing test that a scaffolded app's `bone.json` passes `checkSpecs` from `scripts/check-specs.ts`, and that a scan of the generated files finds no banned domain word. Then fix any gap. _Requirements: 5.4_
 
 - [ ] 6. Kiro registration
   - [ ] 6.1 Write a failing test for `.kiro/settings/mcp.json` (valid JSON, `bone-forge` with command `bun`, args `["tools/bone-forge/src/main.ts"]`, `disabled` false, `autoApprove` exactly `validate_spec` and `preview_countdown`, every name is a tool the server lists). Then add the file. _Requirements: 6.1, 6.2, 6.3_

@@ -6,5 +6,5 @@
     "outDir": "node_modules/.tmp/tsc"
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/ossuary-core" }]
+  "references": [{ "path": "../../packages/ossuary-core" }, { "path": "../../scripts" }]
 }
