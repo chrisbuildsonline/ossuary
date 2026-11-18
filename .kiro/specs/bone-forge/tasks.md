@@ -6,10 +6,10 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 1.1 Write a failing test that `createServer({ root })` returns an `McpServer` with exactly the tools `validate_spec`, `scaffold_app` and `preview_countdown`. Then add the dependencies (`@modelcontextprotocol/sdk`, `zod`; dev `fast-check`, `@types/node`), `server.ts`, `result.ts` (`ok`, `toolError`, `issueLines`) and `input.ts` (`readSpecInput` for objects and JSON text, never throws). _Requirements: 1.1, 1.3, 1.6, 5.1, 5.3_
   - [x] 1.2 Write a failing test for `main.ts` (logs only to stderr, root fixed to the repo), then add `main.ts` with `StdioServerTransport`, and the root script `"bone-forge": "bun tools/bone-forge/src/main.ts"`. _Requirements: 1.1, 1.2, 1.4, 1.5_
 
-- [ ] 2. validate_spec
+- [x] 2. validate_spec
   - [x] 2.1 Write failing tests with fixed specs: valid as object and as text, invalid with a known path, `ok` text line, one text line per issue, no `isError`. Then implement `validateSpec` over `parseBoneSpec` and register the tool with its input and output schema. _Requirements: 2.1, 2.2, 2.3, 2.4_
-  - [ ] 2.2 Write failing tests for JSON text that does not parse (one issue at path `""`) and for `null`, numbers, arrays and very long strings. Then handle them in `readSpecInput` and the handler `try/catch`. _Requirements: 2.5, 2.6_
-  - [ ] 2.3 Write the fast-check fuzz test (fixed seed): `fc.jsonValue()`, `fc.anything()`, arbitrary strings and mutated valid specs never throw, and `valid` and `issues` equal `parseBoneSpec`. Add a test that the input is not changed and the same input gives the same output. _Requirements: 2.6, 2.7, 7.2_
+  - [x] 2.2 Write failing tests for JSON text that does not parse (one issue at path `""`) and for `null`, numbers, arrays and very long strings. Then handle them in `readSpecInput` and the handler `try/catch`. _Requirements: 2.5, 2.6_
+  - [x] 2.3 Write the fast-check fuzz test (fixed seed): `fc.jsonValue()`, `fc.anything()`, arbitrary strings and mutated valid specs never throw, and `valid` and `issues` equal `parseBoneSpec`. Add a test that the input is not changed and the same input gives the same output. _Requirements: 2.6, 2.7, 7.2_
 
 - [ ] 3. preview_countdown
   - [ ] 3.1 Write failing tests with fixed `now` values (a plain day, a day with `minuteOfDay`, a threshold day and the day before) for a one-lifespan spec. Then implement `previewCountdown` over `parseBoneSpec` and `evaluate` and register the tool with the `now` input schema. _Requirements: 4.1, 4.2, 4.5_

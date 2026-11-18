@@ -21,8 +21,14 @@ export function validateSpec(spec: unknown): ValidateOutput {
   return r.ok ? { valid: true, issues: [] } : { valid: false, issues: r.error };
 }
 
+/** Never returns isError: a spec that cannot be read is one issue at path "". */
 export function validateSpecTool({ spec }: { spec?: unknown }): CallToolResult {
-  const r = readSpec(spec);
-  if (r.ok) return ok({ valid: true, issues: [] }, `ok: ${r.value.id}`);
-  return ok({ valid: false, issues: r.error }, issueLines(r.error));
+  try {
+    const r = readSpec(spec);
+    if (r.ok) return ok({ valid: true, issues: [] }, `ok: ${r.value.id}`);
+    return ok({ valid: false, issues: r.error }, issueLines(r.error));
+  } catch {
+    const issues = [{ path: '', message: 'Could not read this spec.' }];
+    return ok({ valid: false, issues }, issueLines(issues));
+  }
 }
