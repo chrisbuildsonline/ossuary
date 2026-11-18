@@ -27,7 +27,8 @@
     "build:wraith": "vite build apps/warranty-wraith",
     "preview:wraith": "vite preview apps/warranty-wraith --port 4174 --strictPort",
     "dev:gallery": "vite packages/ossuary-core/gallery --port 5180 --strictPort",
-    "build":"vite build apps/pantry-reaper && vite build apps/warranty-wraith",
+    "build": "bun scripts/build-dist.ts",
+    "preview": "bun scripts/preview-dist.ts",
     "playwright:install": "playwright install chromium"
   },
   "devDependencies": {
