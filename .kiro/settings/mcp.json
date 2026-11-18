@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "bone-forge": {
+      "command": "bun",
+      "args": ["tools/bone-forge/src/main.ts"],
+      "disabled": false,
+      "autoApprove": ["validate_spec", "preview_countdown"]
+    }
+  }
+}
