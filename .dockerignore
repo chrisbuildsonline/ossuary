@@ -1,0 +1,20 @@
+# Local installs and builds: the image installs from pnpm-lock.yaml and builds its own.
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+**/test-results
+playwright-report
+
+# Local state, history and secrets.
+.git
+.env
+.env.*
+.backups
+.omc
+.claude
+.DS_Store
+PLAN.md
+CLAUDE.md
+
+# Inspiration images, never shipped.
+design/refs
