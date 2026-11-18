@@ -150,5 +150,7 @@ for (const app of apps) {
     await page.goto('/');
     expect(await page.evaluate(() => navigator.serviceWorker.controller === null)).toBe(true);
     expect(await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map((r) => r.scope))).toEqual([`${baseURL}${app.path}`]);
+    const other = apps.find((a) => a !== app)?.path ?? '';
+    expect(await page.evaluate(async (path) => (await navigator.serviceWorker.getRegistration(path)) === undefined, other)).toBe(true);
   });
 }
