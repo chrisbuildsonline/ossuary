@@ -8,7 +8,8 @@ import { renderLauncher } from './page';
 
 const all = (selector: string) => [...document.body.querySelectorAll(selector)];
 const card = (folder: string) => document.body.querySelector<HTMLAnchorElement>(`a.card[href="./${folder}/"]`);
-const nameOf = (a: Element | null) => document.getElementById(a?.getAttribute('aria-labelledby') ?? '')?.textContent;
+/** The card's name from its content: the text of every part not hidden from screen readers. */
+const nameOf = (a: Element | null) => [...(a?.querySelectorAll('.text > :not([aria-hidden="true"])') ?? [])].map((e) => e.textContent).join('');
 
 beforeEach(() => {
   document.body.replaceChildren();
@@ -29,7 +30,7 @@ describe('launcher page', () => {
       ['./warranty-wraith/', wraith.name],
     ]);
     for (const a of all('a.card')) {
-      expect(document.getElementById(a.getAttribute('aria-describedby') ?? '')?.textContent).toMatch(/^Know when /);
+      expect(document.getElementById(a.getAttribute('aria-describedby')?.split(' ')[0] ?? '')?.textContent).toMatch(/^Know when /);
     }
   });
 

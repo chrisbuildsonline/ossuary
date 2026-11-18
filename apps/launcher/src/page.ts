@@ -12,14 +12,15 @@ function appCard(c: CardData): HTMLLIElement {
   const decay = h('oss-decay', { motif: c.motif, tone: 'fresh', fraction: '0.75', size: 'xl' });
   const link = h(
     'a',
-    { class: 'card', href: c.href, 'aria-labelledby': `${id}-name`, 'aria-describedby': `${id}-blurb` },
+    // Named from its content, the app name (the only part not hidden); the blurb and the source describe it.
+    { class: 'card', href: c.href, 'aria-describedby': `${id}-blurb ${id}-source` },
     h('span', { class: 'art' }, decay),
     h(
       'span',
       { class: 'text' },
-      h('span', { class: 'eyebrow' }, c.source),
+      h('span', { class: 'eyebrow', id: `${id}-source`, 'aria-hidden': 'true' }, c.source),
       h('span', { class: 'name', id: `${id}-name` }, c.name),
-      h('span', { class: 'blurb', id: `${id}-blurb` }, c.blurb),
+      h('span', { class: 'blurb', id: `${id}-blurb`, 'aria-hidden': 'true' }, c.blurb),
       h('span', { class: 'go', 'aria-hidden': 'true' }, 'Open', svg(glyph('arrow'))),
     ),
   );

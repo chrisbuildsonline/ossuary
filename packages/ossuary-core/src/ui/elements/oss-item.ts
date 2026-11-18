@@ -132,7 +132,6 @@ a:focus-visible { outline: var(--focus); outline-offset: 2px; }
     const link = h('a', {
       class: `item ${row ? 'row' : 'card'} tone-${primary.stage.tone}${dead ? ' dead' : ''}`,
       href: this.getAttribute('href') ?? '#',
-      'aria-label': accessibleName(title, e, now),
     });
     if (row) link.append(decay, h('span', { class: 'mid' }, titleEl, meta), count, ...(others ? [others] : []), time);
     else {
@@ -141,6 +140,10 @@ a:focus-visible { outline: var(--focus); outline-offset: 2px; }
       link.append(decay, count, h('oss-pill', { tone: primary.stage.tone, label: primary.stage.label }), date, titleEl, meta);
       if (others) link.append(others);
     }
+    // The link is named from its content: one plain sentence for screen readers, and the visible parts (the same
+    // facts) for the eye only. No aria-label, so the name never contradicts the text inside (WCAG 2.5.3).
+    for (const part of Array.from(link.children)) part.setAttribute('aria-hidden', 'true');
+    link.append(h('span', { class: 'sr-only said' }, accessibleName(title, e, now)));
     this.root.replaceChildren(link);
   }
 

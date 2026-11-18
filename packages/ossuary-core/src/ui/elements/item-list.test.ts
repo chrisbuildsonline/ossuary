@@ -46,8 +46,9 @@ describe('oss-item card', () => {
     el.setAttribute('href', '#w1');
     const link = q(el, 'a');
     expect(link?.getAttribute('href')).toBe('#w1');
-    expect(link?.getAttribute('aria-label')).toBe(accessibleName('Blue widget', blue.evaluation, now));
-    expect(link?.getAttribute('aria-label')).toBe('Blue widget. Soon. Expires in 4 days, Wednesday 18 November.');
+    expect(link?.querySelector('.said')?.textContent).toBe(accessibleName('Blue widget', blue.evaluation, now));
+    expect(link?.querySelector('.said')?.textContent).toBe('Blue widget. Soon. Expires in 4 days, Wednesday 18 November.');
+    expect(Array.from(link?.children ?? []).filter((c) => !c.matches('.said, [aria-hidden="true"]'))).toEqual([]);
     expect(q(el, '.count')?.getAttribute('aria-hidden')).toBe('true');
   });
 
@@ -77,7 +78,7 @@ describe('oss-item card', () => {
     expect(other.querySelector('.when')?.textContent).toBe('23 mo');
     expect(other.querySelector('.stage')?.textContent).toBe('Covered');
     expect(other.querySelector('.stage svg')?.getAttribute('aria-hidden')).toBe('true');
-    expect(q(card, 'a')?.getAttribute('aria-label')).toBe(
+    expect(q(card, 'a .said')?.textContent).toBe(
       'Desk gizmo. Last days. Return window: expires in 2 days, Monday 16 November. Cover: expires in 23 months, Tuesday 17 October 2028.',
     );
   });

@@ -49,7 +49,10 @@ describe('countdown names', () => {
     const [blue] = widgets() as [Entry];
     for (const variant of ['card', 'row'] as const) {
       const el = item(blue, variant);
-      expect(q(el, 'a')?.getAttribute('aria-label'), variant).toBe('Blue widget. Soon. Expires in 4 days, Wednesday 18 November.');
+      // Named from content: the one sentence, with every visible part hidden from screen readers.
+      expect(q(el, 'a')?.hasAttribute('aria-label'), variant).toBe(false);
+      expect(q(el, 'a > .said.sr-only')?.textContent, variant).toBe('Blue widget. Soon. Expires in 4 days, Wednesday 18 November.');
+      expect(Array.from(q(el, 'a')?.children ?? []).filter((c) => !c.matches('.said, [aria-hidden="true"]')), variant).toEqual([]);
       expect(q(el, '.count')?.getAttribute('aria-hidden'), variant).toBe('true');
       expect(q(el, 'time')?.getAttribute('datetime'), variant).toBe('2026-11-18');
     }
@@ -57,14 +60,14 @@ describe('countdown names', () => {
 
   it('names a dead item in the past tense', () => {
     const old = widgets()[3] as Entry;
-    expect(q(item(old, 'card'), 'a')?.getAttribute('aria-label')).toBe('Old widget. Gone. Expired 11 days ago, Tuesday 3 November.');
+    expect(q(item(old, 'card'), 'a .said')?.textContent).toBe('Old widget. Gone. Expired 11 days ago, Tuesday 3 November.');
   });
 
   it('names an item with two lifespans with one sentence per lifespan', () => {
     const g = gizmoEntry();
     const el = add(document.createElement('oss-item')) as OssItem;
     Object.assign(el, { spec: gizmo, now, values: g.values, evaluation: g.evaluation });
-    expect(q(el, 'a')?.getAttribute('aria-label')).toBe(
+    expect(q(el, 'a .said')?.textContent).toBe(
       'Desk gizmo. Last days. Return window: expires in 2 days, Monday 16 November. Cover: expires in 23 months, Tuesday 17 October 2028.',
     );
   });
