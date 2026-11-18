@@ -9,14 +9,11 @@ import { downloadText, ensureDocumentTokens, orderLifespans, saveCalendar, title
 import type { ListEntry, OssImport, OssList, OssSheet, OssToast } from '../src/ui/index';
 import core from './fixtures/core.json';
 import multi from './fixtures/multi.json';
+import { galleryThemes } from './themes';
 
 const now: Now = { day: '2026-11-14' };
 const params = new URLSearchParams(location.search);
-const themes = {
-  core: core.theme,
-  warm: { accent: '#b8460e', accentInk: '#9a3a0b', accentTint: '#fbe9dc', canvas: '#f2efea', display: 'fraunces', motif: 'candle', emptyArt: 'candle-jar-moon', wordmark: 'Widget Shelf' },
-  cool: { accent: '#5a4bd1', accentInk: '#5a4bd1', accentTint: '#ebe9fb', canvas: '#edeff6', display: 'space-grotesk', motif: 'ghost', emptyArt: 'ghost-parcel', wordmark: 'Widget Shelf' },
-};
+const themes = galleryThemes;
 const themeName = (params.get('theme') ?? 'core') as keyof typeof themes;
 const state = params.get('state') ?? 'ready';
 

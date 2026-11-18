@@ -36,7 +36,7 @@ animation as the only signal; copied or traced Dribbble/stock art.
   --surface-sunken: #f4f5f8;    /* input fills, trace rows */
   --track: #e9ebf0;             /* segmented track, progress track */
   --line: #eceef2;              /* decorative dividers inside cards only */
-  --line-strong: #8a909c;       /* input outlines: 3.21:1 on white (WCAG 1.4.11) */
+  --line-strong: #858b98;       /* input outlines: 3.42:1 white, 3.13:1 sunken (WCAG 1.4.11) */
   --text: #15171c;              /* 17.93:1 white, 15.72:1 canvas */
   --text-2: #555c69;            /* secondary: 6.73:1 white, 5.90:1 canvas */
   --text-3: #646a78;            /* muted/captions: 5.42:1 white, 4.75:1 canvas */
