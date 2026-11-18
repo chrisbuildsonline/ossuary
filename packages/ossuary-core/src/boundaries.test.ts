@@ -52,7 +52,7 @@ describe('core boundaries', () => {
 
   it('has only allowed runtime dependencies', () => {
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { dependencies?: Record<string, string> };
-    const allowed = (name: string) => ['zod', 'idb', 'ics'].includes(name) || name.startsWith('@fontsource-variable/');
+    const allowed = (name: string) => ['zod', 'idb'].includes(name) || name.startsWith('@fontsource-variable/');
     expect(Object.keys(pkg.dependencies ?? {}).filter((name) => !allowed(name))).toEqual([]);
   });
 });
