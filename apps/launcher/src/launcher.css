@@ -1,0 +1,80 @@
+/* The launcher (design/DESIGN.md section 7). Core tokens only; each card takes its app's theme from its bone spec. */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--canvas); color: var(--text); font: var(--t-body); -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: var(--focus); outline-offset: 2px; }
+svg { flex: none; display: block; }
+
+.top, .launcher { width: 100%; max-width: 1200px; margin: 0 auto; padding-inline: var(--s-10); }
+.top { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+.brand { display: inline-flex; align-items: center; gap: var(--s-2); font: 700 20px/24px var(--font-display); letter-spacing: -0.03em; }
+.link {
+  display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 var(--s-2); border-radius: var(--r-xs);
+  font: var(--t-label); font-weight: 600; color: var(--accent); text-decoration: none;
+}
+.link:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Desktop: the words and the pill on the left, the two cards on the right. */
+.launcher {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 624px); grid-template-areas: "intro apps" "cta apps";
+  column-gap: var(--s-10); align-content: center; min-height: calc(100dvh - 72px); padding-block: var(--s-8) var(--s-18);
+}
+.intro { grid-area: intro; align-self: end; }
+h1 { margin: 0; font: 700 64px/68px var(--font-display); letter-spacing: -0.03em; }
+h1 span { display: block; }
+.lede { max-width: 34ch; margin: var(--s-5) 0 0; font: 400 19px/28px var(--font-ui); color: var(--text-2); }
+.cta { grid-area: cta; align-self: start; margin-top: var(--s-8); }
+.pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-height: 52px; padding: 0 var(--s-6);
+  border-radius: var(--r-pill); background: var(--ink); color: var(--on-ink); font: var(--t-label); font-weight: 600; text-decoration: none;
+  transition: background-color var(--dur-2) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.pill:hover { background: var(--ink-hover); }
+.pill:active { transform: scale(.98); }
+
+.apps { grid-area: apps; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6); align-items: start; margin: 0; padding: 0; list-style: none; }
+.apps li:last-child { margin-top: var(--s-14); }
+/* The tilt is desktop only, and off for reduced motion. */
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .apps li:first-child { --tilt: -3deg; }
+  .apps li:last-child { --tilt: 2deg; }
+}
+.card {
+  display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-3) var(--s-3) var(--s-6); border-radius: var(--r-lg);
+  background: var(--surface); box-shadow: var(--shadow-3); color: var(--text); text-decoration: none;
+  transform: rotate(var(--tilt, 0deg)); transition: transform var(--dur-2) var(--ease-out);
+}
+.card:hover, .card:focus-visible { transform: translateY(-4px); }
+.card:active { transform: scale(.99); }
+.art { display: grid; place-items: center; height: 288px; border-radius: var(--r-md); background: var(--accent-tint); }
+.text { display: grid; gap: var(--s-1); padding: 0 var(--s-3); }
+.eyebrow { font: var(--t-eyebrow); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
+.name { margin-top: var(--s-1); font: 600 28px/34px var(--font-display); letter-spacing: -0.01em; }
+.blurb { color: var(--text-2); }
+.go { display: inline-flex; align-items: center; gap: var(--s-1); margin-top: var(--s-3); font: var(--t-label); font-weight: 600; color: var(--accent-ink); }
+
+/* Phone: headline, the two cards stacked, and the pill waiting at the bottom of the screen. */
+@media (max-width: 899px) {
+  .top, .launcher { padding-inline: var(--s-5); }
+  .top { height: 56px; }
+  .launcher { grid-template-columns: minmax(0, 1fr); grid-template-areas: "intro" "apps" "cta"; align-content: start; min-height: 0; padding-block: var(--s-4) 0; }
+  h1 { font-size: 42px; line-height: 46px; }
+  .lede { margin-top: var(--s-3); font: var(--t-body); }
+  .apps { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); margin-top: var(--s-8); }
+  .apps li:last-child { margin-top: 0; }
+  .card { flex-direction: row; align-items: stretch; gap: var(--s-4); padding: var(--s-3); }
+  .art { flex: none; width: 132px; height: auto; min-height: 168px; }
+  .art oss-decay { zoom: .6; }
+  .text { align-content: center; padding: var(--s-1) 0; }
+  .name { font-size: 24px; line-height: 28px; }
+  .go { margin-top: var(--s-2); }
+  .cta {
+    position: sticky; bottom: 0; margin: var(--s-6) calc(-1 * var(--s-5)) 0;
+    padding: var(--s-4) var(--s-5) calc(var(--s-4) + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--canvas) 70%, transparent);
+  }
+  .pill { width: 100%; min-height: 56px; font-size: 16px; box-shadow: var(--shadow-3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card:hover, .card:focus-visible, .card:active { transform: none; }
+}

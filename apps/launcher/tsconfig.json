@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "typeRoots": ["../../packages/ossuary-core/node_modules/@types"],
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "rootDir": "..",
+    "outDir": "node_modules/.tmp/tsc"
+  },
+  "include": ["src", "e2e", "../pantry-reaper/bone.json", "../warranty-wraith/bone.json"],
+  "references": [{ "path": "../../packages/ossuary-core" }]
+}

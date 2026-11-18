@@ -4,6 +4,7 @@
     { "path": "packages/ossuary-core" },
     { "path": "apps/pantry-reaper" },
     { "path": "apps/warranty-wraith" },
+    { "path": "apps/launcher" },
     { "path": "tools/bone-forge" },
     { "path": "tools/bone-forge/template" },
     { "path": "scripts" },
