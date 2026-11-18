@@ -1,14 +1,10 @@
 // createServer({ root }): the three bone-forge tools on an McpServer, with no transport connected.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
-import { toolError } from './result';
 import { previewCountdownInput, previewCountdownOutput, previewCountdownTool } from './tools/preview-countdown';
+import { scaffoldAppInput, scaffoldAppOutput, scaffoldAppTool } from './tools/scaffold-app';
 import { validateSpecInput, validateSpecOutput, validateSpecTool } from './tools/validate-spec';
 
-const specInput = z.union([z.record(z.string(), z.unknown()), z.string()]).describe('A bone spec, as a JSON object or as JSON text.');
-
 export function createServer({ root }: { root: string }): McpServer {
-  void root;
   const server = new McpServer({ name: 'bone-forge', version: '0.0.0' });
 
   server.registerTool(
@@ -25,9 +21,10 @@ export function createServer({ root }: { root: string }): McpServer {
     'scaffold_app',
     {
       description: 'Create a new app folder apps/<name> from a valid bone spec. Writes only new files and never edits existing ones.',
-      inputSchema: { spec: specInput, name: z.string().optional().describe('Folder name under apps/. Defaults to the spec id.') },
+      inputSchema: scaffoldAppInput,
+      outputSchema: scaffoldAppOutput,
     },
-    () => toolError('scaffold_app is not ready.'),
+    (input) => scaffoldAppTool(root, input),
   );
 
   server.registerTool(
