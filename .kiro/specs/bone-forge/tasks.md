@@ -28,8 +28,8 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 5.4 Write a failing test that a forced write failure removes everything the call created and returns a tool error. Then add the rollback. _Requirements: 3.11_
   - [x] 5.5 Write a failing test that a scaffolded app's `bone.json` passes `checkSpecs` from `scripts/check-specs.ts`, and that a scan of the generated files finds no banned domain word. Then fix any gap. _Requirements: 5.4_
 
-- [ ] 6. Kiro registration
-  - [ ] 6.1 Write a failing test for `.kiro/settings/mcp.json` (valid JSON, `bone-forge` with command `bun`, args `["tools/bone-forge/src/main.ts"]`, `disabled` false, `autoApprove` exactly `validate_spec` and `preview_countdown`, every name is a tool the server lists). Then add the file. _Requirements: 6.1, 6.2, 6.3_
+- [x] 6. Kiro registration
+  - [x] 6.1 Write a failing test for `.kiro/settings/mcp.json` (valid JSON, `bone-forge` with command `bun`, args `["tools/bone-forge/src/main.ts"]`, `disabled` false, `autoApprove` exactly `validate_spec` and `preview_countdown`, every name is a tool the server lists). Then add the file. _Requirements: 6.1, 6.2, 6.3_
 
 - [ ] 7. Integration over stdio
   - [ ] 7.1 Write a failing test that spawns `bun tools/bone-forge/src/main.ts` with `StdioClientTransport`, connects the SDK `Client`, lists the three tools, and calls `validate_spec` and `preview_countdown` with valid input. Then fix the wiring until it passes. _Requirements: 1.1, 1.4, 7.4_
