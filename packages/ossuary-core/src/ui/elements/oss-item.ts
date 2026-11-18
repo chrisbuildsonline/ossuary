@@ -39,22 +39,24 @@ ${toneCss}
 .dead .title { color: var(--text-2); }
 .lifespan { color: var(--text-2); font-weight: 600; }
 .others { list-style: none; margin: var(--s-3) 0 0; padding: var(--s-3) 0 0; border-top: 1px solid var(--line); display: grid; gap: var(--s-1); }
-.other { display: flex; align-items: center; gap: var(--s-2); font: var(--t-caption); color: var(--text-2); min-width: 0; }
-.other .label { color: var(--text); font-weight: 600; }
-.other .when { font-variant-numeric: tabular-nums; }
-.stage { display: inline-flex; align-items: center; gap: 4px; color: var(--tone-fg); font-weight: 600; margin-left: auto; }
+.other { display: flex; align-items: center; gap: var(--s-2); font: var(--t-caption); color: var(--text-2); min-width: 0; white-space: nowrap; }
+.other .label { color: var(--text); font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.other .when { flex: none; font-variant-numeric: tabular-nums; }
+.stage { flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--tone-fg); font-weight: 600; margin-left: auto; }
 .stage svg { width: 14px; height: 14px; }
 .row {
-  grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s-3); min-height: 76px; padding: var(--s-3) var(--s-4);
+  grid-template-columns: auto 1fr auto; grid-template-areas: "decay mid count" "decay others others";
+  align-items: center; column-gap: var(--s-3); row-gap: 0; min-height: 76px; padding: var(--s-3) var(--s-4);
   transition: background-color var(--dur-2) var(--ease-out);
 }
 .row:hover { background: var(--surface-sunken); }
 .row:active { transform: scale(.99); }
-.row .mid { display: grid; gap: 2px; min-width: 0; }
-.row .count { flex-direction: column; align-items: flex-end; gap: 0; }
+.row oss-decay { grid-area: decay; }
+.row .mid { grid-area: mid; display: grid; gap: 2px; min-width: 0; }
+.row .count { grid-area: count; flex-direction: column; align-items: flex-end; gap: 0; }
 .row .value { font: var(--t-num-m); }
-.row .others { border: 0; margin: 2px 0 0; padding: 0; }
-.row .stage { margin-left: 0; }
+/* The other lifespans run under the name and the number, so a long label and "330 days ago" stay on one line. */
+.row .others { grid-area: others; border: 0; margin: var(--s-1) 0 0; padding: 0; min-width: 0; }
 a:focus-visible { outline: var(--focus); outline-offset: 2px; }
 .row:focus-visible { outline-offset: -3px; border-radius: var(--r-md); }
 @media (max-width: 899px) { .card { padding: var(--s-4); } }
@@ -132,7 +134,7 @@ a:focus-visible { outline: var(--focus); outline-offset: 2px; }
       href: this.getAttribute('href') ?? '#',
       'aria-label': accessibleName(title, e, now),
     });
-    if (row) link.append(decay, h('span', { class: 'mid' }, titleEl, meta, others), count, time);
+    if (row) link.append(decay, h('span', { class: 'mid' }, titleEl, meta), count, ...(others ? [others] : []), time);
     else {
       // With several lifespans the primary countdown names its lifespan beside the date.
       const date = h('span', { class: 'date' }, time, several && ' · ', several && h('span', { class: 'lifespan' }, primary.label));

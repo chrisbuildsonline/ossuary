@@ -178,6 +178,47 @@ test('lifespan cards and banners: every state in every theme, two cards side by 
   }
 });
 
+/** Each element matched in `root` (looking through shadow roots), with its height in lines and whether its text is cut. */
+const lineBoxes = (page: Page, root: string, selector: string) =>
+  page.evaluate(
+    ([r, sel]) => {
+      const found: Element[] = [];
+      const walk = (n: Document | ShadowRoot | Element) =>
+        n.querySelectorAll('*').forEach((e) => {
+          if (e.matches(sel)) found.push(e);
+          if (e.shadowRoot) walk(e.shadowRoot);
+        });
+      const start = document.querySelector(r);
+      if (start?.shadowRoot) walk(start.shadowRoot);
+      return found
+        .filter((e) => e.getBoundingClientRect().width > 0)
+        .map((e) => {
+          const lineHeight = parseFloat(getComputedStyle(e).lineHeight);
+          const cut = [e, ...Array.from(e.querySelectorAll('*'))].some((x) => x.scrollWidth > x.clientWidth + 1 && getComputedStyle(x).overflow !== 'visible');
+          return { text: e.textContent?.trim() ?? '', lines: Math.round(e.getBoundingClientRect().height / lineHeight), cut };
+        });
+    },
+    [root, selector] as const,
+  );
+
+test('layout: a two-lifespan row and its trace keep every line on one line', async ({ page }, info) => {
+  const phone = info.project.name === 'gallery-phone';
+  for (const theme of themes) {
+    await open(page, `theme=${theme}`);
+    // The row or card line for the other lifespan: "Rental window 670 days ago · Closed", in full.
+    const others = await lineBoxes(page, '#detail oss-list', '.other');
+    expect(others.map((o) => o.text), theme).toEqual([expect.stringMatching(/^Rental window\s*670 days ago\s*Closed$/)]);
+    for (const o of others) expect(o, `${theme} ${phone ? 'row' : 'card'}`).toMatchObject({ lines: 1, cut: false });
+
+    // The trace: a persistent card in columns 9-12 on desktop, a drawer on phone.
+    if (phone) await page.locator('#detail oss-trace button.open').click();
+    const lines = await lineBoxes(page, '#detail oss-trace', 'li .text, li .delta, .total > span');
+    expect(lines.map((l) => l.text), theme).toEqual(expect.arrayContaining(['Base: Rental window 30 days', 'Base: Cover period 2 years', 'Expires Mon 13 Jan 2025', '= 30 days']));
+    for (const l of lines) expect(l, theme).toMatchObject({ lines: 1, cut: false });
+    if (phone) await page.keyboard.press('Escape');
+  }
+});
+
 test('keyboard: the line banner opens with Enter, the banner link and button are reachable', async ({ page }) => {
   await open(page, 'theme=cool');
   await page.locator('#lifespans oss-banner a[slot="actions"]').focus();

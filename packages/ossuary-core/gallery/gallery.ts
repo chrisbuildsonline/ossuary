@@ -72,6 +72,16 @@ body { margin: 0; background: var(--canvas); font: var(--t-body); color: var(--t
 .end { justify-content: center; margin-top: var(--s-10); }
 .lifespans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-5); }
 @media (max-width: 899px) { .lifespans { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); } }
+.detail { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--s-6); align-items: start; }
+.detail oss-lifespan:nth-of-type(1) { grid-column: 1 / span 4; }
+.detail oss-lifespan:nth-of-type(2) { grid-column: 5 / span 4; }
+.detail .side { grid-column: 9 / span 4; grid-row: 1; }
+@media (max-width: 899px) {
+  .detail { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+  .detail oss-lifespan:nth-of-type(1) { grid-column: 1; }
+  .detail oss-lifespan:nth-of-type(2) { grid-column: 2; }
+  .detail .side { grid-column: 1 / -1; grid-row: auto; justify-self: start; }
+}
 @media (max-width: 899px) { .hero { margin: var(--s-4) 0 var(--s-8); } .block { margin-top: var(--s-10); } }
 `);
 ensureDocumentTokens();
@@ -208,6 +218,29 @@ const lineBanner = el('oss-banner', { variant: 'line', text: '1 possible match Â
 notMine.addEventListener('click', () => toast.show('Match hidden'));
 lineBanner.addEventListener('oss-open', () => toast.show('Match opened'));
 
+// A two-lifespan detail with longer labels and a lifespan that closed long ago: the list (rows on phone),
+// two cards in columns 1-4 and 5-8 and the trace in 9-12 from 900 px, as an app detail view lays them out.
+const longGizmos = spec({
+  ...multi,
+  id: 'gallery-long',
+  lifespans: multi.lifespans.map((l) => {
+    const label = l.id === 'trial' ? 'Rental window' : 'Cover period';
+    return { ...l, label, base: { ...l.base, label } };
+  }),
+  theme: { ...theme, wordmark: 'Gizmo Keeper' },
+});
+const oldGizmo = evaluated(longGizmos, 'old', { name: 'Old gizmo', maker: 'Orbit', bought: '2024-12-14', plan: 'basic' });
+const longList = el('oss-list', { layout: 'auto', 'data-list': 'long' }) as OssList;
+Object.assign(longList, { spec: longGizmos, now, entries: oldGizmo ? [oldGizmo] : [] });
+const longTrace = el('oss-trace', { mode: 'auto', class: 'side' });
+Object.assign(longTrace, { now, evaluation: oldGizmo?.evaluation });
+const detailGrid = el(
+  'div',
+  { class: 'detail' },
+  ...(oldGizmo ? orderLifespans(oldGizmo.evaluation) : []).map((lifespan) => Object.assign(el('oss-lifespan'), { lifespan, now, motif: longGizmos.theme?.motif ?? 'hourglass' })),
+  longTrace,
+);
+
 // Primitives in every state.
 const pills = el('div', { class: 'row' }, ...tones.map((t) => el('oss-pill', { tone: t, label: t[0]?.toUpperCase() + t.slice(1) })));
 const motifs = el(
@@ -258,6 +291,7 @@ shell.append(
   list,
   block('Two lifespans', 'multi', el('div', { class: 'row' }, gizmoCalendar), el('div', { class: 'duo' }, gizmoList, gizmoTrace)),
   block('Lifespan cards and banners', 'lifespans', el('div', { class: 'notices' }, lineBanner, matchBanner, softBanner), lifespanCards),
+  block('Two-lifespan detail', 'detail', longList, detailGrid),
   block(
     'Primitives',
     'primitives',

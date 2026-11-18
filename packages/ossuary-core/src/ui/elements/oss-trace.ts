@@ -31,6 +31,15 @@ dialog[open] li:nth-child(2) { animation-delay: 40ms; } dialog[open] li:nth-chil
 .delta { font: var(--t-label); font-variant-numeric: tabular-nums; color: var(--text-2); white-space: nowrap; text-align: right; }
 .changed .delta { color: var(--accent-ink); font-weight: 600; }
 .total { display: flex; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-2); padding-top: var(--s-3); border-top: 2px dashed var(--line); font: var(--t-heading); font-variant-numeric: tabular-nums; }
+.total span:last-child { white-space: nowrap; }
+/* A narrow column (a third of a desktop detail): smaller type and gaps, so a base line, its delta and the total keep one line each. */
+.card { container-type: inline-size; }
+@container (max-width: 320px) {
+  li { gap: var(--s-2); }
+  .text { font: var(--t-label); font-weight: 400; }
+  .delta { font: var(--t-caption); }
+  .total { font: var(--t-label); font-weight: 600; }
+}
 .open { min-height: 44px; padding: 0 var(--s-2); border: 0; background: none; color: var(--accent); font: var(--t-label); font-weight: 600; cursor: pointer; border-radius: var(--r-sm); }
 .open:hover { text-decoration: underline; text-underline-offset: 4px; }
 @keyframes line-in { from { opacity: 0; transform: translateY(8px); } }
