@@ -6,11 +6,11 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 1.1 Write a failing vitest for the pure parts of `packages/ossuary-core/src/testing/a11y.ts` (the formatter that turns axe results into a message with rule id, selector and summary, and the `WIDTHS` constant). Then add the module with `checkAxe`, `settle`, `runningMotion` and `tabThrough`, generic and with no domain words. _Requirements: 5.2, 7.2, 8.2_
   - [x] 1.2 Change `packages/ossuary-core/e2e/gallery.spec.ts` to use `tabThrough` and `settle` in place of its inlined copies, with the same assertions. Run the gallery project and confirm it still passes. _Requirements: 3.3, 6.5_
 
-- [ ] 2. Contrast
+- [x] 2. Contrast
   - [x] 2.1 Write a failing vitest `contrast-tokens.test.ts` that reads `tokens.css`, the two app `bone.json` themes, the template theme, the launcher card themes and the gallery warm and cool themes, and checks every pair in the design table (tone text 4.5, tone glyph 3, text tokens, accent text, focus ring 3, `--line-strong` 3, `--on-ink` on `--ink`). Run it and record the failing pairs in the task notes before changing anything. _Requirements: 2.1, 2.2, 2.3, 2.4, 8.1_
     - Note (first run, before any token change): one failing pair, --line-strong #8a909c on --surface-sunken #f4f5f8 at 2.94:1 (min 3). Every other pair in every theme passes.
   - [x] 2.2 Fix each failing token to the nearest passing value with the same hue, in `tokens.css` or the theme block of the `bone.json` that owns it. Re-run the new test and the schema contrast tests. If a ratio quoted in `design/DESIGN.md` is proven wrong, correct that row in the same change. _Requirements: 2.1, 2.2, 2.3, 2.5, 2.6_
-  - [ ] 2.3 Write a failing happy-dom test that every `oss-pill` and `oss-item` stage word carries its glyph and word, so no status is colour-only. Then fix any gap in core. _Requirements: 2.6_
+  - [x] 2.3 Write a failing happy-dom test that every `oss-pill` and `oss-item` stage word carries its glyph and word, so no status is colour-only. Then fix any gap in core. _Requirements: 2.6_
 
 - [ ] 3. Countdown names and live regions
   - [ ] 3.1 Write a failing happy-dom test (`a11y-names.test.ts`) that `oss-item` (card and row) and `oss-lifespan` expose one plain-language name from fixed items and a fixed `now`, for example "Milk. Use soon. Expires in 3 days, Friday 20 November.", with `aria-hidden` digits. Make it pass; fix core if a name is wrong. _Requirements: 4.1, 8.2_
