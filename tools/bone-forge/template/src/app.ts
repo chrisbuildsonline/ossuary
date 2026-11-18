@@ -213,8 +213,6 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     calendar.addEventListener('click', () => {
       saveCalendar(boneSpec, [{ id: entry.id, values: entry.values }], now(), { show: (m) => say(m) }, deps.download ?? downloadText);
     });
-    const remove = el('oss-button', { variant: 'ghost', 'data-action': 'remove' }, 'Remove');
-    remove.addEventListener('click', () => void removeEntry(entry, `Removed ${titleOf(boneSpec, entry.values)}`));
     const trace = el('oss-trace', { class: 'bone-trace' });
     Object.assign(trace, { now: today, evaluation: entry.evaluation });
     detail.replaceChildren(
@@ -227,7 +225,8 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
           'div',
           { class: 'bone-main' },
           el('div', { class: 'bone-cards' }, ...orderLifespans(entry.evaluation).map((l) => card(l, today))),
-          el('div', { class: 'bone-actions' }, calendar, edit, remove),
+          // The same row as the apps: Add to calendar, then Edit. Removal is the primary pill ("Done"), with Undo.
+          el('div', { class: 'bone-actions' }, calendar, edit),
         ),
         trace,
       ),

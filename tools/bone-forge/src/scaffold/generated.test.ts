@@ -30,4 +30,13 @@ describe('a scaffolded app', () => {
     }
     expect(readdirSync(join(root, 'apps'))).toEqual(['test-two']);
   });
+
+  it('builds the detail action row the apps have: Add to calendar, then Edit, and no Remove', () => {
+    const root = tmpRoot();
+    const r = scaffoldApp(root, { spec: oneSpec });
+    if (!r.ok) throw new Error(r.error);
+    const app = readFileSync(join(root, 'apps', 'test-bone', 'src', 'app.ts'), 'utf8');
+    expect(app).toContain("el('div', { class: 'bone-actions' }, calendar, edit)");
+    expect(app).not.toContain("'data-action': 'remove'");
+  });
 });

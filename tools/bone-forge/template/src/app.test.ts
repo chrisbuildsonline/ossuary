@@ -161,13 +161,41 @@ describe('template app: detail', () => {
     await vi.waitFor(() => expect(list()?.entries.map((e) => e.values.name)).toEqual(['Blue box']));
   });
 
-  it('removes an item, with undo', async () => {
+  it('offers the same detail actions as the apps: Add to calendar, then Edit, in one wrapping row', async () => {
+    // The row both apps build in renderDetail (apps/*/src/app.ts): a calendar ghost pill, then an Edit ghost pill.
+    // Removal is the primary pill ("Done"), as in the apps, so the row has no Remove.
     app = await mountApp(document.body, deps(await seeded(sample)));
     await openItem('Blue box');
-    (detail()?.querySelector('[data-action="remove"]') as HTMLElement).click();
-    await vi.waitFor(() => expect(toastText()).toBe('Removed Blue box'));
-    expect(list()?.entries).toHaveLength(0);
-    toastUndo()?.click();
-    await vi.waitFor(() => expect(list()?.entries).toHaveLength(1));
+    const rows = Array.from(detail()?.querySelectorAll('.bone-actions') ?? []);
+    expect(rows).toHaveLength(1);
+    const actions = Array.from(rows[0]?.children ?? []).map((b) => ({
+      label: b.textContent,
+      variant: b.getAttribute('variant'),
+      icon: b.getAttribute('icon'),
+      action: b.getAttribute('data-action'),
+    }));
+    expect(actions).toEqual([
+      { label: 'Add to calendar', variant: 'ghost', icon: 'calendar', action: 'calendar' },
+      { label: 'Edit', variant: 'ghost', icon: null, action: 'edit' },
+    ]);
+    expect(detail()?.querySelector('[data-action="remove"]')).toBeNull();
+    expect(primaryPill().map((b) => b.textContent)).toEqual(['Done']);
+  });
+
+  it('keeps live regions to the toast, polite, with no countdown inside', async () => {
+    app = await mountApp(document.body, deps(await seeded(sample)));
+    await openItem('Blue box');
+    primaryPill()[0]?.click();
+    await vi.waitFor(() => expect(toastText()).toBe('Done with Blue box'));
+    const regions: Element[] = [];
+    const walk = (root: Document | ShadowRoot) =>
+      root.querySelectorAll('*').forEach((e) => {
+        if (e.matches('[aria-live], [role="status"], [role="alert"]')) regions.push(e);
+        if (e.shadowRoot) walk(e.shadowRoot);
+      });
+    walk(document);
+    expect(regions.map((r) => (r.getRootNode() as ShadowRoot).host?.tagName.toLowerCase())).toEqual(['oss-toast']);
+    expect(regions[0]?.getAttribute('aria-live')).toBe('polite');
+    expect(regions[0]?.querySelector('time, .count, .value')).toBeNull();
   });
 });
