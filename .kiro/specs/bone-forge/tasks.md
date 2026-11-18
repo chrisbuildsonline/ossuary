@@ -11,10 +11,10 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 2.2 Write failing tests for JSON text that does not parse (one issue at path `""`) and for `null`, numbers, arrays and very long strings. Then handle them in `readSpecInput` and the handler `try/catch`. _Requirements: 2.5, 2.6_
   - [x] 2.3 Write the fast-check fuzz test (fixed seed): `fc.jsonValue()`, `fc.anything()`, arbitrary strings and mutated valid specs never throw, and `valid` and `issues` equal `parseBoneSpec`. Add a test that the input is not changed and the same input gives the same output. _Requirements: 2.6, 2.7, 7.2_
 
-- [ ] 3. preview_countdown
+- [x] 3. preview_countdown
   - [x] 3.1 Write failing tests with fixed `now` values (a plain day, a day with `minuteOfDay`, a threshold day and the day before) for a one-lifespan spec. Then implement `previewCountdown` over `parseBoneSpec` and `evaluate` and register the tool with the `now` input schema. _Requirements: 4.1, 4.2, 4.5_
   - [x] 3.2 Write failing tests for a two-lifespan spec: `primaryIndex`, one text line per lifespan with the primary marked, and structured content equal to `evaluate`. Then add the output schema and text lines. _Requirements: 4.2, 4.3_
-  - [ ] 3.3 Write failing tests for an invalid spec, an invalid item, a bad `now.day` and `minuteOfDay` 1440: each is a tool error listing `path: message`. Add determinism and the three-`TZ` check, and a no-throw check. Then implement the error mapping. _Requirements: 4.4, 4.5, 4.6_
+  - [x] 3.3 Write failing tests for an invalid spec, an invalid item, a bad `now.day` and `minuteOfDay` 1440: each is a tool error listing `path: message`. Add determinism and the three-`TZ` check, and a no-throw check. Then implement the error mapping. _Requirements: 4.4, 4.5, 4.6_
 
 - [ ] 4. Template and generated files
   - [ ] 4.1 Write failing tests for the template (files exist, no domain word, only `main.ts` reads the clock or makes ids). Then add `tools/bone-forge/template` with `tsconfig.json`, a placeholder `bone.json`, and `src/main.ts`, `src/spec.ts`, `src/spec.test.ts`. Reference the template tsconfig from the root `tsconfig.json` so `tsc -b` checks it. _Requirements: 3.7, 3.9, 5.4_

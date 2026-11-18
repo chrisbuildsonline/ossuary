@@ -63,9 +63,14 @@ function line(l: LifespanEvaluation, primary: boolean): string {
   return `${when}, ${l.stage.label}${primary ? ' (primary)' : ''}`;
 }
 
+/** Bad spec, item or `now`: a tool error with one `path: message` line per issue. Never throws. */
 export function previewCountdownTool(input: PreviewInput): CallToolResult {
-  const r = previewCountdown(input);
-  if (!r.ok) return toolError(issueLines(r.error));
-  const text = r.value.lifespans.map((l, i) => line(l, i === r.value.primaryIndex)).join('\n');
-  return ok({ ...r.value }, text);
+  try {
+    const r = previewCountdown(input);
+    if (!r.ok) return toolError(issueLines(r.error));
+    const text = r.value.lifespans.map((l, i) => line(l, i === r.value.primaryIndex)).join('\n');
+    return ok({ ...r.value }, text);
+  } catch {
+    return toolError('(spec): Could not evaluate this spec.');
+  }
 }
