@@ -3,14 +3,13 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseBoneSpec } from '@ossuary/core/schema';
 import { describe, expect, it } from 'vitest';
+// The list scripts/check-boundary.ts keeps out of the core.
+import { domainWords } from '../../../scripts/domain-words';
 
 const template = fileURLToPath(new URL('../template', import.meta.url));
 const repo = fileURLToPath(new URL('../../..', import.meta.url));
 const read = (path: string) => readFileSync(join(template, path), 'utf8');
 const sources = () => readdirSync(join(template, 'src')).map((name) => `src/${name}`);
-
-// The same list scripts/check-boundary.ts keeps out of the core.
-const domainWords = ['food', 'grocery', 'pantry', 'warranty', 'recall', 'usda', 'receipt', 'kettle'];
 
 describe('template', () => {
   it('has a tsconfig, a placeholder bone.json and the generic source files', () => {

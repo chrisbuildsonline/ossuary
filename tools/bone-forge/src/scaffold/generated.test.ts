@@ -2,12 +2,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { checkSpecs, findSpecs } from '../../../../scripts/check-specs';
+// The list scripts/check-boundary.ts keeps out of the core.
+import { domainWords } from '../../../../scripts/domain-words';
 import { oneSpec, twoSpec } from '../fixtures';
 import { tmpRoot } from '../test-tmp';
 import { scaffoldApp } from '../tools/scaffold-app';
-
-// The same list scripts/check-boundary.ts keeps out of the core.
-const domainWords = ['food', 'grocery', 'pantry', 'warranty', 'recall', 'usda', 'receipt', 'kettle'];
 
 describe('a scaffolded app', () => {
   it('has a bone.json that passes the hook:spec check', () => {

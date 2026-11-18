@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const self = fileURLToPath(import.meta.url);
+// The one word list, shared with hook:boundary. Read, not imported: it sits outside this package.
+const banned: string[] = JSON.parse(readFileSync(new URL('../../../scripts/domain-words.json', import.meta.url), 'utf8'));
 
 function walk(dir: string): string[] {
   if (!existsSync(dir)) return [];
@@ -15,12 +16,10 @@ function walk(dir: string): string[] {
   });
 }
 
-const banned = ['food', 'grocery', 'pantry', 'warranty', 'recall', 'usda', 'receipt', 'kettle'];
-
 describe('core boundaries', () => {
   it('contains no domain words', () => {
+    expect(banned.length).toBeGreaterThan(0);
     const hits = walk(root)
-      .filter((file) => file !== self)
       .flatMap((file) => {
         const text = readFileSync(file, 'utf8').toLowerCase();
         return banned.filter((word) => text.includes(word)).map((word) => `${relative(root, file)}: ${word}`);

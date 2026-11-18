@@ -1,10 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { checkBoundary } from './check-boundary';
+import { domainWords } from './domain-words';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const core = join(root, 'packages/ossuary-core');
@@ -78,6 +79,31 @@ describe('checkBoundary', () => {
       'gallery/fixtures/b.json: mentions "kettle" (core has no domain words)',
       'src/ui/a.ts: mentions "pantry" (core has no domain words)',
     ]);
+  });
+});
+
+describe('the domain word list', () => {
+  const list = /['"]receipt['"]\s*,\s*['"]kettle['"]/;
+  const sources = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      if (['node_modules', 'dist', '.git', '.backups', '.omc', 'test-results'].includes(e.name)) return [];
+      const path = join(dir, e.name);
+      return e.isDirectory() ? sources(path) : /\.(ts|json)$/.test(e.name) ? [path] : [];
+    });
+
+  it('lives only in scripts/domain-words.json', () => {
+    const holders = ['packages', 'apps', 'tools', 'scripts']
+      .flatMap((top) => sources(join(root, top)))
+      .filter((file) => list.test(readFileSync(file, 'utf8')))
+      .map((file) => relative(root, file));
+    expect(holders).toEqual(['scripts/domain-words.json']);
+  });
+
+  it('is what the hook checks', () => {
+    expect(domainWords).toEqual(JSON.parse(readFileSync(join(root, 'scripts/domain-words.json'), 'utf8')));
+    expect(domainWords).toContain('kettle');
+    const dir = fixture(Object.fromEntries(domainWords.map((word, i) => [`src/ui/w${i}.ts`, `// ${word.toUpperCase()}\n`])));
+    expect(checkBoundary(dir)).toHaveLength(domainWords.length);
   });
 });
 

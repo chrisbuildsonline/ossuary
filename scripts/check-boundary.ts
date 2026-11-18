@@ -5,9 +5,9 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { domainWords } from './domain-words.ts';
 
 const pure = ['engine', 'schema', 'ics'].map((layer) => `src/${layer}/`);
-const domainWords = ['food', 'grocery', 'pantry', 'warranty', 'recall', 'usda', 'receipt', 'kettle'];
 const domGlobals = /\b(document|window|navigator|customElements|HTMLElement|localStorage|indexedDB)\b/;
 const specifier = /(?:from|import)\s*\(?\s*['"]([^'"]+)['"]/g;
 
@@ -31,11 +31,8 @@ export function checkBoundary(coreDir: string): string[] {
   for (const file of walk(coreDir)) {
     const path = relative(coreDir, file).split(sep).join('/');
     const text = readFileSync(file, 'utf8');
-    // The core's own boundary test holds the same word list.
-    if (path !== 'src/boundaries.test.ts') {
-      const lower = text.toLowerCase();
-      for (const word of domainWords) if (lower.includes(word)) problems.push(`${path}: mentions "${word}" (core has no domain words)`);
-    }
+    const lower = text.toLowerCase();
+    for (const word of domainWords) if (lower.includes(word)) problems.push(`${path}: mentions "${word}" (core has no domain words)`);
     if (!path.endsWith('.ts')) continue;
 
     const imports = [...text.matchAll(specifier)].map((m) => m[1] ?? '');
