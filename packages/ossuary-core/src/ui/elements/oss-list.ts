@@ -120,7 +120,7 @@ h2 { margin: 0; display: flex; align-items: center; gap: var(--s-3); font: var(-
     const state = this.getAttribute('state');
     if (state === 'loading') {
       this.root.replaceChildren(
-        h('div', { class: 'skeleton', 'aria-busy': 'true' }, h('span', { class: 'sr-only', role: 'status' }, 'Loading items'), [1, 2, 3].map(() => h('div', { class: 'bone' }))),
+        h('div', { class: 'skeleton', 'aria-busy': 'true' }, h('span', { class: 'sr-only', role: 'status', 'aria-live': 'polite' }, 'Loading items'), [1, 2, 3].map(() => h('div', { class: 'bone' }))),
       );
       return;
     }

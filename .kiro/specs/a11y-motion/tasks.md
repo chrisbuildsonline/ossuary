@@ -15,7 +15,7 @@ Rules for every task: write the failing test first, then the code, and keep the 
 - [ ] 3. Countdown names and live regions
   - [ ] 3.1 Write a failing happy-dom test (`a11y-names.test.ts`) that `oss-item` (card and row) and `oss-lifespan` expose one plain-language name from fixed items and a fixed `now`, for example "Milk. Use soon. Expires in 3 days, Friday 20 November.", with `aria-hidden` digits. Make it pass; fix core if a name is wrong. _Requirements: 4.1, 8.2_
   - [ ] 3.2 Write a failing test in `apps/pantry-reaper/src/app.test.ts` that the detail countdown name holds the item name, the stage and "expires in N days, <date>". Then build it with `accessibleName` in `renderDetail`. Update any existing assertion on the old label. _Requirements: 4.1, 4.2_
-  - [ ] 3.3 Write a failing happy-dom test that no `[aria-live]`, `[role="status"]` or `[role="alert"]` wraps a countdown or a `time` in core elements, either app, the template and the gallery, and that only the toast, the loading placeholder and the banner carry a live role. Fix any stray region. _Requirements: 4.3, 4.4_
+  - [ ] 3.3 Write a failing happy-dom test that no `[aria-live]`, `[role="status"]` or `[role="alert"]` wraps a countdown or a `time` in core elements, either app, the template and the gallery, and that only the toast, the loading placeholder, the banner and a search combobox result count carry a live role. Fix any stray region. _Requirements: 4.3, 4.4_
   - [ ] 3.4 Write a failing e2e in each app (`e2e/a11y.spec.ts`) that moves the page clock on by 61 minutes (`page.clock`) with a `MutationObserver` on every live region, and sees no change. Then fix any timed re-render that touches a live region. _Requirements: 4.3, 4.5_
 
 - [ ] 4. Reduced motion

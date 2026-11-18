@@ -91,7 +91,7 @@ Likely fixes: any `outline: none` or `outline: 0` on an interactive element that
 
 - `a11y-names.test.ts` (happy-dom) renders `oss-item` (card and row) and `oss-lifespan` from fixed items and fixed `now`, and asserts the exact `aria-label` ("Milk. Use soon. Expires in 3 days, Friday 20 November."), that the digits are `aria-hidden`, and that no `[aria-live], [role="status"], [role="alert"]` exists inside any countdown.
 - Pantry detail: the number `p` gets the same sentence form through `accessibleName`, with the item title and the evaluation, replacing `${stage}. ${spoken}`. This is a one-line change in the app plus an update to the e2e that asserts the old label, if one does.
-- The whole-app check (e2e, per screen) lists every `[aria-live], [role=status], [role=alert]` in the document and shadow roots and asserts each is the toast, the loading placeholder or a banner, and that none contains a `time` element or a countdown digit.
+- The whole-app check (e2e, per screen) lists every `[aria-live], [role=status], [role=alert]` in the document and shadow roots and asserts each is the toast, the loading placeholder, a banner or a search combobox result count, and that none contains a `time` element or a countdown digit.
 - No timer re-renders text inside a live region. The minute refresh (if an app has one) goes through `render()` on non-live nodes only. A test advances the page clock with `page.clock` by 61 minutes on a list and asserts that the toast region text did not change and the live-region mutation count is 0 (a `MutationObserver` on every live region).
 
 ## Axe (requirement 5)

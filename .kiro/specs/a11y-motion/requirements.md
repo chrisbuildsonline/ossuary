@@ -74,7 +74,7 @@ Terms:
 
 4.3 THE SYSTEM SHALL contain no `aria-live`, `role="status"` or `role="alert"` region that holds a countdown value, a unit or a date. Countdowns refresh at most once a minute and silently.
 
-4.4 THE SYSTEM SHALL keep `role="status"` with `aria-live="polite"` only on the toast, the loading placeholder and the recall banner, and each SHALL change only on a user action or a data load, never on a timer.
+4.4 THE SYSTEM SHALL keep `role="status"` with `aria-live="polite"` only on the toast, the loading placeholder, the recall banner, and the result count of a search combobox (it changes only as the user types), and each SHALL change only on a user action or a data load, never on a timer.
 
 4.5 WHEN a countdown crosses a stage by the passing of time THE SYSTEM SHALL change its name and pill without announcing it.
 

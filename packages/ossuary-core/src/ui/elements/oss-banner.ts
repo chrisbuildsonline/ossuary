@@ -60,13 +60,13 @@ ${toneCss}
     if (this.getAttribute('variant') === 'line') {
       const line = h('button', { type: 'button', class: 'line' }, alert, h('span', { class: 'label' }, this.text));
       line.addEventListener('click', () => this.emit('oss-open'));
-      this.root.replaceChildren(h('div', { role: 'status', class: `tone-${tone}` }, line));
+      this.root.replaceChildren(h('div', { role: 'status', 'aria-live': 'polite', class: `tone-${tone}` }, line));
       return;
     }
     this.root.replaceChildren(
       h(
         'div',
-        { role: 'status', class: `banner tone-${tone}` },
+        { role: 'status', 'aria-live': 'polite', class: `banner tone-${tone}` },
         alert,
         h('div', { class: 'words' }, h('span', { class: 'heading' }, this.heading), h('span', { class: 'text' }, this.text)),
         h('div', { class: 'actions' }, h('slot', { name: 'actions' })),
