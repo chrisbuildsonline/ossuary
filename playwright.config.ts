@@ -7,6 +7,7 @@ const apps = [
 const gallery = { testDir: 'packages/ossuary-core/e2e', baseURL: 'http://localhost:5180' };
 // The offline run needs the built app and its service worker, so it uses the preview server.
 const pantryOffline = { script: 'bun run build:pantry && bun run preview:pantry', baseURL: 'http://localhost:4173' };
+const wraithOffline = { script: 'bun run build:wraith && bun run preview:wraith', baseURL: 'http://localhost:4174' };
 
 export default defineConfig({
   forbidOnly: true,
@@ -24,6 +25,12 @@ export default defineConfig({
       testMatch: '**/offline.spec.ts',
       use: { ...devices['Desktop Chrome'], baseURL: pantryOffline.baseURL },
     },
+    {
+      name: 'warranty-wraith-offline',
+      testDir: 'apps/warranty-wraith/e2e',
+      testMatch: '**/offline.spec.ts',
+      use: { ...devices['Desktop Chrome'], baseURL: wraithOffline.baseURL },
+    },
     { name: 'gallery-desktop', ...gallery, use: { ...devices['Desktop Chrome'], baseURL: gallery.baseURL, viewport: { width: 1280, height: 800 } } },
     {
       name: 'gallery-phone',
@@ -35,5 +42,6 @@ export default defineConfig({
     ...apps.map((app) => ({ command: `bun run ${app.script}`, url: `http://localhost:${app.port}`, reuseExistingServer: false })),
     { command: 'bun run dev:gallery', url: gallery.baseURL, reuseExistingServer: false },
     { command: pantryOffline.script, url: pantryOffline.baseURL, reuseExistingServer: false, timeout: 120_000 },
+    { command: wraithOffline.script, url: wraithOffline.baseURL, reuseExistingServer: false, timeout: 120_000 },
   ],
 });

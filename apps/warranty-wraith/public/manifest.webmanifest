@@ -1,0 +1,15 @@
+{
+  "name": "Warranty Wraith",
+  "short_name": "Wraith",
+  "description": "Watch the return window and warranty of everything you buy, and check it against US CPSC recalls.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#5a4bd1",
+  "background_color": "#edeff6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
