@@ -35,6 +35,6 @@ Rules for every task: write the failing test first, then the code, and keep the 
   - [x] 7.1 Write a failing test that spawns `bun tools/bone-forge/src/main.ts` with `StdioClientTransport`, connects the SDK `Client`, lists the three tools, and calls `validate_spec` and `preview_countdown` with valid input. Then fix the wiring until it passes. _Requirements: 1.1, 1.4, 7.4_
   - [x] 7.2 Write failing tests that an invalid `preview_countdown` call and an invalid `scaffold_app` call come back as `isError` results over stdio, and that an invalid `validate_spec` call does not. Add an in-memory test of a successful `scaffold_app` with `createServer({ root: tmp })`. _Requirements: 2.4, 3.2, 4.4, 7.4_
 
-- [ ] 8. Wrap-up
+- [x] 8. Wrap-up
   - [x] 8.1 Check that `packages/ossuary-core` imports nothing from `tools/*`, that bone-forge runtime dependencies are only `@modelcontextprotocol/sdk` and `zod`, and that no network call or file read outside the repo root exists. _Requirements: 1.5, 5.1, 5.2, 5.3_
-  - [ ] 8.2 Run the full gate: `bun run test`, `bun run typecheck`, `bun run e2e`, `bun run hook:boundary` and `bun run hook:spec`. Fix every failure before closing the spec. _Requirements: 7.5_
+  - [x] 8.2 Run the full gate: `bun run test`, `bun run typecheck`, `bun run e2e`, `bun run hook:boundary` and `bun run hook:spec`. Fix every failure before closing the spec. _Requirements: 7.5_
