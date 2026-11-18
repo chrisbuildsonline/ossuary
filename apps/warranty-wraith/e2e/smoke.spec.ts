@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('loads with its name and the core import', async ({ page }) => {
+test('loads the themed shell and the empty drawer', async ({ page }) => {
   const errors: string[] = [];
   page.on('console', (msg) => {
     if (msg.type() === 'error') errors.push(msg.text());
@@ -10,7 +10,9 @@ test('loads with its name and the core import', async ({ page }) => {
   await page.goto('/');
 
   await expect(page).toHaveTitle('Warranty Wraith');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Warranty Wraith');
-  await expect(page.getByTestId('core')).toHaveText('ossuary-core');
+  await expect(page.locator('oss-shell .wordmark')).toHaveText('Warranty Wraith');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('What did you buy?');
+  await expect(page.getByRole('heading', { name: 'No ghosts in the drawer yet.' })).toBeVisible();
+  await expect(page.locator('oss-empty [data-art="ghost-parcel"]')).toBeVisible();
   expect(errors).toEqual([]);
 });
