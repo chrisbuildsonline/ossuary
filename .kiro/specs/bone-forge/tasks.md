@@ -31,9 +31,9 @@ Rules for every task: write the failing test first, then the code, and keep the 
 - [x] 6. Kiro registration
   - [x] 6.1 Write a failing test for `.kiro/settings/mcp.json` (valid JSON, `bone-forge` with command `bun`, args `["tools/bone-forge/src/main.ts"]`, `disabled` false, `autoApprove` exactly `validate_spec` and `preview_countdown`, every name is a tool the server lists). Then add the file. _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 7. Integration over stdio
-  - [ ] 7.1 Write a failing test that spawns `bun tools/bone-forge/src/main.ts` with `StdioClientTransport`, connects the SDK `Client`, lists the three tools, and calls `validate_spec` and `preview_countdown` with valid input. Then fix the wiring until it passes. _Requirements: 1.1, 1.4, 7.4_
-  - [ ] 7.2 Write failing tests that an invalid `preview_countdown` call and an invalid `scaffold_app` call come back as `isError` results over stdio, and that an invalid `validate_spec` call does not. Add an in-memory test of a successful `scaffold_app` with `createServer({ root: tmp })`. _Requirements: 2.4, 3.2, 4.4, 7.4_
+- [x] 7. Integration over stdio
+  - [x] 7.1 Write a failing test that spawns `bun tools/bone-forge/src/main.ts` with `StdioClientTransport`, connects the SDK `Client`, lists the three tools, and calls `validate_spec` and `preview_countdown` with valid input. Then fix the wiring until it passes. _Requirements: 1.1, 1.4, 7.4_
+  - [x] 7.2 Write failing tests that an invalid `preview_countdown` call and an invalid `scaffold_app` call come back as `isError` results over stdio, and that an invalid `validate_spec` call does not. Add an in-memory test of a successful `scaffold_app` with `createServer({ root: tmp })`. _Requirements: 2.4, 3.2, 4.4, 7.4_
 
 - [ ] 8. Wrap-up
   - [ ] 8.1 Check that `packages/ossuary-core` imports nothing from `tools/*`, that bone-forge runtime dependencies are only `@modelcontextprotocol/sdk` and `zod`, and that no network call or file read outside the repo root exists. _Requirements: 1.5, 5.1, 5.2, 5.3_
