@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Bone spec validation",
+  "description": "Validates every app's bone.json against the ossuary-core zod schema when a bone spec is saved.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["apps/*/bone.json"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run hook:spec"
+  }
+}

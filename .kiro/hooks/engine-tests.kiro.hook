@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Engine tests on core save",
+  "description": "Runs the lifespan engine and schema unit tests when a core source file is saved.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["packages/ossuary-core/src/**/*.ts"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run hook:engine"
+  }
+}

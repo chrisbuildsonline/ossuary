@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Core boundary check",
+  "description": "Checks that ossuary-core imports nothing from apps or tools, keeps Date and the DOM out of the engine, schema and ics layers, and holds no domain words.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["packages/ossuary-core/**/*"]
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bun run hook:boundary"
+  }
+}
