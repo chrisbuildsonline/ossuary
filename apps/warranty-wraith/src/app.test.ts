@@ -440,3 +440,100 @@ describe('warranty wraith app: recall banner, dismissal and home line', () => {
     expect(banners()).toHaveLength(1);
   });
 });
+
+describe('warranty wraith app: import and backup', () => {
+  const shell = () => document.querySelector('oss-shell');
+  const importOpen = () => shadow(document.querySelector('oss-import'), 'dialog')?.hasAttribute('open') ?? false;
+  const backupView = () => document.querySelector<HTMLElement>('.ww-backup');
+  const tab = (label: string) => shadowAll(shell(), '.top-nav button').find((b) => b.textContent === label) as HTMLElement;
+  const backupAction = (name: string) => backupView()?.querySelector(`[data-action="${name}"]`) as HTMLElement;
+
+  it('opens oss-import from the Import tab and from the empty state link, with no "Required." text', async () => {
+    app = await mountApp(document.body, deps());
+    const empty = await waitFor(() => shadow(list(), 'oss-empty'));
+    (shadow(empty, 'oss-button[variant="link"]') as HTMLElement).click();
+    expect(importOpen()).toBe(true);
+    expect(document.querySelector('oss-import')?.shadowRoot?.textContent).not.toContain('Required.');
+    (shadow(document.querySelector('oss-import'), '.head oss-button') as HTMLElement).click();
+    expect(importOpen()).toBe(false);
+
+    tab('Import').click();
+    expect(importOpen()).toBe(true);
+    expect(document.querySelector('oss-import')?.shadowRoot?.textContent).not.toContain('Required.');
+  });
+
+  it('shows the Backup screen with a backup download, a restore control and an "Import a list" action', async () => {
+    const d = deps(await seeded({ ...kettle, recalls_dismissed: '27054' }));
+    app = await mountApp(document.body, d);
+    await waitFor(() => shadow(list(), 'oss-item'));
+    tab('Backup').click();
+    expect(backupView()?.hidden).toBe(false);
+    expect(document.querySelector<HTMLElement>('.ww-home')?.hidden).toBe(true);
+    expect(shell()?.getAttribute('current')).toBe('backup');
+    expect(primaryPill()).toHaveLength(0);
+    expect(backupView()?.querySelectorAll('oss-button[variant="primary"]')).toHaveLength(1);
+
+    backupAction('backup').click();
+    await vi.waitFor(() => expect(d.download).toHaveBeenCalledTimes(1));
+    const [filename, text, mime] = vi.mocked(d.download as NonNullable<AppDeps['download']>).mock.calls[0] ?? [];
+    expect([filename, mime]).toEqual(['warranty-wraith-backup.json', 'application/json']);
+    const backup = JSON.parse(String(text)) as { items: { values: Values }[] };
+    expect(backup.items.map((i) => i.values)).toEqual([{ ...kettle, recalls_dismissed: '27054' }]);
+    expect(toastText()).toBe('Backup file saved');
+
+    backupAction('import').click();
+    expect(importOpen()).toBe(true);
+  });
+
+  it('restores a chosen backup file through the store and refreshes the list', async () => {
+    const source = await seeded({ ...kettle, recalls_dismissed: '27054' });
+    const from = await openStore(boneSpec, { newId: () => 'x', nowIso: () => '2026-11-17T08:00:00.000Z', indexedDB: source });
+    if (!from.ok) throw new Error('store did not open');
+    const backup = await from.value.exportBackup();
+    from.value.close();
+    if (!backup.ok) throw new Error('no backup');
+
+    app = await mountApp(document.body, deps());
+    await waitFor(() => shadow(list(), 'oss-empty'));
+    tab('Backup').click();
+    const input = backupView()?.querySelector('input[type="file"]') as HTMLInputElement;
+    const click = vi.spyOn(input, 'click').mockImplementation(() => undefined);
+    backupAction('restore').click();
+    expect(click).toHaveBeenCalled();
+    Object.defineProperty(input, 'files', { value: [new File([JSON.stringify(backup.value)], 'backup.json', { type: 'application/json' })], configurable: true });
+    input.dispatchEvent(new Event('change'));
+    await vi.waitFor(() => expect(toastText()).toBe('Restored 1 purchase'));
+    expect(list()?.entries.map((e) => e.values)).toEqual([{ ...kettle, recalls_dismissed: '27054' }]);
+  });
+
+  it('says so when the chosen file is not a backup', async () => {
+    app = await mountApp(document.body, deps());
+    await waitFor(() => shadow(list(), 'oss-empty'));
+    tab('Backup').click();
+    const input = backupView()?.querySelector('input[type="file"]') as HTMLInputElement;
+    Object.defineProperty(input, 'files', { value: [new File(['not json'], 'notes.txt')], configurable: true });
+    input.dispatchEvent(new Event('change'));
+    await vi.waitFor(() => expect(toastText()).toBeTruthy());
+    expect(toastText()).not.toMatch(/^Restored/);
+  });
+
+  it('goes back to the purchases from the Items tab', async () => {
+    app = await mountApp(document.body, deps(await seeded(kettle)));
+    await waitFor(() => shadow(list(), 'oss-item'));
+    tab('Backup').click();
+    tab('Items').click();
+    expect(backupView()?.hidden).toBe(true);
+    expect(document.querySelector<HTMLElement>('.ww-home')?.hidden).toBe(false);
+    expect(primaryPill().map((b) => b.textContent)).toEqual(['Add purchase']);
+  });
+
+  it('shows "Required." only as an error after an invalid save', async () => {
+    app = await mountApp(document.body, deps());
+    const empty = await waitFor(() => shadow(list(), 'oss-empty'));
+    (shadow(empty, 'oss-button[variant="primary"]') as HTMLElement).click();
+    expect(sheet()?.shadowRoot?.textContent).not.toContain('Required.');
+    (shadow(sheet(), '.foot oss-button') as HTMLElement).click();
+    const name = sheetFields().find((f) => f.field?.key === 'name');
+    expect(name?.shadowRoot?.textContent).toContain('Required.');
+  });
+});

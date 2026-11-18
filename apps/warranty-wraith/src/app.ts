@@ -3,14 +3,17 @@ import { type Item, evaluate } from '@ossuary/core';
 import { type Store, openStore } from '@ossuary/core/store';
 import {
   type Download,
+  type GlyphName,
   type ListEntry,
   type OssBanner,
+  type OssImport,
   type OssLifespan,
   type OssList,
   type OssSheet,
   type OssToast,
   downloadText,
   ensureDocumentTokens,
+  glyph,
   groupEntries,
   loadDisplayFont,
   orderLifespans,
@@ -51,6 +54,16 @@ h1:focus { outline: none; }
 .ww-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
 .ww-line { margin: calc(-1 * var(--s-2)) 0 var(--s-8); max-width: 720px; }
 .ww-banners { display: grid; gap: var(--s-3); margin-bottom: var(--s-6); }
+.ww-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-6); }
+.ww-option {
+  display: grid; grid-template-rows: auto auto 1fr auto; gap: var(--s-2); padding: var(--s-8) var(--s-6) var(--s-6);
+  background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-1);
+}
+.ww-option h2 { margin: var(--s-4) 0 0; font: var(--t-title); letter-spacing: -0.01em; color: var(--text); }
+.ww-option p { margin: 0 0 var(--s-4); font: var(--t-body); color: var(--text-2); max-width: 44ch; }
+.ww-option .ww-actions { min-height: 52px; align-items: center; }
+.ww-tile { display: grid; place-items: center; width: 56px; height: 56px; border-radius: var(--r-lg); background: var(--accent-tint); color: var(--accent-ink); }
+.ww-tile svg { width: 28px; height: 28px; }
 /* Detail: two equal countdown cards, then the trace. 12 columns from 900 px: cards 1-4 and 5-8, trace 9-12. */
 .ww-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto 1fr; gap: var(--s-6); align-items: stretch; }
 .ww-card:nth-of-type(1) { grid-column: 1 / span 4; grid-row: 1; }
@@ -61,6 +74,9 @@ h1:focus { outline: none; }
   .ww-hero { margin: var(--s-4) 0 var(--s-6); }
   .ww-hero h1, .ww-detail h1 { font-size: 34px; line-height: 38px; }
   .ww-detail header { margin-bottom: var(--s-5); }
+  .ww-options { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+  .ww-option { padding: var(--s-6) var(--s-4) var(--s-4); }
+  .ww-option h2 { font-size: 24px; line-height: 30px; }
   .ww-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; gap: var(--s-3); }
   .ww-card:nth-of-type(1) { grid-column: 1; }
   .ww-card:nth-of-type(2) { grid-column: 2; }
@@ -133,12 +149,38 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
 
   const sheet = el('oss-sheet') as OssSheet;
   const toast = el('oss-toast') as OssToast;
-  shell.append(addButton, doneButton, home, detail, sheet, toast);
+  const importer = el('oss-import') as OssImport;
+  importer.spec = boneSpec;
+
+  // Backup: the core store export as a file and the core store import from a chosen file. Import a list sits here too,
+  // because the phone bottom bar has only Items and Backup.
+  const saveBackup = el('oss-button', { variant: 'primary', icon: 'archive', 'data-action': 'backup' }, 'Download backup');
+  const restoreFile = el('input', { type: 'file', accept: '.json,application/json', hidden: '' });
+  const restore = el('oss-button', { variant: 'ghost', icon: 'upload', 'data-action': 'restore' }, 'Restore from file');
+  const importList = el('oss-button', { variant: 'ghost', icon: 'import', 'data-action': 'import' }, 'Import a list');
+  const option = (icon: GlyphName, title: string, text: string, ...actions: Node[]) => {
+    const tile = el('span', { class: 'ww-tile', 'aria-hidden': 'true' });
+    tile.innerHTML = glyph(icon);
+    return el('section', { class: 'ww-option' }, tile, el('h2', {}, title), el('p', {}, text), el('div', { class: 'ww-actions' }, ...actions));
+  };
+  const backup = el(
+    'div',
+    { class: 'ww-backup', hidden: '' },
+    el('section', { class: 'ww-hero' }, el('h1', { tabindex: '-1' }, 'Backup'), el('p', {}, 'Keep your purchases, their dates and hidden recall notices in one file, or bring in a list.')),
+    el(
+      'div',
+      { class: 'ww-options' },
+      option('archive', 'Your drawer in one file', 'Save every purchase to one file. Restore it here, on this or any other device.', saveBackup, restore, restoreFile),
+      option('import', 'From a spreadsheet', 'Paste a CSV or upload a file. You see a preview before anything is added.', importList),
+    ),
+  );
+  shell.append(addButton, doneButton, home, detail, backup, sheet, toast, importer);
   root.append(shell);
 
   let store: Store | undefined;
   let entries: ListEntry[] = [];
   let selected: string | undefined;
+  let view: 'items' | 'backup' = 'items';
   /** Open (not dismissed) recall matches per purchase id, worked out on every reload. */
   let matches = new Map<string, RecallMatch[]>();
 
@@ -151,11 +193,14 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   function render(): void {
     const entry = entries.find((e) => e.id === selected);
     if (!entry) selected = undefined;
-    home.hidden = selected !== undefined;
-    detail.hidden = selected === undefined;
-    // One primary pill per screen: the empty state brings its own.
-    addButton.hidden = selected !== undefined || entries.length === 0;
-    doneButton.hidden = selected === undefined;
+    const items = view === 'items';
+    shell.setAttribute('current', view);
+    backup.hidden = items;
+    home.hidden = !items || selected !== undefined;
+    detail.hidden = !items || selected === undefined;
+    // One primary pill per screen: the empty state and the backup screen bring their own.
+    addButton.hidden = !items || selected !== undefined || entries.length === 0;
+    doneButton.hidden = !items || selected === undefined;
     renderHome();
     if (entry) renderDetail(entry);
   }
@@ -253,6 +298,7 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
 
   function go(id: string | undefined): void {
     selected = id;
+    view = 'items';
     history.pushState(null, '', id ? `#item-${id}` : location.pathname + location.search);
     render();
     (selected ? detail.querySelector('h1') : headline)?.focus();
@@ -284,6 +330,7 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     const opened = await openStore(boneSpec, { newId: deps.newId, nowIso: () => deps.clock().toISOString(), indexedDB: deps.indexedDB });
     if (!opened.ok) return showError('message' in opened.error ? opened.error.message : 'Storage is not available. Try again.');
     store = opened.value;
+    importer.store = store;
     selected = /^#item-(.+)$/.exec(location.hash)?.[1];
     await reload();
   }
@@ -296,14 +343,49 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   addButton.addEventListener('click', openAdd);
   shell.addEventListener('oss-add', openAdd);
   shell.addEventListener('oss-retry', () => void start());
+  const openImport = () => {
+    importer.now = now();
+    importer.show();
+  };
+  shell.addEventListener('oss-import-open', openImport);
+  importList.addEventListener('click', openImport);
   shell.addEventListener('oss-nav', (e) => {
-    if ((e as CustomEvent<{ target: string }>).detail.target === 'items') go(undefined);
+    const target = (e as CustomEvent<{ target: string }>).detail.target;
+    if (target === 'import') return openImport();
+    if (target === 'items') return go(undefined);
+    view = 'backup';
+    render();
+    backup.querySelector('h1')?.focus();
+    scrollTo?.(0, 0);
+  });
+  importer.addEventListener('oss-imported', async (e) => {
+    const { added, updated } = (e as CustomEvent<{ added: number; updated: number }>).detail;
+    await reload();
+    say(`Imported ${count(added + updated, 'purchase', 'purchases')}`);
+  });
+
+  saveBackup.addEventListener('click', async () => {
+    const r = await store?.exportBackup();
+    if (!r?.ok) return say('Could not make the backup. Try again.');
+    (deps.download ?? downloadText)(`${boneSpec.id}-backup.json`, JSON.stringify(r.value, null, 2), 'application/json');
+    say('Backup file saved');
+  });
+  restore.addEventListener('click', () => restoreFile.click());
+  restoreFile.addEventListener('change', async () => {
+    const file = restoreFile.files?.[0];
+    restoreFile.value = '';
+    if (!file || !store) return;
+    const r = await store.importBackup(await file.text(), 'merge');
+    if (!r.ok) return say(r.error.code === 'invalid' ? (r.error.issues[0]?.message ?? 'This backup cannot be read.') : 'This backup cannot be read.');
+    await reload();
+    say(`Restored ${count(r.value.added + r.value.updated, 'purchase', 'purchases')}`);
   });
   list.addEventListener('oss-open', (e) => go((e as CustomEvent<{ id: string }>).detail.id));
   recallLine.addEventListener('oss-open', () => {
     if (recallLine.dataset.open) go(recallLine.dataset.open);
   });
   addEventListener('popstate', () => {
+    view = 'items';
     selected = /^#item-(.+)$/.exec(location.hash)?.[1];
     render();
   });
