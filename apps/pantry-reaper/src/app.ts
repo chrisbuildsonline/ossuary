@@ -9,6 +9,8 @@ import {
   type OssList,
   type OssSheet,
   type OssToast,
+  accessibleName,
+  applyTheme,
   downloadText,
   ensureDocumentTokens,
   fieldText,
@@ -108,6 +110,8 @@ const firstMethod = (food: Food) => (food.days.fridge !== undefined ? 'fridge' :
 
 export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   ensureDocumentTokens(document);
+  // The page behind the shell (overscroll, below a short screen) takes the theme too.
+  applyTheme(document.documentElement, boneSpec.theme);
   const sheetCss = new CSSStyleSheet();
   sheetCss.replaceSync(css);
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheetCss];
@@ -229,7 +233,13 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
       el(
         'div',
         {},
-        el('p', { class: 'pr-count', style: 'margin:0', 'aria-label': `${l.stage.label}. ${c.spoken}` }, el('span', { class: 'pr-num' }, c.value), c.unit ? el('span', { class: 'pr-unit' }, c.unit) : ''),
+        // One sentence for screen readers (name, stage, when); the digits and unit are visual only.
+        el(
+          'p',
+          { class: 'pr-count', style: 'margin:0', role: 'img', 'aria-label': accessibleName(titleOf(boneSpec, entry.values), entry.evaluation, today) },
+          el('span', { class: 'pr-num', 'aria-hidden': 'true' }, c.value),
+          c.unit ? el('span', { class: 'pr-unit', 'aria-hidden': 'true' }, c.unit) : '',
+        ),
         el('div', { class: 'pr-when' }, el('oss-pill', { tone: l.stage.tone, label: l.stage.label }), el('time', { datetime: l.expiresAt }, longDay(l.expiresAt, today))),
       ),
     );

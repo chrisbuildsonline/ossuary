@@ -193,3 +193,44 @@ describe('pantry reaper app', () => {
     expect(empty?.shadowRoot?.querySelectorAll('oss-button')).toHaveLength(1);
   });
 });
+
+/** Every live region in `root` and its open shadow roots, with the tag of the element that hosts it. */
+function liveRegions(root: Document | ShadowRoot): { host: string; el: Element }[] {
+  const found: { host: string; el: Element }[] = [];
+  root.querySelectorAll('*').forEach((e) => {
+    if (e.matches('[aria-live], [role="status"], [role="alert"]')) found.push({ host: ((e.getRootNode() as ShadowRoot).host?.tagName ?? 'document').toLowerCase(), el: e });
+    if (e.shadowRoot) found.push(...liveRegions(e.shadowRoot));
+  });
+  return found;
+}
+
+describe('pantry reaper accessibility', () => {
+  const stored = { name: 'Yogurt', food_id: yogurt.id, storage: 'fridge', bought: '2026-11-17' };
+
+  it('names the detail countdown as one sentence: food, stage, when, with the digits hidden', async () => {
+    app = await mountApp(document.body, deps(await seeded(stored)));
+    await openFirstItem();
+    const count = document.querySelector('.pr-detail .pr-count');
+    expect(count?.getAttribute('aria-label')).toBe('Yogurt. Keeping well. Expires in 7 days, Tuesday 24 November.');
+    expect(count?.querySelector('.pr-num')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('keeps live regions to the toast and the search count, polite, none around a countdown', async () => {
+    app = await mountApp(document.body, deps(await seeded(stored)));
+    await openFirstItem();
+    (document.querySelector('oss-toast') as unknown as { show(m: string): void }).show('Moved to freezer: +58 days');
+    const regions = liveRegions(document);
+    expect(new Set(regions.map((r) => r.host))).toEqual(new Set(['oss-toast', 'pr-food-search']));
+    for (const { host, el } of regions) {
+      expect(el.getAttribute('role'), host).toBe('status');
+      expect(el.getAttribute('aria-live'), host).toBe('polite');
+      expect(el.querySelector('time, .count, .value, .pr-count'), host).toBeNull();
+    }
+  });
+
+  it('paints the page itself with the Pantry Reaper canvas', async () => {
+    app = await mountApp(document.body, deps());
+    expect(document.documentElement.style.getPropertyValue('--canvas')).toBe('#f2efea');
+    expect(document.documentElement.dataset.motif).toBe('candle');
+  });
+});

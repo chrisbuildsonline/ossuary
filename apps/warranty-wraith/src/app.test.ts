@@ -539,3 +539,45 @@ describe('warranty wraith app: import and backup', () => {
     expect(name?.shadowRoot?.textContent).toContain('Required.');
   });
 });
+
+/** Every live region in `root` and its open shadow roots, with the tag of the element that hosts it. */
+function liveRegions(root: Document | ShadowRoot): { host: string; el: Element }[] {
+  const found: { host: string; el: Element }[] = [];
+  root.querySelectorAll('*').forEach((e) => {
+    if (e.matches('[aria-live], [role="status"], [role="alert"]')) found.push({ host: ((e.getRootNode() as ShadowRoot).host?.tagName ?? 'document').toLowerCase(), el: e });
+    if (e.shadowRoot) found.push(...liveRegions(e.shadowRoot));
+  });
+  return found;
+}
+
+describe('warranty wraith app: live regions', () => {
+  const recall: Recall = {
+    id: '27054',
+    date: '2026-10-29',
+    title: 'DREO Recalls DR-HSH015 Space Heaters',
+    hazard: 'The recalled space heaters can overheat.',
+    url: 'https://www.cpsc.gov/Recalls/2027/DREO',
+    names: ['DREO Space Heaters, model DR-HSH015'],
+    brands: ['DREO'],
+    models: [],
+  };
+
+  it('keeps live regions to the toast and the recall banners, polite, none around a countdown', async () => {
+    app = await mountApp(document.body, deps(await seeded({ name: 'DREO Space Heater', retailer: 'Corner Shop', bought: '2026-11-10' }), { recalls: [recall] }));
+    await waitFor(() => shadow(list(), 'oss-item'));
+    (document.querySelector('oss-toast') as unknown as { show(m: string): void }).show('Saved');
+    const check = () => {
+      const regions = liveRegions(document);
+      for (const { host, el } of regions) {
+        expect(['oss-toast', 'oss-banner'], host).toContain(host);
+        expect(el.getAttribute('role'), host).toBe('status');
+        expect(el.getAttribute('aria-live'), host).toBe('polite');
+        expect(el.querySelector('time, .count, .value'), host).toBeNull();
+      }
+      return regions.map((r) => r.host).sort();
+    };
+    expect(check()).toEqual(['oss-banner', 'oss-toast']);
+    await openItem('DREO Space Heater');
+    expect(check()).toEqual(['oss-banner', 'oss-banner', 'oss-toast']);
+  });
+});

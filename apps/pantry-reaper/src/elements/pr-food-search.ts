@@ -93,7 +93,7 @@ export class PrFoodSearch extends HTMLElement {
       styles.replaceSync(css);
     }
     root.adoptedStyleSheets = [styles];
-    root.innerHTML = `<div class="field">${searchIcon}<input type="search" role="combobox" aria-label="Search foods" aria-autocomplete="list" aria-expanded="false" aria-controls="results" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="Search foods, like yogurt or spinach"></div><div class="panel" hidden><ul id="results" role="listbox" aria-label="Foods"></ul><p class="foot">Use ↑ ↓ to choose and Enter to add</p></div><p class="sr-only" role="status"></p>`;
+    root.innerHTML = `<div class="field">${searchIcon}<input type="search" role="combobox" aria-label="Search foods" aria-autocomplete="list" aria-expanded="false" aria-controls="results" autocomplete="off" spellcheck="false" enterkeyhint="search" placeholder="Search foods, like yogurt or spinach"></div><div class="panel" hidden><ul id="results" role="listbox" aria-label="Foods"></ul><p class="foot">Use ↑ ↓ to choose and Enter to add</p></div><p class="sr-only" role="status" aria-live="polite"></p>`;
     this.#input = root.querySelector('input') as HTMLInputElement;
     this.#panel = root.querySelector('.panel') as HTMLElement;
     this.#list = root.querySelector('ul') as HTMLUListElement;
