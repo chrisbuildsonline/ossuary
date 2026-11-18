@@ -1,5 +1,11 @@
 // A spec arrives as a JSON value or as JSON text. Never throws, never changes its argument.
-import type { Result } from '@ossuary/core/schema';
+import { type BoneSpec, type Result, parseBoneSpec } from '@ossuary/core/schema';
+
+/** readSpecInput, then parseBoneSpec. */
+export function readSpec(value: unknown): Result<BoneSpec> {
+  const input = readSpecInput(value);
+  return input.ok ? parseBoneSpec(input.value) : input;
+}
 
 export function readSpecInput(value: unknown): Result<unknown> {
   if (typeof value !== 'string') return { ok: true, value };

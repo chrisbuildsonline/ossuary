@@ -2,6 +2,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { toolError } from './result';
+import { validateSpecInput, validateSpecOutput, validateSpecTool } from './tools/validate-spec';
 
 const specInput = z.union([z.record(z.string(), z.unknown()), z.string()]).describe('A bone spec, as a JSON object or as JSON text.');
 
@@ -13,9 +14,10 @@ export function createServer({ root }: { root: string }): McpServer {
     'validate_spec',
     {
       description: 'Check a bone spec and list every problem with its path. An invalid spec is a normal result, not an error.',
-      inputSchema: { spec: z.unknown().describe('A bone spec, as a JSON value or as JSON text.') },
+      inputSchema: validateSpecInput,
+      outputSchema: validateSpecOutput,
     },
-    () => toolError('validate_spec is not ready.'),
+    validateSpecTool,
   );
 
   server.registerTool(
