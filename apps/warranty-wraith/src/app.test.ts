@@ -78,6 +78,8 @@ describe('warranty wraith app: home, add, edit and done', () => {
     app = await mountApp(document.body, deps());
     const shell = document.querySelector('oss-shell');
     expect(shell?.style.getPropertyValue('--accent')).toBe('#5a4bd1');
+    // The page behind the shell is the cool canvas too, not the core default.
+    expect(document.documentElement.style.getPropertyValue('--canvas')).toBe('#edeff6');
     expect(shadow(shell, '.wordmark')?.textContent).toBe('Warranty Wraith');
     const empty = await waitFor(() => shadow(list(), 'oss-empty'));
     expect(empty.getAttribute('kind')).toBe('empty');

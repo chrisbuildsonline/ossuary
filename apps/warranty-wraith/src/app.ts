@@ -11,6 +11,7 @@ import {
   type OssList,
   type OssSheet,
   type OssToast,
+  applyTheme,
   downloadText,
   ensureDocumentTokens,
   glyph,
@@ -126,6 +127,8 @@ function headlineOf(entries: readonly ListEntry[]): { title: string; soon: { nam
 
 export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
   ensureDocumentTokens(document);
+  // The page behind the shell (overscroll, below a short screen) takes the theme too.
+  applyTheme(document.documentElement, boneSpec.theme);
   const pageCss = new CSSStyleSheet();
   pageCss.replaceSync(css);
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, pageCss];
