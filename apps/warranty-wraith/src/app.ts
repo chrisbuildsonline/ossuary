@@ -4,11 +4,16 @@ import { type Store, openStore } from '@ossuary/core/store';
 import {
   type Download,
   type ListEntry,
+  type OssLifespan,
   type OssList,
   type OssSheet,
   type OssToast,
+  downloadText,
   ensureDocumentTokens,
   loadDisplayFont,
+  orderLifespans,
+  saveCalendar,
+  shortDay,
   titleOf,
 } from '@ossuary/core/ui';
 import { boneSpec, defaults, nowFromClock } from './spec';
@@ -35,10 +40,23 @@ h1:focus { outline: none; }
 .ww-back { margin: var(--s-2) 0 var(--s-2) calc(-1 * var(--s-2)); }
 .ww-detail header { display: grid; gap: var(--s-1); margin-bottom: var(--s-6); }
 .ww-meta { margin: 0; font: var(--t-body); color: var(--text-2); }
+.ww-meta span { white-space: nowrap; }
 .ww-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+/* Detail: two equal countdown cards, then the trace. 12 columns from 900 px: cards 1-4 and 5-8, trace 9-12. */
+.ww-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto 1fr; gap: var(--s-6); align-items: stretch; }
+.ww-card:nth-of-type(1) { grid-column: 1 / span 4; grid-row: 1; }
+.ww-card:nth-of-type(2) { grid-column: 5 / span 4; grid-row: 1; }
+.ww-trace { grid-column: 9 / span 4; grid-row: 1 / span 2; align-self: start; }
+.ww-grid > .ww-actions { grid-column: 1 / span 8; grid-row: 2; align-self: start; }
 @media (max-width: 899px) {
   .ww-hero { margin: var(--s-4) 0 var(--s-6); }
   .ww-hero h1, .ww-detail h1 { font-size: 34px; line-height: 38px; }
+  .ww-detail header { margin-bottom: var(--s-5); }
+  .ww-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; gap: var(--s-3); }
+  .ww-card:nth-of-type(1) { grid-column: 1; }
+  .ww-card:nth-of-type(2) { grid-column: 2; }
+  .ww-trace, .ww-grid > .ww-actions { grid-column: 1 / -1; grid-row: auto; }
+  .ww-trace { justify-self: start; }
 }
 `;
 
@@ -131,15 +149,37 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
 
   function renderDetail(entry: ListEntry): void {
     const today = now();
+    const v = entry.values;
     const back = el('oss-button', { variant: 'link', class: 'ww-back' }, '← All purchases');
     back.addEventListener('click', () => go(undefined));
     const edit = el('oss-button', { variant: 'ghost', 'data-action': 'edit' }, 'Edit');
     edit.addEventListener('click', () => {
       Object.assign(sheet, { spec: boneSpec, now: today });
-      sheet.show(entry.values, entry.id);
+      sheet.show(v, entry.id);
     });
-    const title = el('h1', { tabindex: '-1' }, titleOf(boneSpec, entry.values));
-    detail.replaceChildren(back, el('header', {}, title), el('div', { class: 'ww-actions' }, edit));
+    const calendar = el('oss-button', { variant: 'ghost', icon: 'calendar', 'data-action': 'calendar' }, 'Add to calendar');
+    calendar.addEventListener('click', () => {
+      saveCalendar(boneSpec, [{ id: entry.id, values: v }], now(), { show: (m) => say(m) }, deps.download ?? downloadText);
+    });
+    const title = el('h1', { tabindex: '-1' }, titleOf(boneSpec, v));
+    const meta = [
+      String(v.retailer ?? ''),
+      `bought ${shortDay(String(v.bought), today)}`,
+      typeof v.price === 'number' ? `$${Number.isInteger(v.price) ? v.price : v.price.toFixed(2)}` : '',
+      v.model ? `Model ${String(v.model)}` : '',
+    ].filter(Boolean);
+    const cards = orderLifespans(entry.evaluation).map((l) => {
+      const card = el('oss-lifespan', { class: 'ww-card' }) as OssLifespan;
+      Object.assign(card, { now: today, motif: boneSpec.theme?.motif ?? 'ghost', lifespan: l });
+      return card;
+    });
+    const trace = el('oss-trace', { class: 'ww-trace' });
+    Object.assign(trace, { now: today, evaluation: entry.evaluation });
+    detail.replaceChildren(
+      back,
+      el('header', {}, title, el('p', { class: 'ww-meta' }, ...meta.flatMap((m, i) => [i ? ' · ' : '', el('span', {}, m)]))),
+      el('div', { class: 'ww-grid' }, ...cards, trace, el('div', { class: 'ww-actions' }, calendar, edit)),
+    );
   }
 
   /** One toast at a time; `undo` belongs to the toast on screen. */

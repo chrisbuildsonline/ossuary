@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import 'fake-indexeddb/auto';
 import { openStore } from '@ossuary/core/store';
-import type { OssField } from '@ossuary/core/ui';
+import type { OssField, OssLifespan, OssTrace } from '@ossuary/core/ui';
 import { IDBFactory } from 'fake-indexeddb';
+import ICAL from 'ical.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type App, type AppDeps, mountApp } from './app';
 import { boneSpec, defaults } from './spec';
@@ -197,5 +198,86 @@ describe('warranty wraith app: home, add, edit and done', () => {
     expect(empty?.getAttribute('kind')).toBe('error');
     expect(empty?.shadowRoot?.textContent).toContain('Storage is not available');
     expect(empty?.shadowRoot?.querySelectorAll('oss-button')).toHaveLength(1);
+  });
+});
+
+describe('warranty wraith app: detail view and calendar', () => {
+  const cards = () => Array.from(document.querySelectorAll<OssLifespan>('.ww-detail oss-lifespan'));
+
+  it('shows one oss-lifespan card per lifespan, the live warranty first and the lapsed return window second', async () => {
+    app = await mountApp(document.body, deps(await seeded(kettle)));
+    await openItem('Acme kettle');
+    expect(cards()).toHaveLength(2);
+    expect(cards().map((c) => c.lifespan?.lifespanId)).toEqual(['warranty', 'return_window']);
+    expect(cards().map((c) => c.motif)).toEqual(['ghost', 'ghost']);
+    expect(cards().map((c) => shadow(c, 'oss-decay')?.getAttribute('motif'))).toEqual(['ghost', 'ghost']);
+    expect(cards().map((c) => shadow(c, 'oss-pill')?.getAttribute('label'))).toEqual(['Covered', 'Lapsed']);
+    expect(cards().map((c) => shadow(c, 'time')?.getAttribute('datetime'))).toEqual(['2027-10-08', '2026-11-07']);
+    expect(shadow(cards()[0], 'section')?.getAttribute('aria-label')).toBe('Warranty: expires in 10 months, Friday 8 October 2027.');
+    expect(shadow(cards()[1], 'section')?.getAttribute('aria-label')).toBe('Return window: expired 10 days ago, Saturday 7 November.');
+  });
+
+  it('puts the return window first while it is the one that ends first', async () => {
+    app = await mountApp(document.body, deps(await seeded({ ...kettle, bought: '2026-11-17' })));
+    await openItem('Acme kettle');
+    expect(cards().map((c) => c.lifespan?.lifespanId)).toEqual(['return_window', 'warranty']);
+  });
+
+  it('explains both dates in the trace', async () => {
+    app = await mountApp(document.body, deps(await seeded({ ...kettle, bought: '2026-11-17' })));
+    await openItem('Acme kettle');
+    const trace = document.querySelector<OssTrace>('.ww-detail oss-trace');
+    expect(trace?.evaluation?.lifespans.map((l) => l.lifespanId)).toEqual(['return_window', 'warranty']);
+    const text = trace?.shadowRoot?.textContent ?? '';
+    expect(text).toContain('Return window');
+    expect(text).toContain('Warranty');
+    expect(text).toContain('30 days');
+    expect(text).toContain('12 months');
+  });
+
+  it('shows retailer, bought day, price and model in the meta line, and leaves out what is not set', async () => {
+    app = await mountApp(document.body, deps(await seeded({ ...kettle, price: 69.99, model: 'DR-HSH015' }, { name: 'Desk lamp', retailer: 'Lamp Co', bought: '2026-10-22' })));
+    await openItem('Acme kettle');
+    expect(document.querySelector('.ww-meta')?.textContent).toBe('Corner Shop · bought Thu 8 Oct · $69.99 · Model DR-HSH015');
+    (document.querySelector('.ww-back') as HTMLElement).click();
+    await openItem('Desk lamp');
+    expect(document.querySelector('.ww-meta')?.textContent).toBe('Lamp Co · bought Thu 22 Oct');
+  });
+
+  /** Clicks "Add to calendar" once and returns the parsed events of the downloaded file. */
+  async function exportCalendar(values: Values) {
+    const d = deps(await seeded(values));
+    app = await mountApp(document.body, d);
+    await openItem(String(values.name));
+    const buttons = document.querySelectorAll('.ww-detail [data-action="calendar"]');
+    expect(buttons).toHaveLength(1);
+    (buttons[0] as HTMLElement).click();
+    expect(d.download).toHaveBeenCalledTimes(1);
+    const [filename, text, mime] = vi.mocked(d.download as NonNullable<AppDeps['download']>).mock.calls[0] ?? [];
+    expect([filename, mime]).toEqual(['warranty-wraith.ics', 'text/calendar']);
+    expect(toastText()).toBe('Calendar file saved');
+    return new ICAL.Component(ICAL.parse(String(text))).getAllSubcomponents('vevent').map((e) => ({
+      summary: String(e.getFirstPropertyValue('summary')),
+      day: String(e.getFirstPropertyValue('dtstart')),
+      uid: String(e.getFirstPropertyValue('uid')),
+      alarms: e.getAllSubcomponents('valarm').map((a) => String(a.getFirstPropertyValue('trigger'))),
+    }));
+  }
+
+  it('exports the purchase as two events with stable ids and every alarm when all are ahead', async () => {
+    const events = await exportCalendar({ ...kettle, bought: '2026-11-17' });
+    expect(events).toEqual([
+      { summary: 'Acme kettle - Return window', day: '2026-12-17', uid: 'warranty-wraith-seed-1-return_window@ossuary', alarms: ['-P6DT15H', '-P1DT15H'] },
+      { summary: 'Acme kettle - Warranty', day: '2027-11-17', uid: 'warranty-wraith-seed-1-warranty@ossuary', alarms: ['-P89DT15H', '-P29DT15H', '-P6DT15H'] },
+    ]);
+  });
+
+  it('leaves out the alarms that are already past', async () => {
+    // The return window closes on Sat 21 Nov, so its 7-day alarm (Sat 14 Nov) is past and the 2-day one remains.
+    const events = await exportCalendar({ ...kettle, bought: '2026-10-22' });
+    expect(events.map((e) => [e.day, e.alarms])).toEqual([
+      ['2026-11-21', ['-P1DT15H']],
+      ['2027-10-22', ['-P89DT15H', '-P29DT15H', '-P6DT15H']],
+    ]);
   });
 });
