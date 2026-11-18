@@ -14,6 +14,8 @@ button {
 button:hover { color: var(--text); }
 button[aria-checked="true"] { background: var(--surface); color: var(--accent-ink); font-weight: 600; box-shadow: var(--shadow-1), inset 0 0 0 1.5px var(--accent); }
 button:focus-visible { outline: var(--focus); outline-offset: 2px; }
+/* This shadow root does not adopt the core tokens sheet, so it carries the reduced-motion rule itself. */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 `;
 
 let styles: CSSStyleSheet | undefined;

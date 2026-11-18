@@ -69,6 +69,8 @@ li[aria-selected="true"] .keeps { color: var(--text-2); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @keyframes in { from { opacity: 0; transform: translateY(-4px); } }
 @media (max-width: 899px) { .foot { display: none; } }
+/* This shadow root does not adopt the core tokens sheet, so it carries the reduced-motion rule itself. */
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 `;
 
 const searchIcon =

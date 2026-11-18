@@ -1,11 +1,9 @@
-import AxeBuilder from '@axe-core/playwright';
 import { type Page, expect, test } from '@playwright/test';
 import ICAL from 'ical.js';
-import { settle, tabThrough } from '../src/testing/a11y';
+import { checkAxe, settle, tabThrough } from '../src/testing/a11y';
 import { guardNetwork } from '../src/testing/network-guard';
 
 const themes = ['core', 'warm', 'cool'] as const;
-const tags = ['wcag2a', 'wcag2aa', 'wcag21aa'];
 
 let blocked: () => string[];
 test.beforeEach(({ page }) => {
@@ -18,17 +16,17 @@ test.afterEach(() => {
 async function open(page: Page, query: string) {
   await page.goto(`/?${query}`);
   await page.locator('oss-shell').waitFor();
-  await page.waitForFunction(() => {
+  // The list starts loading; wait for its answer (items, empty or error), or the busy state when the page asks for it.
+  await page.waitForFunction((loading) => {
     const list = document.querySelector('oss-list[data-list="items"]');
-    return !!list?.shadowRoot?.querySelector('oss-item, oss-empty, [aria-busy]');
-  });
+    return !!list?.shadowRoot?.querySelector(loading ? '[aria-busy]' : 'oss-item, oss-empty');
+  }, query.includes('state=loading'));
 }
 
 async function axe(page: Page) {
   // Let sheet, drawer and line entrances finish so contrast is measured at rest.
-  await page.waitForTimeout(450);
-  const r = await new AxeBuilder({ page }).withTags(tags).analyze();
-  expect(r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  await settle(page);
+  await checkAxe(page);
 }
 
 /** Description of the focused element, looking through shadow roots. */
