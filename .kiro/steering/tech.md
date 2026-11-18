@@ -11,7 +11,7 @@ inclusion: always
 - `zod` for the bone spec schema
 - `vitest` and `fast-check` for deterministic property tests of the lifespan engine
 - Playwright for end-to-end UI tests
-- `ics` package for calendar export
+- Calendar export (ICS) hand-written in core, no dependency
 - bone-forge built on the MCP TypeScript SDK
 - Static hosting
 - pnpm workspaces monorepo
