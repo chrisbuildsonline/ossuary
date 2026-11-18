@@ -5,6 +5,7 @@
     { "path": "apps/pantry-reaper" },
     { "path": "apps/warranty-wraith" },
     { "path": "tools/bone-forge" },
+    { "path": "tools/bone-forge/template" },
     { "path": "scripts" },
     { "path": "tsconfig.config.json" }
   ]

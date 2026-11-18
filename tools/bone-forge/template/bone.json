@@ -1,0 +1,28 @@
+{
+  "id": "bone-template",
+  "name": "Bone Template",
+  "version": 1,
+  "entity": {
+    "titleField": "name",
+    "summaryFields": ["note"],
+    "fields": [
+      { "key": "name", "kind": "text", "label": "Name", "required": true },
+      { "key": "note", "kind": "text", "label": "Note" },
+      { "key": "started", "kind": "date", "label": "Started on", "required": true }
+    ]
+  },
+  "lifespans": [
+    {
+      "id": "window",
+      "label": "Window",
+      "startField": "started",
+      "base": { "type": "duration", "amount": 30, "unit": "day", "label": "Window length" },
+      "stages": [
+        { "id": "open", "label": "Open", "tone": "fresh" },
+        { "id": "closing", "label": "Closing", "tone": "soon", "enterAtDays": 7 },
+        { "id": "last_days", "label": "Last days", "tone": "urgent", "enterAtDays": 2 },
+        { "id": "closed", "label": "Closed", "tone": "dead" }
+      ]
+    }
+  ]
+}
