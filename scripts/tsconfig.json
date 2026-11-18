@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "typeRoots": ["../packages/ossuary-core/node_modules/@types"],
+    "allowImportingTsExtensions": true,
+    "rootDir": ".",
+    "outDir": "../node_modules/.tmp/tsc-scripts"
+  },
+  "include": ["*.ts"],
+  "references": [{ "path": "../packages/ossuary-core" }]
+}
