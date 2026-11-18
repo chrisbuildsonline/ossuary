@@ -2,9 +2,9 @@
 
 Rules for every task: write the failing test first, then the code, and keep the whole suite green before the next task. Requirement numbers refer to `requirements.md`.
 
-- [ ] 1. Package and server skeleton
+- [x] 1. Package and server skeleton
   - [x] 1.1 Write a failing test that `createServer({ root })` returns an `McpServer` with exactly the tools `validate_spec`, `scaffold_app` and `preview_countdown`. Then add the dependencies (`@modelcontextprotocol/sdk`, `zod`; dev `fast-check`, `@types/node`), `server.ts`, `result.ts` (`ok`, `toolError`, `issueLines`) and `input.ts` (`readSpecInput` for objects and JSON text, never throws). _Requirements: 1.1, 1.3, 1.6, 5.1, 5.3_
-  - [ ] 1.2 Write a failing test for `main.ts` (logs only to stderr, root fixed to the repo), then add `main.ts` with `StdioServerTransport`, and the root script `"bone-forge": "bun tools/bone-forge/src/main.ts"`. _Requirements: 1.1, 1.2, 1.4, 1.5_
+  - [x] 1.2 Write a failing test for `main.ts` (logs only to stderr, root fixed to the repo), then add `main.ts` with `StdioServerTransport`, and the root script `"bone-forge": "bun tools/bone-forge/src/main.ts"`. _Requirements: 1.1, 1.2, 1.4, 1.5_
 
 - [ ] 2. validate_spec
   - [ ] 2.1 Write failing tests with fixed specs: valid as object and as text, invalid with a known path, `ok` text line, one text line per issue, no `isError`. Then implement `validateSpec` over `parseBoneSpec` and register the tool with its input and output schema. _Requirements: 2.1, 2.2, 2.3, 2.4_

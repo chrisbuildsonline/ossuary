@@ -12,6 +12,7 @@
     "hook:boundary": "bun scripts/check-boundary.ts",
     "hook:spec": "bun scripts/check-specs.ts",
     "typecheck": "tsc -b",
+    "bone-forge": "bun tools/bone-forge/src/main.ts",
     "e2e": "playwright test",
     "dev": "bun run dev:pantry",
     "dev:pantry": "vite apps/pantry-reaper --port 5173 --strictPort",
