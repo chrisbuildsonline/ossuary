@@ -90,7 +90,8 @@ const add = el('oss-button', { variant: 'primary', slot: 'primary', 'data-action
 const calendar = el('oss-button', { variant: 'ghost', icon: 'calendar', slot: 'actions', 'data-action': 'calendar' }, 'Calendar');
 const headline = el('h1');
 const support = el('p');
-const list = el('oss-list', { layout: 'auto', 'data-list': 'items' }) as OssList;
+// Loading until the store answers, so the empty state never flashes before the items.
+const list = el('oss-list', { layout: 'auto', 'data-list': 'items', state: 'loading' }) as OssList;
 Object.assign(list, { spec: widgets, now });
 const sheet = el('oss-sheet') as OssSheet;
 Object.assign(sheet, { spec: widgets, now });
