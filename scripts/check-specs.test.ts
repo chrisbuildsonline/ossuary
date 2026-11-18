@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,11 +17,13 @@ const garbled = join(temp, 'garbled.json');
 writeFileSync(garbled, '{ "id": ');
 
 describe('findSpecs', () => {
-  it('finds the bone spec of every app', () => {
-    expect(findSpecs(root)).toEqual([
-      join(root, 'apps/pantry-reaper/bone.json'),
-      join(root, 'apps/warranty-wraith/bone.json'),
-    ]);
+  // Not an exact list, so a third app made with docs/REMIX.md keeps this green.
+  it('finds the bone spec of every app in name order, and skips folders without one', () => {
+    const specs = findSpecs(root);
+    expect(specs).toEqual(expect.arrayContaining([join(root, 'apps/pantry-reaper/bone.json'), join(root, 'apps/warranty-wraith/bone.json')]));
+    expect(specs).toEqual([...specs].sort());
+    for (const spec of specs) expect(existsSync(spec), spec).toBe(true);
+    expect(specs).not.toContain(join(root, 'apps/launcher/bone.json'));
   });
 });
 
