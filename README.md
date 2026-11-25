@@ -15,44 +15,47 @@ Built for [Kiroween 2026](https://kiroween.devpost.com/), category Skeleton Crew
   <img src="docs/screenshots/warranty-wraith-390.png" alt="Warranty Wraith on a phone in the crypt theme" width="20%">
 </p>
 
-**The crypt.** Every app opens in a dark crypt theme: a stone canvas in the app's own hue, bone-white type and
-candlelight. Decay is visible at a glance. Candles burn down to a stub with a dashed outline of where the wax was,
-ghosts fade into the stone as time runs out, things about to die glow ember, and dead items turn into dashed ghost
-cards. On the first load the candles burn down from full and the ghosts fade in. The first visit adds a few sample
-items (a toast offers "Clear") so the decay shows straight away. A sun button switches to the light theme and
-remembers the choice. Reduced motion shows the same final states with nothing moving. The crypt colours are
-derived from each spec's light theme (`cryptTheme` in `packages/ossuary-core/src/ui/crypt.ts`), so a third app gets
-its own crypt for free, and a unit test checks every theme against WCAG AA in both modes.
+Both apps open in a dark theme we call the crypt: a near-black stone background tinted with the app's own colour
+(warm soot for Pantry Reaper, blue night for Warranty Wraith) and bone-white text. You can see decay from across
+the room. A candle burns down to a stub and leaves a dashed outline where the wax used to be. A ghost fades into the
+background as its time runs out. Anything that dies today gets an ember glow, and dead items become dashed outlines
+of a card. On first load the candles burn down from full height and the ghosts fade in.
+
+The first visit adds a few sample items so there is something to look at (the toast has a "Clear" button). The sun
+button in the top bar switches to the old light theme and remembers it. With reduced motion turned on you get the
+same end states and nothing moves. The dark colours are worked out from each spec's light theme by `cryptTheme` in
+`packages/ossuary-core/src/ui/crypt.ts`, so a third app gets its own crypt without extra work. A unit test checks
+every theme against WCAG AA in both modes.
 
 ## What it is
 
 `packages/ossuary-core` is the skeleton. It has no domain knowledge: a boundary check (a Kiro hook and a test)
 fails if it ever says "food", "warranty" or a similar word. It holds:
 
-- **Bone spec schema** (zod 4). It validates a spec and reports every problem as `path: message`. It also rejects
+- Bone spec schema (zod 4). It validates a spec and reports every problem as `path: message`. It also rejects
   theme colours below 4.5:1 contrast. The schema is exported as JSON Schema in `bone-spec.schema.json`.
-- **Lifespan engine.** It is pure and deterministic, and time is always passed in as an argument. It turns a spec
+- Lifespan engine: It is pure and deterministic, and time is always passed in as an argument. It turns a spec
   and an item into an expiry day, the days left, a stage, and a trace that explains every rule ("why this date").
   The core suite runs under three time zones.
-- **Local store.** IndexedDB via `idb`. It also handles CSV import (column mapping, preview, a 5 MB and
+- Local store: IndexedDB via `idb`. It also handles CSV import (column mapping, preview, a 5 MB and
   10,000-row cap) and JSON backup and restore.
-- **Calendar export.** A hand-written iCalendar writer: one all-day event per lifespan, with a reminder when each
+- Calendar export: A hand-written iCalendar writer: one all-day event per lifespan, with a reminder when each
   stage with a threshold begins.
-- **UI.** Plain web components (`oss-shell`, `oss-list`, `oss-item`, `oss-sheet`, `oss-field`, `oss-trace`,
+- UI: Plain web components (`oss-shell`, `oss-list`, `oss-item`, `oss-sheet`, `oss-field`, `oss-trace`,
   `oss-decay`, `oss-import`, `oss-toast` and more) and the design tokens from `design/DESIGN.md`. Each spec sets its
   own accent, display font and decay motif (candle, ghost or hourglass).
-- **Offline.** A Vite plugin builds a service worker that precaches every built file, so the app works with no
+- Offline: A Vite plugin builds a service worker that precaches every built file, so the app works with no
   network after the first visit.
 
 A live gallery of every component in every state runs with `bun run dev:gallery`.
 
 ## The two apps
 
-**Pantry Reaper** (`apps/pantry-reaper`) counts down food. Search 640 foods from a USDA FoodKeeper snapshot ("yogurt",
+Pantry Reaper (`apps/pantry-reaper`) counts down food. Search 640 foods from a USDA FoodKeeper snapshot ("yogurt",
 "spinach"), and its shelf life fills in for pantry, fridge or freezer. Switch storage later and the date moves
 ("Moved to freezer: +N days", with undo). Items burn down like a candle. Mark one "Used it" when it's gone.
 
-**Warranty Wraith** (`apps/warranty-wraith`) tracks two clocks per purchase: the return window and the warranty.
+Warranty Wraith (`apps/warranty-wraith`) tracks two clocks per purchase: the return window and the warranty.
 It checks each item's name and model against a snapshot of 264 US CPSC recalls. A possible match shows a "Possible
 recall match" banner with a link to the notice and a "Not my model" button that hides it. Purchases fade like a
 ghost.
@@ -69,7 +72,7 @@ Both apps give you:
 
 Neither app has accounts or makes any network call after load. Their only code is thin glue plus their data.
 
-**Launcher** (`apps/launcher`) is the landing page. It has one card per app, built from each app's `bone.json`.
+Launcher (`apps/launcher`) is the landing page. It has one card per app, built from each app's `bone.json`.
 
 ## Run it
 
@@ -149,9 +152,9 @@ An app is a `bone.json`:
 - **stages**: the first stage has no threshold. The ones after it enter at a falling `enterAtDays`, and the last one
   has the `dead` tone. Each stage maps to one of five tone slots (fresh, steady, soon, urgent, dead), whose
   colours the core owns.
-- **theme** (optional): accent colours, canvas, display font, motif, empty-state art and wordmark. Contrast is
+- theme (optional): accent colours, canvas, display font, motif, empty-state art and wordmark. Contrast is
   checked.
-- **copy** and **sources** (optional): empty-state text, the add button label, and data sources with their
+- copy and **sources** (optional): empty-state text, the add button label, and data sources with their
   licences.
 
 Pantry Reaper and Warranty Wraith are both complete examples (`apps/*/bone.json`).
@@ -176,22 +179,22 @@ To make your own app in about 10 minutes, see [docs/REMIX.md](docs/REMIX.md).
 
 Everything in `.kiro/` was written with Kiro (kiro-cli) and is committed, as the hackathon requires.
 
-- **Steering** (`.kiro/steering/`): `product.md` (pitch, components, the no-domain-words rule), `tech.md` (stack and
+- Steering (`.kiro/steering/`): `product.md` (pitch, components, the no-domain-words rule), `tech.md` (stack and
   engineering rules: pure engine, tests first, local-first, validate at boundaries) and `structure.md` (the
   monorepo layout and the dependency direction). All three are always included.
-- **Specs** (`.kiro/specs/`): each has a requirements, design and tasks file. Every task starts with a failing
+- Specs (`.kiro/specs/`): each has a requirements, design and tasks file. Every task starts with a failing
   test.
   - `skeleton-contract`: the bone spec, engine, store and calendar export.
   - `app-pantry-reaper` and `app-warranty-wraith`.
   - `bone-forge`.
   - `launcher`.
   - `a11y-motion`.
-- **Hooks** (`.kiro/hooks/`):
+- Hooks (`.kiro/hooks/`):
   - Saving any file in `packages/ossuary-core` runs `bun run hook:boundary`. It fails if the core imports an app or
     tool, uses `Date` or the DOM in its pure layers, or contains a domain word.
   - Saving a core `.ts` file runs `bun run hook:engine`.
   - Saving an `apps/*/bone.json` runs `bun run hook:spec`.
-- **MCP** (`.kiro/settings/mcp.json`): registers bone-forge, so Kiro can validate specs, preview countdowns and
+- MCP (`.kiro/settings/mcp.json`): registers bone-forge, so Kiro can validate specs, preview countdowns and
   scaffold apps in chat.
 
 ## Accessibility and offline
@@ -209,11 +212,11 @@ Everything in `.kiro/` was written with Kiro (kiro-cli) and is committed, as the
 
 ## Data and licences
 
-- **USDA FoodKeeper** (Pantry Reaper): US Department of Agriculture, Food Safety and Inspection Service. It is a
+- USDA FoodKeeper (Pantry Reaper): US Department of Agriculture, Food Safety and Inspection Service. It is a
   public domain US government work, listed as CC0 1.0 on data.gov. Snapshot retrieved 2026-11-17.
   - Details are in `apps/pantry-reaper/SOURCE.md`.
   - Shelf life is guidance, not a safety guarantee.
-- **CPSC Recalls** (Warranty Wraith): US Consumer Product Safety Commission, via the SaferProducts.gov Recalls API.
+- CPSC Recalls (Warranty Wraith): US Consumer Product Safety Commission, via the SaferProducts.gov Recalls API.
   It is a public domain US government work (17 U.S.C. § 105). Snapshot of recalls from 2026-06-04 to 2026-11-12.
   - Credit: US Consumer Product Safety Commission. This app is not endorsed by CPSC, and it uses no recall
     photographs.
