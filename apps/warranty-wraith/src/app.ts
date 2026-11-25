@@ -1,5 +1,5 @@
 // The app glue: store, evaluation against bone.json, and the core elements. No engine, schema, store or ICS logic here.
-import { type Item, evaluate } from '@ossuary/core';
+import { type Item, evaluate, exportIcs } from '@ossuary/core';
 import { type Store, openStore } from '@ossuary/core/store';
 import {
   type Download,
@@ -22,6 +22,7 @@ import {
   shortDay,
   titleOf,
 } from '@ossuary/core/ui';
+import { claimNote } from './claim';
 import type { Recall } from './data/cpsc';
 import { type RecallMatch, matchRecalls } from './data/match';
 import bundledRecalls from './data/recalls.json';
@@ -244,6 +245,17 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     calendar.addEventListener('click', () => {
       saveCalendar(boneSpec, [{ id: entry.id, values: v }], now(), { show: (m) => say(m) }, deps.download ?? downloadText);
     });
+    // Claim reminder: the warranty alone, with the claim note as the event text, while the warranty is still live.
+    const warranty = entry.evaluation.lifespans.find((l) => l.lifespanId === 'warranty');
+    const claim = el('oss-button', { variant: 'ghost', icon: 'calendar', 'data-action': 'claim' }, 'Claim reminder');
+    claim.addEventListener('click', () => {
+      const spec = { ...boneSpec, lifespans: boneSpec.lifespans.filter((l) => l.id === 'warranty') };
+      const values = { ...v, [boneSpec.entity.titleField]: `Warranty claim: ${titleOf(boneSpec, v)}` };
+      const { ics } = exportIcs(spec, [{ id: entry.id, values }], { now: now(), describe: (_, l) => claimNote(v, l.expiresAt) });
+      (deps.download ?? downloadText)(`${boneSpec.id}-claim.ics`, ics, 'text/calendar');
+      say('Claim reminder saved');
+    });
+    const actions = [calendar, ...(warranty && warranty.stage.tone !== 'dead' ? [claim] : []), edit];
     const title = el('h1', { tabindex: '-1' }, titleOf(boneSpec, v));
     const meta = [
       String(v.retailer ?? ''),
@@ -268,7 +280,7 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
       back,
       el('header', {}, title, el('p', { class: 'ww-meta' }, ...meta.flatMap((m, i) => [i ? ' · ' : '', el('span', {}, m)]))),
       ...(banners.length ? [el('div', { class: 'ww-banners' }, ...banners)] : []),
-      el('div', { class: 'ww-grid' }, ...cards, trace, el('div', { class: 'ww-actions' }, calendar, edit)),
+      el('div', { class: 'ww-grid' }, ...cards, trace, el('div', { class: 'ww-actions' }, ...actions)),
     );
   }
 

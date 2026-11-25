@@ -275,6 +275,35 @@ describe('warranty wraith app: detail view and calendar', () => {
     ]);
   });
 
+  it('saves a claim reminder: the warranty only, its alarms and the ready-to-send claim note', async () => {
+    const d = deps(await seeded({ ...kettle, price: 69.99, model: 'AK-2' }));
+    app = await mountApp(document.body, d);
+    await openItem('Acme kettle');
+    const claim = document.querySelector<HTMLElement>('.ww-detail .ww-actions [data-action="claim"]');
+    expect(claim?.textContent).toBe('Claim reminder');
+    claim?.click();
+    expect(d.download).toHaveBeenCalledTimes(1);
+    const [filename, text, mime] = vi.mocked(d.download as NonNullable<AppDeps['download']>).mock.calls[0] ?? [];
+    expect([filename, mime]).toEqual(['warranty-wraith-claim.ics', 'text/calendar']);
+    expect(toastText()).toBe('Claim reminder saved');
+    const events = new ICAL.Component(ICAL.parse(String(text))).getAllSubcomponents('vevent');
+    expect(events).toHaveLength(1);
+    const [event] = events;
+    expect(String(event?.getFirstPropertyValue('summary'))).toBe('Warranty claim: Acme kettle');
+    expect(String(event?.getFirstPropertyValue('dtstart'))).toBe('2027-10-08');
+    expect(event?.getAllSubcomponents('valarm').map((a) => String(a.getFirstPropertyValue('trigger')))).toEqual(['-P89DT15H', '-P29DT15H', '-P6DT15H']);
+    const note = String(event?.getFirstPropertyValue('description'));
+    expect(note).toContain('warranty claim for my Acme kettle (model AK-2), bought at Corner Shop on 8 October 2026 for $69.99.');
+    expect(note).toContain('Its warranty runs until 8 October 2027.');
+  });
+
+  it('shows no claim reminder once the warranty has lapsed', async () => {
+    app = await mountApp(document.body, deps(await seeded({ ...kettle, bought: '2025-01-10' })));
+    await openItem('Acme kettle');
+    expect(document.querySelector('.ww-detail [data-action="calendar"]')).not.toBeNull();
+    expect(document.querySelector('.ww-detail [data-action="claim"]')).toBeNull();
+  });
+
   it('leaves out the alarms that are already past', async () => {
     // The return window closes on Sat 21 Nov, so its 7-day alarm (Sat 14 Nov) is past and the 2-day one remains.
     const events = await exportCalendar({ ...kettle, bought: '2026-10-22' });
