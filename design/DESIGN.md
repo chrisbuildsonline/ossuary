@@ -6,21 +6,29 @@ web components, so everything below is CSS custom properties plus component anat
 
 Refs in `design/refs/` are inspiration only. Never copy, trace or ship them.
 
+**Two modes, one skeleton.** The default is the **crypt**: a deep stone canvas lit by candlelight, bone-white
+type, each app's accent turned into a glow. **Light** (the original soft-paper look) stays as an option behind
+one toggle. Both modes use the same components and tokens; only token values change. Every rule below applies
+to both modes unless it says "crypt" or "light".
+
 ## 1. Principles
 
-1. **Soft canvas, floating paper.** A soft neutral canvas (`#eef0f4`) with white surfaces lifted by a
-   soft shadow at 16-20px radius. Depth comes from shadow, never from borders.
-2. **One loud thing per screen.** Each screen has one near-black primary pill and one accent colour
-   (per app) for links, selection and charts. Everything else stays quiet.
+1. **Stone canvas, lit slabs.** Crypt: a near-black stone canvas tinted by the app's hue (`#0d0f14` core) with
+   slightly lighter stone slabs (surfaces) at 16-20px radius. Depth comes from light (a 1px top highlight and a
+   soft dark shadow), never from borders. Light mode: the soft neutral canvas (`#eef0f4`) with white surfaces.
+2. **One loud thing per screen.** Each screen has one primary pill (bone-white in the crypt, near-black in
+   light) and one accent colour (per app) for links, selection and charts. Everything else stays quiet.
 3. **The number is the hero.** A countdown is a big tabular number with a small unit ("2 days").
    Titles are large, secondary text is muted and sections get real space between them.
 4. **Status is a word in a tinted pill**, and it always comes with a glyph. Colour is never the only signal.
 5. **Scannable, not exhaustive.** A list row is the motif, the name, kind + one short line, then the
    countdown. Detail only lives on the detail screen.
-6. **Halloween is a whisper.** It shows up in illustration and micro-motion (a candle that burns down, a
-   ghost that fades) on the soft canvas, and always next to text that says the same thing.
+6. **Decay you can see across the room.** The haunting lives in light and decay, not in props: candles that
+   visibly burn down to a stub, ghosts that fade into the stone, a warm glow around things about to die, and
+   cards that turn to ghosts once they are gone. Always next to text that says the same thing.
 
-**Forbidden:** bordered white boxes stacked on a white page; dark "admin kit" UI and left sidebars; more
+**Forbidden:** bordered white boxes stacked on a white page; grey "admin kit" UI (flat #1e1e1e panels, neon
+accents, left sidebars) – the crypt is warm stone and candlelight, not a dashboard; pure `#000` backgrounds; more
 than one accent per app; more than one primary pill per screen; full-width coloured (non-ink) primary
 buttons; orange-and-black Halloween palettes, bats, spiders, cobwebs, blood/drip fonts or skulls on content;
 rainbow icon tiles; walls of equal-weight text; desktop tables shrunk onto phones; colour-only status;
@@ -28,8 +36,40 @@ animation as the only signal; copied or traced Dribbble/stock art.
 
 ## 2. Tokens (core defaults, `packages/ossuary-core/src/ui/tokens.css`)
 
+`tokens.css` declares the crypt values on `:root` (the default, so the page is dark before any script runs)
+and the light values on `:root[data-mode="light"]`. The mode lives on `<html data-mode>`, set from
+`localStorage["ossuary:mode"]` by `initMode()` and switched by `setMode()` (section 6, theme toggle).
+
+**Crypt (default)**
+
 ```css
 :root {
+  --canvas: #0d0f14;            /* core; apps derive theirs from their hue (section 4) */
+  --surface: #181b23;           /* stone slab: cards, sheets */
+  --surface-sunken: #11141a;    /* input fills, trace rows */
+  --track: #262a33;  --line: #2a2e38;
+  --line-strong: #7a7468;       /* input outlines, >=3:1 on every crypt surface */
+  --text: #efe8da;              /* bone white, >=13:1 */
+  --text-2: #bdb5a6;            /* >=8:1 */
+  --text-3: #a19a8c;            /* >=5.9:1 */
+  --ink: #efe8da;  --ink-hover: #fffaf0;  --on-ink: #16130f;   /* the primary pill is bone, 15.2:1 */
+  --scrim: rgb(4 5 8 / .66);  --disabled: #3a3833;  --error: #ff8a7a;
+  --highlight: inset 0 1px 0 rgb(255 248 230 / .06);          /* the lit top edge of a slab */
+  --shadow-1: var(--highlight), 0 1px 2px rgb(0 0 0 / .4), 0 6px 16px rgb(0 0 0 / .32);
+  /* motif paint: wax stays cream, lines go dark, light glows */
+  --motif-ink: #1a140d;  --motif-dish: #3b342b;  --motif-spirit: #e4e8ff;  --motif-spirit-line: #cfd5fb;
+  --halo: .28;           /* candle halo opacity (0 in light) */
+  --spirit-glow: rgb(196 206 255 / .45);
+  --glow-urgent: rgb(255 112 82 / .30);  --glow-soon: rgb(244 187 85 / .16);
+}
+```
+
+**Light (option, `data-mode="light"`)** keeps the original values below, with `--halo: 0`, no glows,
+`--motif-ink: var(--text)`, `--motif-spirit: var(--surface)`, `--motif-spirit-line: var(--text)` and
+`--motif-dish: var(--surface-sunken)`.
+
+```css
+:root[data-mode="light"] {
   /* colour */
   --canvas: #eef0f4;            /* page */
   --surface: #ffffff;           /* cards, sheets */
@@ -113,6 +153,10 @@ A spec names its own stages (any number). Each stage maps onto one of five **ton
 | `urgent` | `#fde3df` | `#a8261b` | **5.82:1** | exclamation in triangle | Eat today | Last days |
 | `dead` | `#e4e6ea` | `#3c414b` | **8.20:1** | tombstone | Spoiled | Lapsed |
 
+Crypt pills are dark tinted glass with a light word: `fresh` `#7fd8a2` on `#123222` (8.14), `steady` `#a3c0f5`
+on `#17263f` (8.24), `soon` `#f4bb55` on `#3a2809` (8.13), `urgent` `#ff9c8c` on `#431713` (7.58), `dead`
+`#bcc0c8` on `#2a2c31` (7.66). Every crypt word is also >=8:1 on every crypt surface.
+
 All ratios are WCAG 2.x relative luminance, text on pill background, and all pass AA for 13px/600.
 Anatomy: height 28px (32px on detail), padding `0 10px 0 8px`, gap 6px, `--r-pill`, `--t-caption` at
 weight 600, glyph 14px in the text colour, `aria-hidden="true"`. The label is always the visible stage word.
@@ -120,11 +164,24 @@ Pills are status, not buttons. A stage that is filterable appears as a chip (sec
 
 ## 4. Per-app themes
 
-Themes are token overrides scoped on `<oss-app data-theme>` and generated from the spec's `theme` block.
+Themes are token overrides generated from the spec's `theme` block by `applyTheme(el, theme)`. It writes each
+themable token twice, as `--light-*` and `--crypt-*`, and marks the element `data-themed`; `tokens.css` picks
+the set for the current mode, so switching modes is pure CSS and never re-renders.
+
+**Crypt values are derived, not authored** (`cryptTheme()` in `ui/crypt.ts`), so a third app gets a crypt for free:
+- canvas / surface / sunken = the hue and saturation (capped at 34%) of the spec's light canvas at HSL
+  lightness 6.5% / 11.5% / 8.5%. Pantry's warm paper becomes warm soot (`#14120d`), Wraith's cool paper a
+  blue night (`#0b0e16`).
+- accent = the spec accent with its HSL lightness raised until it reaches 4.6:1 on the crypt surface, canvas
+  and tint. Pantry `#b8460e` becomes ember `#f07639`, Wraith `#5a4bd1` spectral `#9086e0`, core `#7a90db`.
+- accent tint = the spec accent at 24% over the crypt surface; accent ink = the crypt accent.
+A unit test checks every app, template and gallery theme against all AA pairs in both modes.
 
 | Token | Core / launcher | Pantry Reaper | Warranty Wraith |
 |---|---|---|---|
-| `--canvas` | `#eef0f4` | `#f2efea` (warm, candle-lit) | `#edeff6` (cool, moonlit) |
+| `--canvas` (crypt) | `#0d0f14` | `#14120d` (warm soot) | `#0b0e16` (blue night) |
+| `--accent` (crypt) | `#7a90db` | `#f07639` ember | `#9086e0` spectral |
+| `--canvas` (light) | `#eef0f4` | `#f2efea` (warm, candle-lit) | `#edeff6` (cool, moonlit) |
 | `--accent` | `#3657c9` slate blue | `#b8460e` pumpkin | `#5a4bd1` spectral violet |
 | accent ratio (white / own canvas) | 6.25 / 5.47 | 5.36 / 4.67 | 6.25 / 5.44 |
 | `--accent-ink` on `--accent-tint` | `#3657c9` on `#e8edfa` 5.33 | `#9a3a0b` on `#fbe9dc` 5.96 | `#5a4bd1` on `#ebe9fb` 5.23 |
@@ -153,13 +210,18 @@ scale, focus ring (derived from accent) or motion.
 - Sizes: `s` 32x40 (phone row), `m` 48x64 (card), `l` 120x160 (detail), `xl` 200x240 (empty state/launcher).
 - Always `aria-hidden="true"`. The adjacent number, unit and pill carry the meaning.
 
-**Candle (Pantry Reaper).** A cream wax body `#f6efe3` with a 2px `--text` stroke and 4px radius. Its height
-is `8 + 64 * fraction` (in a 48x96 viewBox), standing on an ellipse dish. Drips: one at fraction <0.66 and two
+**Candle (Pantry Reaper).** A cream wax body `#f6efe3` with a 2px `--motif-ink` stroke and 4px radius. Its height
+is `8 + 64 * fraction` (in a 48x96 viewBox), standing on an ellipse dish. **Burnt outline:** above the wax, a
+dashed `--line-strong` outline (`.burnt`, height `64 * (1 - fraction)`) shows where the full candle stood, so the
+shrink reads at a glance even at 32px. **Halo:** a blurred flame-coloured circle (`.halo`, opacity `--halo`)
+behind the flame, radius scaled with the flame; none when dead. Drips: one at fraction <0.66 and two
 at <0.33. A wick (2x6) holds a flame: an outer teardrop `#f59e0b` and an inner `#fde68a` (the only gradient-free
 warm colours). `fresh`/`steady` get a tall flame with a slow sway. `soon` gets a 0.8x flame. `urgent` gets a 0.6x
 guttering flame and a wax pool on the dish. `dead` is a stub with no flame and three smoke curls that rise and fade once.
 
-**Ghost (Warranty Wraith).** A rounded body with a wavy 3-lobe hem, 2px `--text` stroke and white fill. Fill
+**Ghost (Warranty Wraith).** A rounded body with a wavy 3-lobe hem, 2px `--motif-spirit-line` stroke and
+`--motif-spirit` fill with a `--spirit-glow` drop-shadow, so a full-life ghost glows and a dying one fades into
+the stone (the glow follows the fill opacity). Eyes are `--motif-ink`. Fill
 opacity is `0.15 + 0.85 * fraction` and stroke opacity `0.35 + 0.65 * fraction`. Below 0.25 the hem stroke turns
 dotted (`stroke-dasharray: 2 4`). Eyes: round (`fresh`/`steady`), half-lidded (`soon`), worried brows (`urgent`).
 For `dead` only a dotted outline remains at 0.35 opacity. On detail Wraith shows one ghost per countdown
@@ -167,6 +229,20 @@ For `dead` only a dotted outline remains at 0.35 opacity. On detail Wraith shows
 
 **Hourglass (core).** Top sand area = fraction and bottom = 1 - fraction. The sand is in `--accent-tint` with an
 `--accent` stroke. `dead` lays it on its side.
+
+**Decaying cards (crypt and light).** The item card carries its life as `--life` (the fraction) and its tone:
+- *Ghost fade:* the card slab is `--surface` at `40% + 60% * life` over the canvas, so a card loses substance as
+  it nears death. Text stays on solid colour pairs, so contrast never drops.
+- *Glow near death:* `soon` cards get a faint amber edge glow (`--glow-soon`); `urgent` cards an ember glow
+  (`--glow-urgent`) that breathes slowly (opacity .6→1, 2.8s, ≤0.4Hz). Rows get the same glow as a 3px left ember bar.
+- *Dead = a ghost of a card:* no slab, a 1.5px dashed `--line-strong` outline, motif at 55% opacity and greyscale,
+  name and number in `--text-2`.
+- *First load:* the first time a list renders with items, every candle burns down from full height to its
+  fraction and every ghost fades from full to its opacity (1.2s `--ease-out`, 50ms stagger), and dead cards
+  fade from a slab to their ghost outline. Later re-renders are static.
+- *First visit:* an app may ship sample items (`samples` passed to `seedFirstVisit`). On the very first visit with
+  an empty store they are added once, a toast says "Sample items added" with a "Clear" action, and the crypt
+  shows living, dying and dead cards straight away. A later visit never re-adds them.
 
 **Text pairing (mandatory).** A decay visual is never rendered without, in the same card: the number+unit,
 the stage pill and (on detail) the absolute date (`Fri 20 Nov`).
@@ -184,10 +260,12 @@ the stage pill and (on detail) the absolute date (`Fri 20 Nov`).
 | Card hover | `translateY(-2px)`, `--shadow-2` | `--dur-2` `--ease-out` |
 | Sheet/drawer in | phone: translateY 100%→0. Desktop side sheet: translateX 24px + fade | `--dur-3` `--ease-out`. Out is 200ms `--ease-in-out` |
 
-List cards are static at rest (no infinite animation on 20 cards). At most one idling motif is on screen.
+List cards are static at rest apart from the urgent ember breath (glow only, never the motif). At most one idling
+motif is on screen.
 
 **`prefers-reduced-motion: reduce`:** set every `--dur-*` to `0ms`, remove all infinite and one-shot
-keyframes, render the decay visual in its final state, change numbers instantly, and open sheets without
+keyframes (the first-load burn-down and the ember breath included: candles, ghosts, glows and ghost cards are
+drawn in their final state), render the decay visual in its final state, change numbers instantly, and open sheets without
 sliding. The date jump is still communicated by its toast ("Moved to freezer: +58 days").
 
 ## 6. Components
@@ -204,8 +282,12 @@ All are custom elements prefixed `oss-`. Every interactive target is ≥44x44px.
   radius of `--r-xl`. Its centre holds the primary pill (48px tall, 160px min) and its sides hold two 44px tab
   buttons (icon 24 + caption).
 - The page background is always `--canvas`. Nothing sticks to the top except the phone app bar.
+- **Theme toggle:** a 44px icon button in the top bar, left of the primary pill on desktop and at the right of
+  the phone app bar (`aria-pressed`, label "Light theme", sun glyph in crypt, moon glyph in light). It is not a
+  primary action. The launcher has the same toggle beside GitHub. The choice persists per device.
 
-**Primary pill `<oss-button variant="primary">`.** `--ink` background, white `--t-label` at weight 600 (16px on
+**Primary pill `<oss-button variant="primary">`.** `--ink` background (bone in the crypt, with a soft candle
+glow `0 0 24px rgb(255 214 150 / .16)`), `--on-ink` `--t-label` at weight 600 (16px on
 phone). Height 52px desktop / 56px in phone footers, padding `0 24px`, `--r-pill`. Hover `--ink-hover`, press
 `scale(.98)` over `--dur-1`. Disabled: `#c9ccd3` with `--text-2`. Other variants: `ghost` (surface, `--shadow-1`,
 `--text`, 44px) and `link` (accent text, underline on hover). An icon button is a 44px circle that shows
@@ -426,9 +508,10 @@ own" opens the remix guide.
 
 - **Original inline SVG only**, drawn in code (procedural parameters, no traced or stock assets). Generic
   icons may come from Lucide (ISC licence), inlined, 24px with 1.75px stroke.
-- **Style:** 2px stroke (2.5px at `xl`) in `--text`, round caps and joins, flat fills from the surface,
-  `--accent-tint`, one accent and the motif's own colours (wax cream `#f6efe3`, flame `#f59e0b`/`#fde68a`). No
-  gradients, no textures, no drop shadows inside art. Generous negative space with a slight hand wobble (±0.5px
+- **Style:** 2px stroke (2.5px at `xl`) in `--motif-ink`/`--text`, round caps and joins, flat fills from the
+  surface, `--accent-tint`, one accent and the motif's own colours (wax cream `#f6efe3`, flame `#f59e0b`/`#fde68a`).
+  No gradients or textures inside art. **Light is not art:** in the crypt, the flame halo, the ghost glow and
+  the card glows are blurred light (CSS blur/drop-shadow/box-shadow), driven by tokens that are 0 in light mode. Generous negative space with a slight hand wobble (±0.5px
   path jitter baked in, not random at runtime).
 - **Needed:** motifs candle/ghost/hourglass × 5 tones × 4 sizes (procedural, one component); empty states:
   unlit candle + jar + crescent moon (Pantry), ghost asleep in a parcel box (Wraith), hourglass on its side
@@ -437,7 +520,8 @@ own" opens the remix guide.
 
 ## 9. Accessibility
 
-- **Contrast:** all text tokens and pills are ≥4.5:1 (ratios in sections 2-4). UI boundaries (inputs, the
+- **Contrast:** all text tokens and pills are ≥4.5:1 in both modes (ratios in sections 2-4). axe runs on every
+  screen in the crypt (the default) and the light mode. UI boundaries (inputs, the
   selected chip ring, the focus ring) are ≥3:1. Accent focus vs canvas: Pantry 4.67, Wraith 5.44, core 5.47.
 - **Focus:** `:focus-visible { outline: var(--focus); outline-offset: 2px; }` on everything interactive, never
   removed. Cards ring the whole card. Sheets and dialogs trap focus, return it on close, and close on Esc.
@@ -454,8 +538,9 @@ own" opens the remix guide.
 
 ## 10. Sign-off checklist (judge each UI feature)
 
-1. The canvas is the soft neutral of the theme, and surfaces are white with shadow + 16-20px radius. No bordered white boxes on white.
-2. There is exactly one near-black primary pill on the screen (bottom on phone). The accent is used only for links, selection, charts and focus.
+1. The crypt is the default: a stone canvas in the app's hue, lit stone slabs at 16-20px radius, bone type. Light mode
+   still works from the toggle. No bordered boxes, no flat grey admin panels, no pure black.
+2. There is exactly one primary pill on the screen (bone in the crypt, near-black in light; bottom on phone). The accent is used only for links, selection, charts and focus.
 3. The first thing on the screen is a title, a status headline or the primary action.
 4. Countdown numbers are large, tabular and in the display face, with a muted unit beside them and the absolute date nearby.
 5. Every status is a tinted pill with a word and a glyph from the five tone slots. No colour-only state.
@@ -466,5 +551,6 @@ own" opens the remix guide.
 10. Keyboard: every action is reachable, the focus ring is visible, sheets trap and restore focus, and Esc closes.
 11. Targets are ≥44px. Text contrast is ≥4.5:1 (checked with the tokens, not eyeballed).
 12. Tokens come only from this file or the spec `theme` block. No hard-coded colours, radii or durations in components.
-13. Halloween stays restrained: illustration + micro-motion only, nothing cheesy or dark-kit.
+13. A judge sees a haunting at a glance: candles visibly burnt down, ghosts fading, a glow on what is about to die,
+    dead items as ghost cards. Still no props (bats, skulls, cobwebs, drip fonts) and nothing cheesy.
 14. Empty, loading, error and dead states exist for the feature, and each has one line + one action.
