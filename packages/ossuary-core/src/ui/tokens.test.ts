@@ -21,9 +21,36 @@ describe('tokens.css', () => {
       '--dur-1', '--dur-2', '--dur-3', '--dur-4', '--ease-out', '--ease-in-out', '--ease-settle', '--focus',
     ];
     expect(names.filter((n) => token(n) === undefined)).toEqual([]);
-    expect(token('--canvas')).toBe('#eef0f4');
-    expect(token('--accent')).toBe('#3657c9');
-    expect(token('--ink')).toBe('#15171c');
+    // The crypt is the default: :root holds it, so the page is dark before any script runs.
+    expect(token('--canvas')).toBe('#0d0f14');
+    expect(token('--surface')).toBe('#181b23');
+    expect(token('--accent')).toBe('#7a90db');
+    expect(token('--text')).toBe('#efe8da');
+    expect(token('--ink')).toBe('#efe8da');
+  });
+
+  it('keeps the light values behind data-mode="light"', () => {
+    const light = /:root\[data-mode="light"\]\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    const lightToken = (name: string) => new RegExp(`${name}:\\s*([^;]+);`).exec(light)?.[1]?.trim();
+    expect(lightToken('--canvas')).toBe('#eef0f4');
+    expect(lightToken('--surface')).toBe('#ffffff');
+    expect(lightToken('--accent')).toBe('#3657c9');
+    expect(lightToken('--ink')).toBe('#15171c');
+    expect(lightToken('--text')).toBe('#15171c');
+    expect(lightToken('--halo')).toBe('0');
+  });
+
+  it('declares the crypt light-and-decay tokens and never uses pure black', () => {
+    for (const name of ['--motif-ink', '--motif-dish', '--motif-spirit', '--motif-spirit-line', '--halo', '--spirit-glow', '--glow-urgent', '--glow-soon', '--highlight']) {
+      expect(token(name), name).toBeDefined();
+    }
+    expect(Number(token('--halo'))).toBeGreaterThan(0);
+    expect(css).not.toMatch(/#000(000)?\b/i);
+  });
+
+  it('lets a themed element pick its crypt or light set from the mode', () => {
+    expect(css).toMatch(/\[data-themed\]\s*\{[^}]*--canvas:\s*var\(--crypt-canvas\)/);
+    expect(css).toMatch(/\[data-mode="light"\] \[data-themed\][^{]*\{[^}]*--canvas:\s*var\(--light-canvas/);
   });
 
   it('gives every tone slot a background and text colour that meet 4.5:1', () => {
@@ -36,14 +63,14 @@ describe('tokens.css', () => {
     }
   });
 
-  it('keeps the text tokens at 4.5:1 on white and on the canvas', () => {
+  it('keeps the text tokens at 4.5:1 on the surface and the canvas', () => {
     for (const name of ['--text', '--text-2', '--text-3', '--accent']) {
-      for (const bg of ['#ffffff', token('--canvas') ?? '']) {
+      for (const bg of [token('--surface') ?? '', token('--canvas') ?? '']) {
         expect(contrastRatio(token(name) ?? '', bg), `${name} on ${bg}`).toBeGreaterThanOrEqual(4.5);
       }
     }
     expect(contrastRatio(token('--accent-ink') ?? '', token('--accent-tint') ?? '')).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(token('--line-strong') ?? '', '#ffffff')).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(token('--line-strong') ?? '', token('--surface') ?? '')).toBeGreaterThanOrEqual(3);
   });
 
   it('zeroes every duration and stops animation under reduced motion', () => {

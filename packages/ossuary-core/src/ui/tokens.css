@@ -1,44 +1,61 @@
 /* Ossuary core tokens (design/DESIGN.md sections 2, 3 and 5). Components use only these. */
 :root {
-  /* colour */
-  --canvas: #eef0f4;
-  --surface: #ffffff;
-  --surface-sunken: #f4f5f8;
-  --track: #e9ebf0;
-  --line: #eceef2;
-  --line-strong: #858b98;
-  --text: #15171c;
-  --text-2: #555c69;
-  --text-3: #646a78;
-  --ink: #15171c;
-  --ink-hover: #2a2d35;
-  --on-ink: #ffffff;
-  --scrim: rgb(21 23 28 / .32);
-  --disabled: #c9ccd3;
-  --grabber: #d5d8df;
-  --error: #a8261b;
+  /* colour: the crypt is the default (design/DESIGN.md section 2); light lives behind data-mode="light" below */
+  color-scheme: dark;
+  --canvas: #0d0f14;
+  --surface: #181b23;
+  --surface-sunken: #11141a;
+  --track: #262a33;
+  --line: #2a2e38;
+  --line-strong: #7a7468;
+  --text: #efe8da;
+  --text-2: #bdb5a6;
+  --text-3: #a19a8c;
+  --ink: #efe8da;
+  --ink-hover: #fffaf0;
+  --on-ink: #16130f;
+  --scrim: rgb(4 5 8 / .66);
+  --disabled: #3a3833;
+  --grabber: #4a463f;
+  --error: #ff8a7a;
 
-  /* accent (a theme overrides these on oss-shell) */
-  --accent: #3657c9;
-  --accent-ink: #3657c9;
-  --accent-tint: #e8edfa;
+  /* accent (a theme overrides these through --crypt-* and --light-*) */
+  --accent: #7a90db;
+  --accent-ink: #7a90db;
+  --accent-tint: #1f294b;
 
   /* tone slots: the core owns these, themes cannot change them */
-  --tone-fresh-bg: #e2f3e8;
-  --tone-fresh-fg: #17663a;
-  --tone-steady-bg: #e5edfa;
-  --tone-steady-fg: #2b4f96;
-  --tone-soon-bg: #fcefd6;
-  --tone-soon-fg: #8a4b00;
-  --tone-urgent-bg: #fde3df;
-  --tone-urgent-fg: #a8261b;
-  --tone-dead-bg: #e4e6ea;
-  --tone-dead-fg: #3c414b;
+  --tone-fresh-bg: #123222;
+  --tone-fresh-fg: #7fd8a2;
+  --tone-steady-bg: #17263f;
+  --tone-steady-fg: #a3c0f5;
+  --tone-soon-bg: #3a2809;
+  --tone-soon-fg: #f4bb55;
+  --tone-urgent-bg: #431713;
+  --tone-urgent-fg: #ff9c8c;
+  --tone-dead-bg: #2a2c31;
+  --tone-dead-fg: #bcc0c8;
 
-  /* motif colours (section 5 and 8) */
+  /* motif colours (section 5 and 8): wax stays cream, lines go dark, light glows */
   --motif-wax: #f6efe3;
   --motif-flame: #f59e0b;
   --motif-flame-core: #fde68a;
+  --motif-ink: #1a140d;
+  --motif-dish: #3b342b;
+  --motif-spirit: #e4e8ff;
+  --motif-spirit-line: #cfd5fb;
+  --motif-moon: #f3ecd8;
+  --halo: .28;
+  --spirit-glow: rgb(196 206 255 / .45);
+  --glow-urgent: rgb(255 112 82 / .30);
+  --glow-soon: rgb(244 187 85 / .16);
+  --glow-ink: rgb(255 214 150 / .16);
+
+  /* shadow: a lit top edge and a soft dark fall-off */
+  --highlight: inset 0 1px 0 rgb(255 248 230 / .06);
+  --shadow-1: var(--highlight), 0 1px 2px rgb(2 3 6 / .4), 0 6px 16px rgb(2 3 6 / .32);
+  --shadow-2: var(--highlight), 0 2px 4px rgb(2 3 6 / .45), 0 14px 36px rgb(2 3 6 / .5);
+  --shadow-3: var(--highlight), 0 8px 16px rgb(2 3 6 / .5), 0 24px 64px rgb(2 3 6 / .66);
 
   /* radius */
   --r-xs: 8px;
@@ -47,11 +64,6 @@
   --r-lg: 20px;
   --r-xl: 28px;
   --r-pill: 999px;
-
-  /* shadow (cool ink tint, never pure black) */
-  --shadow-1: 0 1px 2px rgb(21 23 28 / .04), 0 4px 12px rgb(21 23 28 / .05);
-  --shadow-2: 0 2px 4px rgb(21 23 28 / .05), 0 12px 32px rgb(21 23 28 / .09);
-  --shadow-3: 0 8px 16px rgb(21 23 28 / .08), 0 24px 64px rgb(21 23 28 / .18);
 
   /* spacing (4px base) */
   --s-1: 4px;
@@ -82,6 +94,71 @@
   --ease-out: cubic-bezier(.22, 1, .36, 1);
   --ease-in-out: cubic-bezier(.65, 0, .35, 1);
   --ease-settle: cubic-bezier(.34, 1.4, .64, 1);
+}
+
+:root[data-mode="light"] {
+  color-scheme: light;
+  --canvas: #eef0f4;
+  --surface: #ffffff;
+  --surface-sunken: #f4f5f8;
+  --track: #e9ebf0;
+  --line: #eceef2;
+  --line-strong: #858b98;
+  --text: #15171c;
+  --text-2: #555c69;
+  --text-3: #646a78;
+  --ink: #15171c;
+  --ink-hover: #2a2d35;
+  --on-ink: #ffffff;
+  --scrim: rgb(21 23 28 / .32);
+  --disabled: #c9ccd3;
+  --grabber: #d5d8df;
+  --error: #a8261b;
+  --accent: #3657c9;
+  --accent-ink: #3657c9;
+  --accent-tint: #e8edfa;
+  --tone-fresh-bg: #e2f3e8;
+  --tone-fresh-fg: #17663a;
+  --tone-steady-bg: #e5edfa;
+  --tone-steady-fg: #2b4f96;
+  --tone-soon-bg: #fcefd6;
+  --tone-soon-fg: #8a4b00;
+  --tone-urgent-bg: #fde3df;
+  --tone-urgent-fg: #a8261b;
+  --tone-dead-bg: #e4e6ea;
+  --tone-dead-fg: #3c414b;
+  --motif-ink: #15171c;
+  --motif-dish: #f4f5f8;
+  --motif-spirit: #ffffff;
+  --motif-spirit-line: #15171c;
+  --motif-moon: #e8edfa;
+  --halo: 0;
+  --spirit-glow: transparent;
+  --glow-urgent: transparent;
+  --glow-soon: transparent;
+  --glow-ink: transparent;
+  --highlight: inset 0 0 0 transparent;
+  --shadow-1: 0 1px 2px rgb(21 23 28 / .04), 0 4px 12px rgb(21 23 28 / .05);
+  --shadow-2: 0 2px 4px rgb(21 23 28 / .05), 0 12px 32px rgb(21 23 28 / .09);
+  --shadow-3: 0 8px 16px rgb(21 23 28 / .08), 0 24px 64px rgb(21 23 28 / .18);
+}
+
+/* A themed element (applyTheme) carries both sets; the mode picks one. */
+[data-themed] {
+  --canvas: var(--crypt-canvas);
+  --surface: var(--crypt-surface);
+  --surface-sunken: var(--crypt-surface-sunken);
+  --accent: var(--crypt-accent);
+  --accent-ink: var(--crypt-accent-ink);
+  --accent-tint: var(--crypt-accent-tint);
+}
+[data-mode="light"] [data-themed], [data-mode="light"][data-themed] {
+  --canvas: var(--light-canvas, #eef0f4);
+  --surface: #ffffff;
+  --surface-sunken: #f4f5f8;
+  --accent: var(--light-accent, #3657c9);
+  --accent-ink: var(--light-accent-ink, #3657c9);
+  --accent-tint: var(--light-accent-tint, #e8edfa);
 }
 
 /* Tokens built from themable ones. They are declared again wherever a theme is applied

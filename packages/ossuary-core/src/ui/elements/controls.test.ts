@@ -25,7 +25,9 @@ describe('oss-shell', () => {
     const el = document.createElement('oss-shell') as OssShell;
     el.spec = widget;
     document.body.append(el);
-    expect(el.style.getPropertyValue('--accent')).toBe('#b8460e');
+    expect(el.style.getPropertyValue('--light-accent')).toBe('#b8460e');
+    expect(el.style.getPropertyValue('--crypt-accent')).toBe('#f07639');
+    expect(el.hasAttribute('data-themed')).toBe(true);
     expect(el.dataset.motif).toBe('candle');
     expect(q(el, '.wordmark')?.textContent).toBe('Widget Tracker');
     expect(q(el, '.brand svg')?.getAttribute('aria-hidden')).toBe('true');

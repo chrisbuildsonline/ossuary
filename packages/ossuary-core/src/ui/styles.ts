@@ -1,4 +1,5 @@
 // One constructable stylesheet per css text, shared by every element. Tokens flow in from the document and oss-shell.
+import { initMode } from './mode';
 import tokens from './tokens.css?raw';
 
 const cache = new Map<string, CSSStyleSheet>();
@@ -34,6 +35,8 @@ export function adopt(root: ShadowRoot, css: string): void {
 
 /** Adds the tokens to the page once, so `:root` defaults and theme-derived tokens apply. */
 export function ensureDocumentTokens(doc: Document = document): void {
+  // The stored crypt/light choice, applied once before anything themed is drawn.
+  if (!doc.documentElement.dataset.mode) initMode(doc);
   const s = sheet(tokens);
   if (!doc.adoptedStyleSheets.includes(s)) doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, s];
 }
