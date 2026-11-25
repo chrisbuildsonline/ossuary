@@ -5,6 +5,25 @@ local-first countdown app. Two different apps built on it show that the skeleton
 
 Built for [Kiroween 2026](https://kiroween.devpost.com/), category Skeleton Crew.
 
+| Pantry Reaper | Warranty Wraith |
+|---|---|
+| ![Pantry Reaper in the crypt: candles burnt down to different heights, an ember glow on what dies today](docs/screenshots/pantry-reaper-1280.png) | ![Warranty Wraith in the crypt: ghosts fading with the time left, a lapsed purchase as a dashed ghost card](docs/screenshots/warranty-wraith-1280.png) |
+
+<p>
+  <img src="docs/screenshots/launcher-1280.png" alt="The Ossuary launcher in the crypt theme" width="58%">
+  <img src="docs/screenshots/pantry-reaper-390.png" alt="Pantry Reaper on a phone in the crypt theme" width="20%">
+  <img src="docs/screenshots/warranty-wraith-390.png" alt="Warranty Wraith on a phone in the crypt theme" width="20%">
+</p>
+
+**The crypt.** Every app opens in a dark crypt theme: a stone canvas in the app's own hue, bone-white type and
+candlelight. Decay is visible at a glance. Candles burn down to a stub with a dashed outline of where the wax was,
+ghosts fade into the stone as time runs out, things about to die glow ember, and dead items turn into dashed ghost
+cards. On the first load the candles burn down from full and the ghosts fade in. The first visit adds a few sample
+items (a toast offers "Clear") so the decay shows straight away. A sun button switches to the light theme and
+remembers the choice. Reduced motion shows the same final states with nothing moving. The crypt colours are
+derived from each spec's light theme (`cryptTheme` in `packages/ossuary-core/src/ui/crypt.ts`), so a third app gets
+its own crypt for free, and a unit test checks every theme against WCAG AA in both modes.
+
 ## What it is
 
 `packages/ossuary-core` is the skeleton. It has no domain knowledge: a boundary check (a Kiro hook and a test)
@@ -31,7 +50,7 @@ A live gallery of every component in every state runs with `bun run dev:gallery`
 
 **Pantry Reaper** (`apps/pantry-reaper`) counts down food. Search 640 foods from a USDA FoodKeeper snapshot ("yogurt",
 "spinach"), and its shelf life fills in for pantry, fridge or freezer. Switch storage later and the date moves
-("Moved to freezer: +N days", with undo). Items fade like a burning candle. Mark one "Used it" when it's gone.
+("Moved to freezer: +N days", with undo). Items burn down like a candle. Mark one "Used it" when it's gone.
 
 **Warranty Wraith** (`apps/warranty-wraith`) tracks two clocks per purchase: the return window and the warranty.
 It checks each item's name and model against a snapshot of 264 US CPSC recalls. A possible match shows a "Possible
