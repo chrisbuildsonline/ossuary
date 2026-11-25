@@ -1,6 +1,7 @@
 // The launcher: one headline, one line, the two apps as cards in their own themes, and one pill to the remix guide.
 import { h, svg } from '../../../packages/ossuary-core/src/ui/elements/base.ts';
 import '../../../packages/ossuary-core/src/ui/elements/oss-decay.ts';
+import '../../../packages/ossuary-core/src/ui/elements/oss-mode-toggle.ts';
 import { glyph } from '../../../packages/ossuary-core/src/ui/glyphs.ts';
 import { applyTheme } from '../../../packages/ossuary-core/src/ui/theme.ts';
 import { type CardData, REMIX_URL, REPO_URL } from './cards';
@@ -33,7 +34,12 @@ function appCard(c: CardData): HTMLLIElement {
 }
 
 export function renderLauncher(root: ParentNode, cards: readonly CardData[]): void {
-  const top = h('header', { class: 'top' }, h('span', { class: 'brand' }, svg(glyph('bone')), 'Ossuary'), h('a', { class: 'link', href: REPO_URL, ...newTab }, 'GitHub'));
+  const top = h(
+    'header',
+    { class: 'top' },
+    h('span', { class: 'brand' }, svg(glyph('bone')), 'Ossuary'),
+    h('div', { class: 'top-end' }, h('oss-mode-toggle'), h('a', { class: 'link', href: REPO_URL, ...newTab }, 'GitHub')),
+  );
   const main = h(
     'main',
     { class: 'launcher' },

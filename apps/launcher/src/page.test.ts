@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { cryptTheme } from '../../../packages/ossuary-core/src/ui/crypt.ts';
 import pantry from '../../pantry-reaper/bone.json';
 import wraith from '../../warranty-wraith/bone.json';
 import { REMIX_URL, REPO_URL, cards } from './cards';
@@ -49,9 +50,10 @@ describe('launcher page', () => {
       ['warranty-wraith', wraith, 'Space Grotesk'],
     ] as const) {
       const a = card(folder);
-      expect(a?.style.getPropertyValue('--accent')).toBe(spec.theme.accent);
-      expect(a?.style.getPropertyValue('--accent-ink')).toBe(spec.theme.accentInk);
-      expect(a?.style.getPropertyValue('--accent-tint')).toBe(spec.theme.accentTint);
+      expect(a?.style.getPropertyValue('--light-accent')).toBe(spec.theme.accent);
+      expect(a?.style.getPropertyValue('--light-accent-ink')).toBe(spec.theme.accentInk);
+      expect(a?.style.getPropertyValue('--light-accent-tint')).toBe(spec.theme.accentTint);
+      expect(a?.style.getPropertyValue('--crypt-accent')).toBe(cryptTheme(spec.theme).accent);
       expect(a?.style.getPropertyValue('--font-display')).toContain(face);
       expect(a?.dataset.motif).toBe(spec.theme.motif);
     }
@@ -76,6 +78,12 @@ describe('launcher page', () => {
     expect(all('oss-decay[idle]').map((d) => d.getAttribute('motif'))).toEqual(['ghost']);
     b?.dispatchEvent(new Event('blur'));
     expect(idle()).toBe(0);
+  });
+
+  it('has the crypt/light toggle beside the repo link', () => {
+    const end = document.body.querySelector('header .top-end');
+    expect(end?.querySelector('oss-mode-toggle')).toBeTruthy();
+    expect(end?.querySelector('a')?.textContent).toBe('GitHub');
   });
 
   it('links the repo from the header and copies no colour by hand', () => {

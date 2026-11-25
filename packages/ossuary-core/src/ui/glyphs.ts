@@ -32,6 +32,8 @@ const icons = {
   archive: [24, `<rect x="3" y="4" width="18" height="5" rx="1.5" ${stroke} stroke-width="1.75"/><path ${stroke} stroke-width="1.75" d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9M10 13h4"/>`],
   more: [24, `<circle cx="5.5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor"/>`],
   chevron: [16, `<path ${stroke} stroke-width="1.6" d="M4 6l4 4 4-4"/>`],
+  sun: [24, `<circle cx="12" cy="12" r="4.2" ${stroke} stroke-width="1.75"/><path ${stroke} stroke-width="1.75" d="M12 2.8v2M12 19.2v2M2.8 12h2M19.2 12h2M5.5 5.5l1.4 1.4M17.1 17.1l1.4 1.4M5.5 18.5l1.4-1.4M17.1 6.9l1.4-1.4"/>`],
+  moon: [24, `<path ${stroke} stroke-width="1.75" d="M19.6 14.6A8 8 0 0 1 9.4 4.4a8 8 0 1 0 10.2 10.2Z"/>`],
   arrow: [16, `<path ${stroke} stroke-width="1.6" d="M3 8h10M9 4l4 4-4 4"/>`],
 } as const;
 

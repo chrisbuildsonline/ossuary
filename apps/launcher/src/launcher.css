@@ -6,6 +6,7 @@ svg { flex: none; display: block; }
 
 .top, .launcher { width: 100%; max-width: 1200px; margin: 0 auto; padding-inline: var(--s-10); }
 .top { display: flex; align-items: center; justify-content: space-between; height: 72px; }
+.top-end { display: flex; align-items: center; gap: var(--s-2); }
 .brand { display: inline-flex; align-items: center; gap: var(--s-2); font: 700 20px/24px var(--font-display); letter-spacing: -0.03em; }
 .link {
   display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 var(--s-2); border-radius: var(--r-xs);

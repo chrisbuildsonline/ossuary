@@ -5,6 +5,7 @@ import { type GlyphName, glyph } from '../glyphs';
 import { ensureDocumentTokens } from '../styles';
 import { applyTheme } from '../theme';
 import { OssElement, define, h, svg } from './base';
+import './oss-mode-toggle';
 
 const nav: { id: string; label: string; icon: GlyphName }[] = [
   { id: 'items', label: 'Items', icon: 'list' },
@@ -76,7 +77,7 @@ main { display: block; max-width: 1120px; margin: 0 auto; padding: var(--s-4) va
         { class: 'top' },
         h('div', { class: 'brand' }, svg(glyph('bone')), h('span', { class: 'wordmark' }, theme?.wordmark ?? this.#spec?.name ?? 'Ossuary')),
         h('nav', { class: 'top-nav', 'aria-label': 'Main' }, nav.map((n) => tab(n, false))),
-        h('div', { class: 'actions' }, h('slot', { name: 'actions' }), h('span', { class: 'primary' }, h('slot', { name: 'primary' }))),
+        h('div', { class: 'actions' }, h('slot', { name: 'actions' }), h('oss-mode-toggle'), h('span', { class: 'primary' }, h('slot', { name: 'primary' }))),
       ),
       h('main', {}, h('slot')),
       h('nav', { class: 'bottom', 'aria-label': 'Tabs' }, tab(nav[0] as (typeof nav)[number], true), tab(nav[2] as (typeof nav)[number], true)),
