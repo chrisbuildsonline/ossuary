@@ -90,6 +90,24 @@ test('one headline, one line, two large app cards and one primary pill', async (
   await page.screenshot({ path: `${shots}launcher-${page.viewportSize()?.width}.png` });
 });
 
+test('on a short phone screen the pill never covers a card, at any scroll', async ({ page }) => {
+  test.skip(!isPhone(page), 'phone layout only');
+  await page.setViewportSize({ width: 390, height: 664 });
+  await open(page);
+  const pill = page.getByRole('link', { name: 'Make your own' });
+  const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+  for (let y = 0; y <= max + 40; y += 40) {
+    await page.evaluate((top) => scrollTo(0, top), Math.min(y, max));
+    const p = await pill.boundingBox();
+    for (const card of await page.locator('a.card').all()) {
+      const c = await card.boundingBox();
+      const overlap = p && c && p.y < c.y + c.height && c.y < p.y + p.height;
+      expect(overlap, `pill over a card at scroll ${y}`).toBeFalsy();
+    }
+  }
+  await expect(pill).toBeInViewport();
+});
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
   test('the cards stand straight and no motif moves on hover', async ({ page }) => {
@@ -116,17 +134,25 @@ test('no sideways scroll, 44px targets and a visible focus ring in reading order
   expect(m.small).toEqual([]);
 
   const stops = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 5; i++) {
     await page.keyboard.press('Tab');
     stops.push(
       await page.evaluate(() => {
-        const a = document.activeElement as HTMLElement;
+        // The theme toggle's button lives in its shadow root, so follow focus all the way in.
+        let a = document.activeElement as HTMLElement;
+        while (a.shadowRoot?.activeElement) a = a.shadowRoot.activeElement as HTMLElement;
         const s = getComputedStyle(a);
-        return { href: a.getAttribute('href'), ring: s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2 };
+        return { href: a.getAttribute('href') ?? a.getAttribute('aria-label'), ring: s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) >= 2 };
       }),
     );
   }
-  expect(stops.map((s) => s.href)).toEqual([expect.stringMatching(/^https:\/\/github\.com\//), expect.stringMatching(remix), './pantry-reaper/', './warranty-wraith/']);
+  expect(stops.map((s) => s.href)).toEqual([
+    'Light theme',
+    expect.stringMatching(/^https:\/\/github\.com\//),
+    expect.stringMatching(remix),
+    './pantry-reaper/',
+    './warranty-wraith/',
+  ]);
   expect(stops.every((s) => s.ring)).toBe(true);
 });
 
