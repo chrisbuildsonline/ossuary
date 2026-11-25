@@ -2,170 +2,176 @@
 
 ## Overview
 
-The crypt is a second set of token values plus a few generic components and helpers. Structure does not change. The visual source of truth is `design/DESIGN.md`. This file says where each piece lives in code and how it is tested.
+The crypt is a second set of token values plus a few generic components and helpers. Structure does not change. The visual source of truth is `design/DESIGN.md`. This file says where each piece lives in code and how it is tested. It describes what was built. Places where the build differs from `requirements.md` are called out in "Decisions and alternatives" and in the "Not done" notes in `tasks.md`.
 
 ```
 packages/ossuary-core/src/ui/
   tokens.css        crypt on :root, light on :root[data-mode="light"], [data-themed] picks --light-* / --crypt-*
-  mode.ts           initMode, setMode, getMode (localStorage "ossuary:mode")
+  mode.ts           initMode, setMode, currentMode (localStorage "ossuary:mode")
   crypt.ts          cryptTheme(theme): pure colour derivation
-  color.ts          hex/HSL helpers and contrast ratio (shared with contrast tests)
+  color.ts          hexToHsl, hslToHex, mixHex (contrast ratio stays in schema/contrast.ts)
   theme.ts          applyTheme writes both sets and data-themed
-  first-visit.ts    seedFirstVisit(store, samples, options)
+  first-visit.ts    seedFirstVisit({ specId, store, samples, storage })
+  styles.ts         ensureDocumentTokens applies the stored mode when <html> has none
   elements/
     oss-mode-toggle.ts   the toggle button
-    oss-shell.ts         hosts the toggle (top bar / phone app bar)
-    oss-decay.ts         candle .burnt and .halo, ghost glow
-    oss-item.ts          --life, decaying slab, glows, dead ghost card
-    oss-list.ts          owns the one-shot burn-down flag
-apps/<app>/src/data/samples.ts    sample items as data (offsets in days)
-apps/<app>/src/main.ts            initMode(), seedFirstVisit(...)
-apps/launcher/                    initMode(), oss-mode-toggle beside GitHub
-tools/bone-forge/                 template: initMode(), <head> script, empty samples.ts
+    oss-shell.ts         hosts the toggle in its actions area, before the primary slot
+    oss-decay.ts         halo, burnt outline and ghost glow paint; first-load keyframes
+    oss-item.ts          --life, decaying slab, glows, dead ghost card, first-load arrival
+    oss-list.ts          owns the one-shot first-load flag
+  motifs/candle.ts       .burnt rect, .halo circle, flame-rise group
+apps/<app>/src/data/samples.ts    samples(today) returns sample items, dated by day offsets
+apps/<app>/src/main.ts            passes samples to mountApp
+apps/<app>/src/app.ts             calls seedFirstVisit in start(), shows the "Sample items added" toast
+apps/launcher/                    ensureDocumentTokens(), oss-mode-toggle in header .top-end beside GitHub
 ```
+
+bone-forge templates and `docs/REMIX.md` were not changed. A scaffolded app has no toggle call, no `samples.ts` and no first-visit seeding yet.
 
 ## Components and interfaces
 
 ### Tokens and mode
 
-- `tokens.css` holds the crypt values on `:root` and the light values on `:root[data-mode="light"]`, copied from DESIGN.md section 2. Non-colour tokens (radius, spacing, type, motion, focus) are shared and sit on `:root` once. New tokens: `--highlight`, `--halo`, `--spirit-glow`, `--glow-soon`, `--glow-urgent`, `--motif-*`. `--shadow-1` includes `--highlight`.
-- Themed elements: `[data-themed] { --canvas: var(--crypt-canvas, var(--canvas-core)); ... }` and `:root[data-mode="light"] [data-themed] { --canvas: var(--light-canvas, ...); ... }`. The mode attribute is on `<html>`, the themed element is below it, so the selector needs no JavaScript. The core fallbacks are kept as separate `--core-*` names so the fallback is not a self-reference.
+- `tokens.css` holds the crypt values on `:root` and the light values on `:root[data-mode="light"]`. Non-colour tokens (radius, spacing, type, motion, focus) are shared and sit on `:root` once. Crypt-specific tokens: `--highlight`, `--halo`, `--spirit-glow`, `--glow-soon`, `--glow-urgent`, `--glow-ink`, `--atmosphere` (scales the canvas and card light, 0 in light), `--motif-*` (wax, flame, flame-core, ink, dish, spirit, spirit-line, moon). `--shadow-1..3` include `--highlight`.
+- Themed elements: `[data-themed]` reads `--crypt-canvas`, `--crypt-surface`, `--crypt-surface-sunken` and the three `--crypt-accent*` values. `--track` and `--line` are mixed from the crypt surface and bone white with `color-mix`. `[data-mode="light"] [data-themed], [data-mode="light"][data-themed]` reads `--light-canvas`, `--light-accent`, `--light-accent-ink` and `--light-accent-tint`, with the core light colours as literal fallbacks, and sets light surface, sunken, track and line directly. The mode attribute is on `<html>` and the selector needs no JavaScript.
 - `mode.ts`:
 
 ```ts
 export type Mode = 'crypt' | 'light';
 export const MODE_KEY = 'ossuary:mode';
-export function getMode(root?: HTMLElement): Mode;                 // reads data-mode, default crypt
-export function initMode(storage?: Storage, root?: HTMLElement): Mode; // read key, set attribute, never throws
-export function setMode(mode: Mode, storage?: Storage, root?: HTMLElement): void; // set attribute, write key, swallow errors
+export const currentMode = (doc?: Document): Mode;                     // reads data-mode, crypt unless "light"
+export function initMode(doc?: Document, storage?: Storage): Mode;     // read key, set attribute, never writes, never throws
+export function setMode(mode: Mode, doc?: Document, storage?: Storage): void; // set attribute, write key, swallow errors, dispatch `oss-mode` on doc
 ```
 
-  `storage` and `root` default to `localStorage` and `document.documentElement`. They are arguments so tests pass fakes. Only `light` is stored as a special case in CSS. `crypt` is written as `data-mode="crypt"` for symmetry.
-- Each `index.html` has a tiny inline `<head>` script (`try{if(localStorage.getItem('ossuary:mode')==='light')document.documentElement.dataset.mode='light'}catch(e){}`) so a stored light choice does not flash. A test compares the script's key with `MODE_KEY`. CSP is not set on these static pages, so inline script is allowed. The precache list and the offline behaviour do not change.
+  `doc` and `storage` default to `document` and `localStorage`. They are arguments so tests pass fakes. `initMode` always sets the attribute, so `crypt` is written as `data-mode="crypt"`. Only `light` is special in CSS. `setMode` dispatches a `CustomEvent('oss-mode', { detail: { mode } })` on the document so every toggle on the page updates.
+- `ensureDocumentTokens` (called by `oss-shell` and by the launcher's `main.ts`) calls `initMode` when `<html>` has no `data-mode`. This is how a stored light choice is applied.
+- There is no inline `<head>` script in any `index.html`. The crypt is the `:root` default in `tokens.css`, so the first paint is dark with no flash. A visitor who chose light sees the crypt until the shell or launcher calls `ensureDocumentTokens`, which happens before the first item render. The precache list and offline behaviour are unchanged.
 
 ### Theme derivation
 
-`color.ts` exports `hexToHsl`, `hslToHex`, `mix(a, b, t)` and `contrast(a, b)` (WCAG 2.x). The contrast tests import it, so the checker and the derivation use one implementation.
+`color.ts` exports `hexToHsl`, `hslToHex` and `mixHex(a, b, amount)` (`a` at `amount` over `b`, per channel in sRGB). `contrastRatio` (WCAG 2.x) is the existing function in `schema/contrast.ts`. The derivation and the contrast tests both use it.
 
 ```ts
-export interface CryptColors { canvas: string; surface: string; surfaceSunken: string; accent: string; accentInk: string; accentTint: string }
-export function cryptTheme(theme: Theme | undefined): CryptColors;
+export interface CryptColours { canvas: string; surface: string; surfaceSunken: string; accent: string; accentInk: string; accentTint: string }
+export function cryptTheme(theme: Theme | Pick<Theme, 'accent' | 'canvas'> | undefined): CryptColours;
 ```
 
 Algorithm:
 
-1. `base` = the spec's `canvas`, else the core light canvas `#eef0f4`. Take its hue `h` and saturation `s = min(s, 0.34)`.
-2. canvas, surface, sunken = `hsl(h, s, 0.065 | 0.115 | 0.085)`. Core defaults are returned unchanged when there is no `theme.canvas`, so the core crypt stays `#0d0f14`/`#181b23`/`#11141a`.
-3. `accent` = the spec accent (core default `#3657c9`). Raise HSL lightness in 1% steps until `contrast(accent, surface)`, `contrast(accent, canvas)` and `contrast(accent, tint)` are all at least 4.6, or lightness reaches 95%. The tint depends on the accent, so it is recomputed per step: `tint = mix(accent_spec, surface, 0.24)` uses the spec accent, not the stepped one, so it does not move while the loop runs.
-4. `accentInk` = the crypt accent. `accentTint` = the tint from step 3.
+1. `base` = the spec's `canvas`, else the core light canvas. Take its hue `h` and saturation `s = min(s, 0.34)`.
+2. `canvas = hsl(h, s, 0.065)`, `surface = hsl(h, 0.9 * s, 0.115)`, `surfaceSunken = hsl(h, s, 0.085)`. With no `theme.canvas` the core light canvas gives `#0d0f14`, `#181b23`, `#11141a`.
+3. `accentTint = mix(spec accent, surface, 0.24)`. The spec accent is the base (core default `#3657c9`), so the tint does not move while the loop runs.
+4. `accent`: starting from the spec accent, raise HSL lightness in 0.5% steps until `contrastRatio` against surface, canvas and tint is at least 4.6, or lightness reaches 100%. The loop stops at the first passing step, so an accent that already passes is kept.
+5. `accentInk` = the crypt accent.
 
-Expected values (`#f07639`, `#9086e0`, `#7a90db`) are asserted in a unit test as the contract. If the 1% step produces a neighbouring hex, the test and DESIGN.md are updated together, because DESIGN.md says these are what the function returns.
+Expected values are asserted in `crypt.test.ts` as the contract: core `#0d0f14` / `#7a90db` with tint `#1f294b`, Pantry Reaper canvas `#14120d` and accent `#f07639`, Warranty Wraith canvas `#0b0e16` and accent `#9086e0`.
 
-`applyTheme(el, theme)`:
-
-```ts
-const crypt = cryptTheme(theme);
-el.style.setProperty('--light-accent', t.accent) ... // only when the spec sets it
-el.style.setProperty('--crypt-accent', crypt.accent) ...
-el.dataset.themed = '';        // attribute present
-```
-
-`--light-surface` and `--light-surface-sunken` are not authored by specs, so they are written only for symmetry when needed. The light set keeps writing only what the spec gives, so light behaviour is as before. With `theme` undefined every `--light-*` and `--crypt-*` is removed and `data-themed` is deleted.
+`applyTheme(el, theme)` writes, from the spec: `--light-accent`, `--light-accent-ink` (falls back to the accent), `--light-accent-tint`, `--light-canvas`. From `cryptTheme`: `--crypt-accent`, `--crypt-accent-ink`, `--crypt-accent-tint`, `--crypt-canvas`, `--crypt-surface`, `--crypt-surface-sunken`. It also writes `--font-display`, sets `data-themed` and sets `data-motif` and `data-empty-art`. Light surfaces are not authored by specs, so no `--light-surface*` is written. With `theme` undefined every property is removed, `data-themed` is removed and the motif attributes return to their defaults. The exported `themeProperties` list is what the tests and the cleanup loop use.
 
 ### Toggle
 
-`<oss-mode-toggle>` is a core element. It renders one `<button type="button" aria-pressed aria-label="Light theme">` with an inline sun or moon glyph (Lucide, inlined, `aria-hidden`). It reads `getMode()` on connect, flips with `setMode`, and listens to the `storage` event for `ossuary:mode` to follow other tabs. `oss-shell` places it in its `actions` area (left of the primary pill on desktop, right in the phone app bar) by slot, so the shell has no knowledge of it beyond the slot. The launcher page adds it to its top links. The button is a 44px icon button from `oss-button`'s icon variant.
+`<oss-mode-toggle>` is a core element. It renders one `<button type="button" aria-pressed aria-label="Light theme">` with an inline sun (in the crypt) or moon (in light) glyph from `glyphs.ts`, `aria-hidden`. A press calls `setMode` with the other mode and keeps focus on the button. It re-renders on the document's `oss-mode` event, so several toggles stay in step. It does not listen to the `storage` event, so a change in another tab is picked up on that tab's next load, not live. The button is a 44px round icon button styled inside the element. `oss-shell` renders `<oss-mode-toggle>` in its `.actions` area between the `actions` slot and the `primary` span, so the shell does not slot it. The launcher puts it in `header .top-end` beside the GitHub link.
 
 ### Decay motifs
 
-`oss-decay` already receives `motif`, `fraction`, `stage`, `size`. Additions, all procedural:
+`oss-decay` receives `motif`, `fraction`, `tone`, `size` and, on first load, `enter`. All drawing is procedural SVG from `motifs/`.
 
-- Candle: a `.burnt` dashed rect (stroke `--line-strong`, `stroke-dasharray: 3 3`, no fill) with height `64 * (1 - fraction)` sitting on top of the wax, and a `.halo` circle (fill flame colour, `filter: blur(6px)`, `opacity: var(--halo)`, `r` scaled by flame size). The halo is omitted for `dead`. Burnt is omitted at fraction 1.
-- Ghost: fill and stroke use `--motif-spirit`, `--motif-spirit-line`; `filter: drop-shadow(0 0 6px var(--spirit-glow))` on a wrapper with `opacity` set from the fill opacity so the glow follows it. Eyes use `--motif-ink`.
-- Wax and flame colours stay fixed (`#f6efe3`, `#f59e0b`, `#fde68a`).
-- Burn-down uses CSS custom property `--from` (full height or opacity) and a class `.enter` on the motif. The motif's final geometry is set as attributes, so the static state is the real state and the animation is a visual from-to only. This is what makes reduced motion trivial: with no animation the final geometry is already there.
+- Candle: wax height is `8 + 64 * fraction` (a stub of 8 when dead). A `.burnt` dashed rect of height `72 - wax height` marks where the full candle stood, and is absent at full height. A `.halo` circle (`r = 13 * flame scale`) sits in the `flame-rise` group with the wick and flame. It is omitted when dead. Paint is in `oss-decay`'s CSS: `.halo` has `opacity: var(--halo)` and `filter: blur(4px)`, `.burnt` is a dashed `--line-strong` stroke with no fill.
+- Ghost: `.body` uses `--motif-spirit` and `--motif-spirit-line` with `filter: drop-shadow(0 0 5px var(--spirit-glow))` on the path itself, so the glow follows the fill. Fill opacity is `0.15 + 0.85 * fraction`, stroke opacity `0.35 + 0.65 * fraction`, with a dotted hem below 0.25 and a dead state. Eyes use `--motif-ink`. There is no gradient in the art.
+- Wax and flame colours come from `--motif-wax`, `--motif-flame` and `--motif-flame-core`.
+- First load: with `enter` set, the candle `.wax` animates `burn` from full height, `.flame-rise` animates `rise` by `--burn-dy` (full wax minus final wax), `.drip`, `.pool` and `.burnt` fade in late, and the ghost `.body` animates `haunt` from full fill and stroke opacity. Keyframes give only the from-state, so every animation ends on the static geometry that is already in the attributes.
 
 ### Decaying cards
 
-`oss-item` sets `style="--life: .45"` and `data-tone="soon"` on its host. CSS:
+`oss-item` sets `--life` (the quantised fraction) as an inline style on its link and the classes `tone-<tone>`, plus `dead ghost` when the stage is dead. CSS in `oss-item.ts`:
 
-```css
-oss-item[data-variant="card"] .slab {
-  background: color-mix(in srgb, var(--surface) calc(40% + 60% * var(--life)), var(--canvas));
-}
-oss-item[data-tone="soon"]   .slab { box-shadow: var(--shadow-1), 0 0 24px var(--glow-soon); }
-oss-item[data-tone="urgent"] .slab { box-shadow: var(--shadow-1), 0 0 28px var(--glow-urgent); animation: ember 2.8s var(--ease-in-out) infinite alternate; }
-oss-item[data-tone="dead"]   .slab { background: none; box-shadow: none; outline: 1.5px dashed var(--line-strong); }
-```
-
-`--life` is unitless, so `calc(40% + 60% * var(--life))` is valid inside `color-mix`. The slab is a background layer, so text stays on `--surface` text tokens, and contrast is tested against the mixed result at life 0 (the worst case). Rows use a `::before` 3px bar. The ember animation animates `opacity` of a pseudo-element glow layer (`.6 → 1`), not the card, so text never fades. The `dead` card uses `filter: grayscale(1)` and `opacity: .55` on the motif only.
+- Card slab: `color-mix(in srgb, var(--surface) calc(40% + 60% * var(--life)), transparent)` over a faint radial light in the motif's colour (`--atmosphere` scales it). The slab mixes toward transparent, so the canvas shows through.
+- `tone-soon`: `--shadow-1` plus a 1px `--glow-soon` ring and a soft glow.
+- `tone-urgent`: `--shadow-1` plus a 1px `--glow-urgent` ring, and an `::after` glow layer that animates `opacity` from .55 to 1 over 2.8s (`ember`, alternate). The card and text never fade.
+- `ghost` (dead): transparent background, no shadow, a 1.5px dashed `--line-strong` border, the `oss-decay` at 55% opacity and greyscale, and the value and title in `--text-2`.
+- Rows: `tone-soon` and `tone-urgent` get a 3px inset left bar in the tone's foreground colour. An urgent row also gets a glow gradient and a faint inset ember.
+- First load: the link gets `enter` when the list marked it, which runs `arrive` (fade and 8px rise, the whole card) and, for a dead card, `to-ghost` (slab to dashed outline).
 
 ### First-load burn-down
 
-`oss-list` holds a module-level `let burnPlayed = false`. On render with items and `!burnPlayed`, it adds `data-enter` to the list for the render, sets `--i` (the item index, capped so `i * 50ms + 1.2s <= 2.5s`) on each item, then sets `burnPlayed = true`. CSS keyframes (`burn`, `fade-in`, `slab-to-ghost`) run under `[data-enter]` only. The attribute is removed on `animationend` of the last item, and after 2.6s as a fallback. An empty render leaves the flag false. Under `prefers-reduced-motion: reduce` the flag is set but `data-enter` is never added. Keeping the flag in the module means it resets on a page load and not on re-render, as 8.2 and 8.6 require.
+`oss-list` has an instance field `#entered`, false until the first render that has items. On that render it sets `data-enter` on the `.groups` element, marks every `oss-item` with an `entering` attribute, and sets `--i` (the index) and `--enter-delay` (`min(index, 20) * 50ms`, so the stagger stops growing at 1s). Later renders do not set these. An empty or error render returns before the flag is used, so the first render with items plays it. `oss-item` reads and removes `entering` when it renders, passes `enter` to `oss-decay` and adds the `enter` class to its link. Because the marker is consumed once, a re-render of one item is static. The flag lives on the element, so it resets on a page load and not on a re-render. There is no `animationend` cleanup or timer fallback: the attributes are inert once the animations end.
 
 ### First visit
 
 ```ts
-export interface Sample { id: string; fields: Record<string, string | number | { daysAgo: number } | { daysFromNow: number }>; }  // dates as day offsets
-export interface SeedOptions {
-  now: Date | number;                   // passed in, as in the engine
-  spec: BoneSpec;
-  toast: (msg: string, action?: { label: string; run: () => void | Promise<void> }) => void;
+export const firstVisitKey = (specId: string) => `ossuary:${specId}:visited`;
+export interface FirstVisit {
+  specId: string;
+  store: Pick<Store, 'list' | 'create'>;
+  samples: readonly unknown[];   // item values, already resolved to dates
+  storage?: Pick<Storage, 'getItem' | 'setItem'>;   // default localStorage
 }
-export async function seedFirstVisit(store: Store, samples: readonly Sample[], opts: SeedOptions): Promise<'seeded' | 'skipped'>;
+export async function seedFirstVisit(opts: FirstVisit): Promise<string[]>;   // ids it added
 ```
 
-- A `Sample` is `{ id, fields }` where a date field is `{ daysAgo: number }` or `{ daysFromNow: number }`. `seedFirstVisit` resolves them against `now` to `YYYY-MM-DD` in local time, builds an item, validates it with the existing item parser for `spec`, and writes all of them in one transaction. If any is invalid nothing is written. Ids are prefixed `sample-` and are stable, so Clear can find them.
-- Meta: the store gets a `meta` object store key `firstVisitDone` (a version bump of the IndexedDB schema with a no-data migration; existing databases keep their items). `seedFirstVisit` reads it. If it is set, or the item count is above 0, it sets the key and returns `skipped`. Otherwise it writes samples, sets the key in the same transaction, and shows the toast `Sample items added` with `Clear`. Clear deletes only the stored ids that start with `sample-` and still exist, then refreshes the list.
-- Each app's `samples.ts` exports `samples: Sample[]` with five to seven items covering fresh, steady (where the app has one), soon, urgent and dead. Pantry Reaper uses foods (a jar of yogurt, spinach, chicken, a frozen item, an old leftover). Warranty Wraith uses purchases with a return window and a warranty and one that matches the recall snapshot, so the banner shows. Both read as the app's own voice. Because dates are offsets, the stages hold on any day.
-- bone-forge emits `export const samples: Sample[] = [];`. An empty list makes `seedFirstVisit` return `skipped` without setting the key, so a remixer who adds samples later still gets them on a fresh device.
+- With no samples it returns `[]` and sets nothing, so a remixer who adds samples later still gets them on a fresh device.
+- If `localStorage["ossuary:<spec id>:visited"]` is set it returns `[]`. Otherwise it sets the key, then lists the store. A non-empty store (or a list error) returns `[]` with the key now set, so a store that is emptied later is not re-seeded. On an empty store it calls `store.create` for each sample and returns the ids that were accepted. `store.create` validates against the spec, so a sample that does not fit is skipped and the rest are kept.
+- If `storage` throws, it adds nothing, because the visit could not be remembered and samples would return on every load.
+- The toast and Clear live in each app's `start()`: after `reload()`, if ids were added it shows "Sample items added" with a "Clear" action that removes exactly those ids and reloads. Ids come from the store, so a user item is never touched.
+- Each app's `samples.ts` exports `samples(today: IsoDay): Item[]`. Items are written as `daysAgo` offsets and turned into dates with `toDayNumber` and `fromDayNumber`, so the stages hold on any day. Pantry Reaper has 8 FoodKeeper foods (chicken, spinach, avocados, cheese, eggs, smoked salmon, hummus, brie). Warranty Wraith has 6 purchases, one of which matches the recall snapshot (the sensory swing). `main.ts` passes `samples` to `mountApp`, which passes `samples(now().day)` to `seedFirstVisit`.
 
 ### Reduced motion
 
-The existing rule in `tokens.css` (`@media (prefers-reduced-motion: reduce)`) sets `--dur-*` to 0 and `animation: none !important; transition: none !important` on core elements. New keyframes (`burn`, `fade-in`, `slab-to-ghost`, `ember`) are added to the list that `motion-source.test.ts` checks, and are only reachable under `[data-enter]` or the urgent tone. In reduced motion the `ember` rule is `animation: none` and the glow is at `opacity: 1`. Final states are the base styles, since the animation is from-to only.
+The existing rule in `tokens.css` (`@media (prefers-reduced-motion: reduce)`) sets `--dur-*` to 0 and `animation: none !important; transition: none !important` on `:host, *, *::before, *::after`. It reaches every core element, so the first-load keyframes, `ember`, the flame sway and the card hover transitions are all off. Final states are the base styles, since the animations are from-to only. The list still marks the first render as used, and the `entering` attributes are set but have no effect. `motion-source.test.ts` checks in general that every stylesheet that animates is covered by that rule. It does not name individual keyframes.
 
 ## Data models
 
-- `localStorage["ossuary:mode"]`: `"crypt" | "light"`.
-- IndexedDB `meta` store: `{ key: 'firstVisitDone', value: true }`.
-- `Sample`: `{ id: string; fields: Record<string, string | number | { daysAgo: number } | { daysFromNow: number }> }`.
-- Theme: no schema change. `CryptColors` is derived and never stored.
+- `localStorage["ossuary:mode"]`: `"crypt" | "light"`, written on a toggle press only.
+- `localStorage["ossuary:<spec id>:visited"]`: `"1"`. No IndexedDB schema change.
+- Samples: plain item values, produced by `samples(today)` in each app.
+- Theme: no schema change. `CryptColours` is derived and never stored.
 
 ## Error handling
 
-- `localStorage` missing or throwing (private mode, blocked storage): `initMode` returns `crypt`, `setMode` still sets the attribute.
-- Invalid sample: `seedFirstVisit` throws a `ValidationError` naming the sample id and field before anything is written. The app's `main` catches it, logs it to the console and continues with an empty store, because a bad sample must not stop the app.
-- IndexedDB unavailable: the store already reports it. `seedFirstVisit` is not called.
-- `cryptTheme` never throws. A theme that cannot reach contrast returns the best it found and the unit test names the failing pair.
+- `localStorage` missing or throwing (private mode, blocked storage): `initMode` returns `crypt`, `setMode` still sets the attribute. `seedFirstVisit` adds nothing.
+- An invalid sample is skipped by `store.create`. The rest are added. Nothing throws.
+- IndexedDB unavailable: the app shows its error state and does not reach `seedFirstVisit`.
+- `cryptTheme` never throws. A theme that cannot reach contrast returns the lightest step it tried, and `contrast-tokens.test.ts` names the failing pair.
 
 ## Testing strategy
 
-All tests are written before the code. Core unit tests use vitest with happy-dom. Dates are fixed.
+Core unit tests use vitest with happy-dom. Dates are fixed.
 
-- `color.test.ts`: round trip hex/HSL, `contrast` against known WCAG values.
-- `crypt.test.ts`: the three expected value sets; saturation cap at 34%; accent already passing is kept; determinism (fast-check: same input gives the same output, output contrast at least 4.6 for any accent that is below 4.5:1 on white); no `Date`, DOM or random use (covered by `hook:boundary`).
-- `crypt-contrast.test.ts`: every `apps/*/bone.json` (glob), the bone-forge template theme and each gallery theme, in both modes, against all pairs in requirement 4.6, with the app and pair in the failure message. Extends `contrast-tokens.test.ts`, which reads `tokens.css` for the fixed tokens.
-- `tokens.test.ts`: `:root` holds the crypt values, `:root[data-mode="light"]` the light ones, every token exists in both, no `#000`, `--halo` is 0 in light.
-- `mode.test.ts`: default crypt; stored `light`; garbage value; throwing storage; `setMode` writes; `initMode` does not write.
-- `theme.test.ts` (extended): both sets written, `data-themed` set, removal on undefined, light values unchanged from before.
-- `oss-mode-toggle.test.ts`: name, `aria-pressed`, glyph swap, `setMode` call, `storage` event, keyboard, 44px class, no store access.
-- `oss-decay.test.ts` (extended): `.burnt` height for several fractions and absence at 1; `.halo` present except `dead`; ghost opacities by formula; `aria-hidden`; no `<linearGradient>` in the output.
-- `item-list.test.ts` (extended): `--life` and tone on cards and rows, dead card has the ghost class, number text unchanged.
-- `burn-down.test.ts`: first non-empty render sets `data-enter`; second render does not; empty render does not use it up; reduced motion never sets it and still marks it done; a new module instance plays again.
-- `first-visit.test.ts` (fake-indexeddb): seeds on empty store with toast; skips on non-empty; skips on second call; Clear removes only `sample-*` ids and leaves a user item; invalid sample writes nothing; same `now` gives the same items; empty list does nothing and does not set the key; every app's samples cover living, dying and dead stages in the engine at a fixed `now`.
-- `motion-source.test.ts` (extended): the new keyframes are inside the reduced-motion rule.
-- Boundary: `hook:boundary` and the core boundaries test must pass with the new files. No domain word is allowed in the toggle, the sample types or the tests of core. Sample words appear only under `apps/`.
-- Playwright (per app and launcher, 1280 and 390): the toggle flips the mode and the choice survives a reload; the first visit shows the samples and the toast, Clear empties the list, and a reload adds nothing; the burn-down plays once (animations present on the first render, none after filtering); with `reducedMotion: 'reduce'` `document.getAnimations()` is empty and every card is in its final state; axe is clean in the crypt and in light, with samples present.
-- Network guard: the existing e2e guard stays on, so any request leaving the machine fails the run.
+- `crypt.test.ts` holds the colour helper tests (hex/HSL round trip, `mixHex` endpoints) and the `cryptTheme` tests: the core, warm and cool expected values, the 34% saturation cap, the accent lift to 4.6:1 on surface, canvas and tint for seven accents, and determinism by example. There is no `color.test.ts` and no fast-check property for the derivation.
+- `contrast-tokens.test.ts` reads `tokens.css` for the fixed tokens, and builds its theme list by glob: core, every `apps/*/bone.json`, every `tools/*/template/bone.json` and the gallery themes. In both modes it checks tone pairs (4.5:1 word, 3:1 glyph), on-ink pairs, `--line-strong` at 3:1 on surface and sunken, text, text-2, text-3 and error at 4.5:1 on surface, sunken and canvas, and accent, accent-ink and focus-ring pairs. The thresholds are WCAG AA. The stricter ratios in DESIGN.md (13:1, 8:1, 5.9:1) are not asserted.
+- `tokens.test.ts`: `:root` holds the crypt values, `:root[data-mode="light"]` the light ones, the motif and light tokens exist, `--halo` is positive in the crypt and 0 in light, no `#000`, `[data-themed]` picks the crypt or light set, reduced motion zeroes durations.
+- `mode.test.ts`: default crypt, stored light, garbage value, throwing storage, `setMode` writes, sets the attribute and fires `oss-mode`.
+- `theme.test.ts`: both sets written, `data-themed` set, removal on undefined, no text, radius or spacing tokens.
+- `oss-mode-toggle.test.ts`: name, `aria-pressed`, hidden glyph, click flips mode and storage, and the shell places it in `.top` outside `.primary`.
+- `motifs/motifs.test.ts`: wax height, `.burnt` height and absence at full, `.halo` present except dead, ghost fill and stroke opacity by formula, dotted hem, no hex colour in any motif.
+- `elements/item-list.test.ts`: `--life` and tone class on cards, the dead ghost card still reads its number and pill, and the list's first-load behaviour (`data-enter` and `--i` on the first render with items, none on the second, none while empty).
+- `first-visit.test.ts` (fake storage and a real store harness): seeds once, skips a non-empty store and marks the visit, does not re-seed an emptied store, empty list sets nothing, a bad sample is skipped, unavailable storage adds nothing.
+- `apps/*/src/data/samples.test.ts`: samples fit the spec, the stages include living, soon or urgent, and dead on three different days, dates are relative to today, and Wraith has exactly one recall match.
+- `apps/launcher/src/page.test.ts`: the toggle sits in `header .top-end` beside the GitHub link.
+- Boundary: `hook:boundary` and the core boundaries test apply to the new files. Sample words appear only under `apps/`.
+- Playwright: `playwright.config.ts` gives every project a `storageState` that marks both apps as visited (`ossuary:<id>:visited = 1` for the dev, preview and gallery origins), so every project starts as a returning visit and no older spec meets sample items. The crypt specs (`apps/pantry-reaper/e2e/crypt.spec.ts`, `apps/warranty-wraith/e2e/crypt.spec.ts`, `apps/launcher/e2e/crypt.spec.ts`) override it with an empty storage state to get a real first visit. They check:
+  - the crypt canvas colour and `data-mode="crypt"`;
+  - several candle heights or ghost strengths and the ember glow (or the phone row's left bar);
+  - the dashed ghost card, axe clean, and no sample added on reload;
+  - Clear;
+  - the toggle, its survival across a reload, and axe in light;
+  - the first-load animation on the first render and none after a detail round trip;
+  - with `reducedMotion: 'reduce'`, no running animation and the final wax height or ghost opacity.
+  The launcher spec checks the crypt, the halo and the toggle. The apps run it at 1280 and 390. The launcher runs under its two phone and desktop projects. The existing network guard stays on in the app specs.
 
 ## Decisions and alternatives
 
-- **Crypt as the `:root` default, light behind an attribute**, rather than a `prefers-color-scheme` media query. The brand look is the crypt, so every visitor gets it, and the toggle is the only way to change it. A media query would give light to some judges first.
-- **Both sets written by `applyTheme`, chosen in CSS**, rather than re-applying the theme on toggle. A switch is then one attribute, with no re-render and no flash.
-- **Derive the crypt from the light theme** rather than add crypt fields to the spec. Specs stay unchanged, a third app gets a crypt for free, and the schema needs no migration. The cost is that the author cannot hand-tune the crypt. If that is ever needed it is a spec field, added later.
-- **Burn-down flag in memory**, rather than in `localStorage`. Playing once per page load is enough to teach the art, and a stored flag would hide the best moment from a returning judge.
-- **Sample dates as day offsets**, rather than fixed dates, so the stages are the same whenever the app is opened.
-- **Sample flag in the store's own meta**, rather than in `localStorage`. Clearing site data then resets both together, so the first visit really is first.
+- **Crypt as the `:root` default, light behind an attribute**, rather than a `prefers-color-scheme` media query. The brand look is the crypt, so every visitor gets it, and the toggle is the only way to change it.
+- **No inline `<head>` script.** Because the crypt is the `:root` default there is no dark flash for the default case, and an inline script would be one more thing to keep in step with `MODE_KEY` and the precache. The cost is that a stored light choice is applied when `ensureDocumentTokens` runs, a moment after first paint, so a light visitor can see a brief crypt flash on load. Revisit if that is noticed.
+- **Both sets written by `applyTheme`, chosen in CSS**, rather than re-applying the theme on toggle. A switch is then one attribute, with no re-render.
+- **Derive the crypt from the light theme** rather than add crypt fields to the spec. Specs stay unchanged, a third app gets a crypt for free, and the schema needs no migration. The cost is that the author cannot hand-tune the crypt.
+- **Burn-down flag on the `oss-list` instance**, in memory, rather than in `localStorage` or a module variable. Playing once per page load is enough to teach the art, and a stored flag would hide the best moment from a returning judge. A list element that is removed and created again would play again, and the apps keep one list.
+- **The whole card arrives on first load**, not only the art. `oss-item` fades and lifts the card (`arrive`), so the number, pill and name animate with it, and the final state is the same as the static one. The design had said only the art animates.
+- **First-visit flag in `localStorage` (`ossuary:<spec id>:visited`)**, not an IndexedDB `meta` store. It needs no IndexedDB schema bump or migration and is readable before the store opens. The cost is that clearing IndexedDB alone does not reset the first visit, and clearing site data does both.
+- **Samples as a function of today** (`samples(today)` with day offsets), rather than fixed dates, so the stages are the same whenever the app is opened.
+- **`seedFirstVisit` returns the added ids and the app owns the toast.** Core needs no toast dependency, and Clear removes exactly the ids that were added.
+- **Colour helpers are tested inside `crypt.test.ts`**, and the AA check for every theme in both modes lives in `contrast-tokens.test.ts`, which already read the token sources. This avoided a second file that read the same sources.
+- **e2e projects start as a returning visit** through a `storageState` in `playwright.config.ts`, and only the crypt specs opt into a real first visit. The older specs then see an empty store as before.
 - **Sample data in the apps**, with only the mechanism in core, so the core boundary holds.
-- **Animation is from-to over final geometry**, so reduced motion means "do not run it" and needs no second drawing path.
+- **Animation is from-to over final geometry**, so reduced motion means "do not run it" and needs no second drawing path. The global reduced-motion rule does this, so the list needs no reduced-motion branch.

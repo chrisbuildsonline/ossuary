@@ -18,7 +18,7 @@ All of it lives in `packages/ossuary-core` as generic tokens, components and hel
 
 1.3 THE SYSTEM SHALL define the tokens `--motif-ink`, `--motif-dish`, `--motif-spirit`, `--motif-spirit-line`, `--halo`, `--spirit-glow`, `--glow-urgent`, `--glow-soon` and `--highlight` in both modes. Components SHALL use these tokens and no hard-coded colour, radius or duration.
 
-1.4 THE SYSTEM SHALL give every crypt text token at least the ratio in DESIGN.md (`--text` 13:1, `--text-2` 8:1, `--text-3` 5.9:1 on the crypt surfaces), every crypt `--line-strong` at least 3:1 on every crypt surface, and the five crypt stage pills at least 8:1 for their word. Light values keep the ratios already tested.
+1.4 THE SYSTEM SHALL meet WCAG AA as the asserted floor in both modes: at least 4.5:1 for text (including `--text`, `--text-2`, `--text-3` and the stage pill words) on every crypt surface, and at least 3:1 for outlines (`--line-strong`) on every crypt surface. The higher ratios in DESIGN.md (`--text` 13:1, `--text-2` 8:1, `--text-3` 5.9:1, stage pill words 8:1) are design targets and are not asserted by a test.
 
 1.5 THE SYSTEM SHALL NOT use `#000` as a canvas or surface in either mode.
 
@@ -34,7 +34,7 @@ All of it lives in `packages/ossuary-core` as generic tokens, components and hel
 
 2.3 WHEN `setMode("crypt")` runs THEN the attribute SHALL be `data-mode="crypt"`. `tokens.css` SHALL treat only `data-mode="light"` as light.
 
-2.4 THE SYSTEM SHALL call `initMode()` before the first render in each app and in the launcher. Each `index.html` SHALL also set the attribute from the key with a small inline script in `<head>`, so a stored light choice does not flash dark.
+2.4 THE SYSTEM SHALL call `initMode()` before the first item render in each app and in the launcher, through `ensureDocumentTokens`. No `index.html` SHALL have an inline script in `<head>`. The crypt is the `:root` default in `tokens.css`, so the first paint is dark without a script, and a stored light choice is applied when `ensureDocumentTokens` runs.
 
 2.5 THE SYSTEM SHALL write `ossuary:mode` only on a toggle press. It SHALL NOT write it on load.
 
@@ -88,7 +88,7 @@ All of it lives in `packages/ossuary-core` as generic tokens, components and hel
 
 5.4 WHEN the toggle is pressed THEN it SHALL call `setMode`, flip `aria-pressed` and update the glyph. It SHALL NOT re-render the list or touch the store.
 
-5.5 WHEN the mode is changed in another tab THEN the toggle SHALL follow it (`storage` event).
+5.5 WHEN the mode is changed in the page THEN every toggle SHALL follow it through the document `oss-mode` event. Following a change made in another tab (`storage` event) is task 5.3 and is not required.
 
 5.6 THE SYSTEM SHALL be operable by keyboard (Enter and Space) and show the focus ring.
 
@@ -144,7 +144,7 @@ All of it lives in `packages/ossuary-core` as generic tokens, components and hel
 
 8.4 THE SYSTEM SHALL have `oss-list` own the one-shot flag, so apps need no code for it.
 
-8.5 THE SYSTEM SHALL NOT delay the number, the pill or the name. Only the art animates. The final state SHALL be the same as the static one.
+8.5 THE SYSTEM SHALL animate the whole card on first load: it fades in and rises, so the art, the number, the pill and the name arrive together. The number and the pill SHALL NOT change value during it. The final state SHALL be the same as the static one.
 
 8.6 THE SYSTEM SHALL keep the flag in memory only. A new page load (a browser reload) plays the burn-down once again.
 
@@ -158,7 +158,7 @@ All of it lives in `packages/ossuary-core` as generic tokens, components and hel
 
 9.2 WHEN the app starts on the very first visit and the store is empty THEN `seedFirstVisit` SHALL add the samples once, and an `oss-toast` SHALL say "Sample items added" with a "Clear" action.
 
-9.3 THE SYSTEM SHALL record the visit in the store itself (a meta key in the same IndexedDB database), so it works offline and is tied to the device data. It SHALL write the key whether or not it added items.
+9.3 THE SYSTEM SHALL record the visit in `localStorage` under the key `ossuary:<spec id>:visited`, so it works offline and needs no IndexedDB change. It SHALL write the key whether or not it added items, except when the sample list is empty, where it writes nothing.
 
 9.4 WHEN the key exists, or the store is not empty (including after "Clear", a restore, an import or the user deleting everything) THEN it SHALL add nothing. A later visit SHALL NOT re-add samples.
 
