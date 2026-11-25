@@ -16,12 +16,18 @@ export class OssItem extends OssElement {
   static override styles = `
 :host { display: block; min-width: 0; }
 ${toneCss}
+.motif-candle { --motif-light: var(--motif-flame); }
+.motif-ghost { --motif-light: var(--motif-spirit); }
+.motif-hourglass { --motif-light: var(--accent); }
 .item { --life: 1; position: relative; display: grid; color: inherit; text-decoration: none; min-width: 0; -webkit-tap-highlight-color: transparent; }
 .card {
   grid-template-columns: auto 1fr auto; grid-template-areas: "decay count pill" "decay date date" "title title title" "meta meta meta" "others others others";
   column-gap: var(--s-4); row-gap: 0; align-items: start; min-height: 168px; padding: calc(var(--s-6) - 1.5px);
   /* Ghost fade: the slab loses substance with the life left. Text sits on solid pairs, so contrast holds. */
-  background: color-mix(in srgb, var(--surface) calc(40% + 60% * var(--life)), transparent);
+  /* Light from the motif (a candle's warmth, a ghost's pallor) pools behind it, dimmer as life runs out. */
+  background:
+    radial-gradient(circle at 48px 64px, color-mix(in srgb, var(--motif-light) calc(var(--atmosphere) * (6% + 14% * var(--life))), transparent), transparent 150px),
+    color-mix(in srgb, var(--surface) calc(40% + 60% * var(--life)), transparent);
   border: 1.5px solid transparent; border-radius: var(--r-lg); box-shadow: var(--shadow-1);
   transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
 }
@@ -158,7 +164,7 @@ a:focus-visible { outline: var(--focus); outline-offset: 2px; }
     const meta = h('span', { class: 'meta' }, shortLine(spec, values, now));
 
     const link = h('a', {
-      class: `item ${row ? 'row' : 'card'} tone-${primary.stage.tone}${dead ? ' dead ghost' : ''}${enter ? ' enter' : ''}`,
+      class: `item ${row ? 'row' : 'card'} motif-${spec.theme?.motif ?? 'hourglass'} tone-${primary.stage.tone}${dead ? ' dead ghost' : ''}${enter ? ' enter' : ''}`,
       href: this.getAttribute('href') ?? '#',
     });
     link.style.setProperty('--life', String(quantise(primary.fraction)));

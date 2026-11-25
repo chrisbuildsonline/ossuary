@@ -50,6 +50,7 @@
   --glow-urgent: rgb(255 112 82 / .30);
   --glow-soon: rgb(244 187 85 / .16);
   --glow-ink: rgb(255 214 150 / .16);
+  --atmosphere: 1;              /* scales the canvas and card light; 0 in light */
 
   /* shadow: a lit top edge and a soft dark fall-off */
   --highlight: inset 0 1px 0 rgb(255 248 230 / .06);
@@ -137,6 +138,7 @@
   --glow-urgent: transparent;
   --glow-soon: transparent;
   --glow-ink: transparent;
+  --atmosphere: 0;
   --highlight: inset 0 0 0 transparent;
   --shadow-1: 0 1px 2px rgb(21 23 28 / .04), 0 4px 12px rgb(21 23 28 / .05);
   --shadow-2: 0 2px 4px rgb(21 23 28 / .05), 0 12px 32px rgb(21 23 28 / .09);
@@ -147,6 +149,8 @@
 [data-themed] {
   --canvas: var(--crypt-canvas);
   --surface: var(--crypt-surface);
+  --track: color-mix(in srgb, var(--crypt-surface) 86%, #efe8da);
+  --line: color-mix(in srgb, var(--crypt-surface) 90%, #efe8da);
   --surface-sunken: var(--crypt-surface-sunken);
   --accent: var(--crypt-accent);
   --accent-ink: var(--crypt-accent-ink);
@@ -156,6 +160,8 @@
   --canvas: var(--light-canvas, #eef0f4);
   --surface: #ffffff;
   --surface-sunken: #f4f5f8;
+  --track: #e9ebf0;
+  --line: #eceef2;
   --accent: var(--light-accent, #3657c9);
   --accent-ink: var(--light-accent-ink, #3657c9);
   --accent-tint: var(--light-accent-tint, #e8edfa);

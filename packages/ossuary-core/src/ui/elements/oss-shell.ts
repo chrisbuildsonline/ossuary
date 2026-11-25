@@ -16,7 +16,11 @@ const nav: { id: string; label: string; icon: GlyphName }[] = [
 export class OssShell extends OssElement {
   static observedAttributes = ['current'];
   static override styles = `
-:host { display: block; min-height: 100dvh; background: var(--canvas); color: var(--text); }
+:host {
+  display: block; min-height: 100dvh; color: var(--text);
+  /* In the crypt a faint glow of the app's accent hangs over the top of the page, like light through a grate. */
+  background: radial-gradient(ellipse 70% 360px at 50% -80px, color-mix(in srgb, var(--accent) calc(var(--atmosphere) * 14%), transparent), transparent) no-repeat, var(--canvas);
+}
 .top { display: flex; align-items: center; gap: var(--s-6); height: 72px; max-width: 1120px; margin: 0 auto; padding: 0 var(--s-10); }
 .brand { display: flex; align-items: center; gap: var(--s-2); color: var(--text); flex: none; }
 .wordmark { font: 600 20px/24px var(--font-display); letter-spacing: -0.01em; white-space: nowrap; }

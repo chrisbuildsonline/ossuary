@@ -61,7 +61,9 @@ and the light values on `:root[data-mode="light"]`. The mode lives on `<html dat
   --halo: .28;           /* candle halo opacity (0 in light) */
   --spirit-glow: rgb(196 206 255 / .45);
   --glow-urgent: rgb(255 112 82 / .30);  --glow-soon: rgb(244 187 85 / .16);
+  --atmosphere: 1;       /* canvas and card light; 0 in light */
 }
+/* themed elements also warm --track and --line toward bone from their own crypt surface */
 ```
 
 **Light (option, `data-mode="light"`)** keeps the original values below, with `--halo: 0`, no glows,
@@ -233,6 +235,10 @@ For `dead` only a dotted outline remains at 0.35 opacity. On detail Wraith shows
 **Decaying cards (crypt and light).** The item card carries its life as `--life` (the fraction) and its tone:
 - *Ghost fade:* the card slab is `--surface` at `40% + 60% * life` over the canvas, so a card loses substance as
   it nears death. Text stays on solid colour pairs, so contrast never drops.
+- *Motif light:* behind the motif a soft pool of its own light (flame amber for the candle, spirit white for the
+  ghost, the accent for the hourglass) at `--atmosphere * (6% + 14% * life)`, so a full candle warms its card and a
+  dying one leaves it cold. In the crypt the shell also hangs a faint accent glow over the top of the page.
+  `--atmosphere` is 1 in the crypt and 0 in light, which removes both.
 - *Glow near death:* `soon` cards get a faint amber edge glow (`--glow-soon`); `urgent` cards an ember glow
   (`--glow-urgent`) that breathes slowly (opacity .6→1, 2.8s, ≤0.4Hz). Rows get the same glow as a 3px left ember bar.
 - *Dead = a ghost of a card:* no slab, a 1.5px dashed `--line-strong` outline, motif at 55% opacity and greyscale,
