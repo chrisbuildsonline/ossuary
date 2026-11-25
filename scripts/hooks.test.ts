@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stripVTControlCharacters } from 'node:util';
 import { describe, expect, it } from 'vitest';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -39,7 +40,8 @@ describe('hook:engine', () => {
     expect(scripts['hook:engine']).toBe('vitest run packages/ossuary-core/src/engine packages/ossuary-core/src/schema');
     const run = spawnSync('bun', ['run', 'hook:engine'], { cwd: root, encoding: 'utf8' });
     expect(run.status, run.stdout + run.stderr).toBe(0);
-    expect(run.stdout).toMatch(/Test Files\s+\d+ passed \(\d+\)/);
-    expect(run.stdout).not.toMatch(/failed/);
+    const out = stripVTControlCharacters(run.stdout);
+    expect(out).toMatch(/Test Files\s+\d+ passed \(\d+\)/);
+    expect(out).not.toMatch(/failed/);
   }, 60_000);
 });
