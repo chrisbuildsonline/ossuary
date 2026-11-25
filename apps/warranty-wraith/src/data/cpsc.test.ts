@@ -72,12 +72,20 @@ describe('mapCpscRecalls', () => {
     expect(r.recalls[0]?.names).toEqual(['Kettle', 'Lid']);
   });
 
-  it('cuts a long title and a long hazard to 160 characters', () => {
-    const long = `Recall ${'x'.repeat(300)}`;
+  it('cuts a long title and a long hazard to 160 characters at a word break, ending in "…"', () => {
+    const long = Array.from({ length: 40 }, (_, i) => `word${i},`).join(' ');
     const r = mapCpscRecalls([row({ Title: long, Hazards: [{ Name: long }] })]);
-    expect(r.recalls[0]?.title).toHaveLength(160);
-    expect(r.recalls[0]?.title).toBe(long.slice(0, 160));
-    expect(r.recalls[0]?.hazard).toHaveLength(160);
+    for (const text of [r.recalls[0]?.title ?? '', r.recalls[0]?.hazard ?? '']) {
+      expect(text.length).toBeLessThanOrEqual(160);
+      expect(text).toMatch(/word\d+…$/);
+      expect(long.startsWith(`${text.slice(0, -1)},`)).toBe(true);
+    }
+  });
+
+  it('keeps text of exactly 160 characters whole, and cuts one long word with "…"', () => {
+    const exact = `${'a'.repeat(79)} ${'b'.repeat(80)}`;
+    expect(mapCpscRecalls([row({ Title: exact })]).recalls[0]?.title).toBe(exact);
+    expect(mapCpscRecalls([row({ Title: 'x'.repeat(300) })]).recalls[0]?.title).toBe(`${'x'.repeat(159)}…`);
   });
 
   it('uses "" when there is no hazard', () => {

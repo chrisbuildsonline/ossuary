@@ -6,8 +6,8 @@ import { z } from 'zod';
 export interface Recall {
   id: string; // RecallNumber, e.g. "27054"
   date: string; // ISO day of the recall
-  title: string; // cut to 160 characters
-  hazard: string; // first hazard name, cut to 160 characters, "" when none
+  title: string; // cut to 160 characters at a word break, ending in "…"
+  hazard: string; // first hazard name, cut like title, "" when none
   url: string; // https://www.cpsc.gov/... only
   names: string[]; // product names
   brands: string[]; // from Manufacturers, Importers and Distributors
@@ -33,7 +33,14 @@ const rowSchema = z.object({
 });
 
 const unique = (values: Iterable<string>) => [...new Set([...values].map((v) => v.trim()).filter((v) => v !== ''))];
-const cut = (s: string) => s.trim().slice(0, MAX_TEXT).trimEnd();
+/** Text over 160 characters ends at the last word break that leaves room for "…", trailing punctuation dropped. */
+function cut(s: string): string {
+  const text = s.trim();
+  if (text.length <= MAX_TEXT) return text;
+  const head = text.slice(0, MAX_TEXT);
+  const space = head.lastIndexOf(' ');
+  return `${(space > 0 ? head.slice(0, space) : head.slice(0, MAX_TEXT - 1)).replace(/[\s,;:.-]+$/, '')}…`;
+}
 const namesOf = (list: z.infer<typeof named>) => (list ?? []).map((x) => x.Name ?? '');
 
 /** "Legal name, dba Brand, of Place" -> ["Legal name", "Brand"]; text in brackets is dropped. */
