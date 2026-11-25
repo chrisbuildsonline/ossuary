@@ -294,6 +294,35 @@ describe('exportIcs text', () => {
   });
 });
 
+describe('exportIcs describe option', () => {
+  const description = (ics: string) =>
+    new ICAL.Component(ICAL.parse(ics)).getAllSubcomponents('vevent').map((e) => e.getFirstPropertyValue('description'));
+
+  it('adds a DESCRIPTION from describe(entry, lifespan), escaped and folded so a parser reads it back', () => {
+    const text = `Hello, ${'long; line '.repeat(12)}\\ end\nSecond line`;
+    const seen: string[] = [];
+    const { ics } = exportIcs(gizmo, [{ id: 'g', values: { name: 'Gizmo', bought: '2026-11-14' } }], {
+      now,
+      describe: (entry, lifespan) => {
+        seen.push(`${entry.id}:${lifespan.lifespanId}:${lifespan.expiresAt}`);
+        return lifespan.lifespanId === gizmo.lifespans[0]?.id ? text : undefined;
+      },
+    });
+    expect(seen).toHaveLength(2);
+    expect(seen[0]).toMatch(/^g:/);
+    expect(description(ics)).toEqual([text, null]);
+    expect(ics.split('\r\n').filter((line) => new TextEncoder().encode(line).length > 75)).toEqual([]);
+  });
+
+  it('leaves the file unchanged when describe is absent or gives "" or undefined', () => {
+    const plain = exportIcs(gizmo, [{ id: 'g', values: { name: 'Gizmo', bought: '2026-11-14' } }], { now }).ics;
+    expect(description(plain)).toEqual([null, null]);
+    for (const describe of [() => '', () => undefined]) {
+      expect(exportIcs(gizmo, [{ id: 'g', values: { name: 'Gizmo', bought: '2026-11-14' } }], { now, describe }).ics).toBe(plain);
+    }
+  });
+});
+
 describe('exportIcs properties', () => {
   const lo = toDayNumber('0000-01-01');
   const hi = toDayNumber('9999-12-31');

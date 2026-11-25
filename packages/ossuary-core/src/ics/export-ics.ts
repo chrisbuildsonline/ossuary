@@ -68,7 +68,14 @@ const tooFar = (lifespans: LifespanEvaluation[]): Issue[] =>
 /** Offset from the event start (midnight on the expiry day) to 09:00 on the day `n` days before. */
 const triggerFor = (n: number): string => (n === 0 ? 'PT9H' : n === 1 ? '-PT15H' : `-P${n - 1}DT15H`);
 
-export function exportIcs(spec: BoneSpec, entries: IcsEntry[], opts: { now: Now; prodId?: string }): IcsExport {
+export interface IcsOptions {
+  now: Now;
+  prodId?: string;
+  /** Text for an event's DESCRIPTION; "" or undefined leaves it out. */
+  describe?: (entry: IcsEntry, lifespan: LifespanEvaluation) => string | undefined;
+}
+
+export function exportIcs(spec: BoneSpec, entries: IcsEntry[], opts: IcsOptions): IcsExport {
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', `PRODID:${escapeText(opts.prodId ?? `-//Ossuary//${spec.id}//EN`)}`, 'CALSCALE:GREGORIAN'];
   const skipped: IcsExport['skipped'] = [];
   const several = spec.lifespans.length > 1;
@@ -86,6 +93,7 @@ export function exportIcs(spec: BoneSpec, entries: IcsEntry[], opts: { now: Now;
     const title = String(entry.values[spec.entity.titleField] ?? '');
     result.value.lifespans.forEach((lifespan, i) => {
       const summary = several ? `${title} - ${lifespan.label}` : title;
+      const description = opts.describe?.(entry, lifespan);
       const expiry = toDayNumber(lifespan.expiresAt);
       const alarms = (spec.lifespans[i]?.stages ?? []).flatMap(({ enterAtDays, label }) =>
         enterAtDays === undefined || expiry - enterAtDays < nowDay
@@ -99,6 +107,7 @@ export function exportIcs(spec: BoneSpec, entries: IcsEntry[], opts: { now: Now;
         `DTSTART;VALUE=DATE:${dateValue(lifespan.expiresAt)}`,
         `DTEND;VALUE=DATE:${dateValue(fromDayNumber(expiry + 1))}`,
         `SUMMARY:${escapeText(summary)}`,
+        ...(description ? [`DESCRIPTION:${escapeText(description)}`] : []),
         'TRANSP:TRANSPARENT',
         ...alarms,
         'END:VEVENT',
