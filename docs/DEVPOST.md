@@ -61,7 +61,7 @@ has no fridge number there, which is why the demo uses buttermilk, `docs/DEMO.md
 
 Measured test counts from one full `bun run test` run: 1,142 unit and property tests in 107 files, all passing, plus
 the core suite run again under 3 time zones (UTC, America/New_York, Pacific/Auckland; 759 tests each). `bun run e2e`
-adds 96 Playwright end-to-end tests that drive both apps, the launcher and the component gallery in a real browser,
+adds 112 Playwright end-to-end tests that drive both apps, the launcher and the component gallery in a real browser,
 including the demo script in `docs/DEMO.md`.
 
 ## Accomplishments
