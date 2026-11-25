@@ -61,6 +61,12 @@ describe('candle', () => {
         }
         expect(count(svg, 'drip')).toBe(f < 0.33 ? 2 : f < 0.66 ? 1 : 0);
         expect(count(svg, 'pool')).toBe(tone === 'urgent' ? 1 : 0);
+        // The burnt outline shows where the full candle stood, so the shrink reads at a glance.
+        const burnt = 72 - height;
+        expect(count(svg, 'burnt')).toBe(burnt > 0 ? 1 : 0);
+        if (burnt > 0) expect(Number(attr(svg, 'height', 'burnt'))).toBeCloseTo(burnt, 5);
+        // A halo of candlelight behind every live flame, none on a dead stub.
+        expect(count(svg, 'halo')).toBe(tone === 'dead' ? 0 : 1);
       });
     }
   }

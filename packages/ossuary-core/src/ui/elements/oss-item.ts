@@ -5,6 +5,7 @@ import type { Item } from '../../schema/item';
 import { accessibleName, formatCountdown, shortDay } from '../countdown';
 import { toneGlyph } from '../glyphs';
 import { shortLine, titleOf } from '../item-text';
+import { quantise } from '../motifs/index';
 import { OssElement, define, h, svg } from './base';
 import './oss-decay';
 import './oss-pill';
@@ -15,14 +16,34 @@ export class OssItem extends OssElement {
   static override styles = `
 :host { display: block; min-width: 0; }
 ${toneCss}
-.item { display: grid; color: inherit; text-decoration: none; min-width: 0; -webkit-tap-highlight-color: transparent; }
+.item { --life: 1; position: relative; display: grid; color: inherit; text-decoration: none; min-width: 0; -webkit-tap-highlight-color: transparent; }
 .card {
   grid-template-columns: auto 1fr auto; grid-template-areas: "decay count pill" "decay date date" "title title title" "meta meta meta" "others others others";
-  column-gap: var(--s-4); row-gap: 0; align-items: start; min-height: 168px; padding: var(--s-6);
-  background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow-1);
+  column-gap: var(--s-4); row-gap: 0; align-items: start; min-height: 168px; padding: calc(var(--s-6) - 1.5px);
+  /* Ghost fade: the slab loses substance with the life left. Text sits on solid pairs, so contrast holds. */
+  background: color-mix(in srgb, var(--surface) calc(40% + 60% * var(--life)), transparent);
+  border: 1.5px solid transparent; border-radius: var(--r-lg); box-shadow: var(--shadow-1);
   transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
 }
 .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+/* Glow near death: amber when soon, a slowly breathing ember when urgent (the glow layer breathes, never the motif). */
+.card.tone-soon { box-shadow: var(--shadow-1), 0 0 0 1px var(--glow-soon), 0 0 28px -6px var(--glow-soon); }
+.card.tone-urgent { box-shadow: var(--shadow-1), 0 0 0 1px var(--glow-urgent); }
+.card.tone-urgent::after, .row.tone-urgent::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 40px -4px var(--glow-urgent), inset 0 0 28px -10px var(--glow-urgent);
+  animation: ember 2.8s var(--ease-in-out) infinite alternate;
+}
+@keyframes ember { from { opacity: .55; } to { opacity: 1; } }
+/* Dead: a ghost of a card. No slab, a dashed outline, a faded grey motif. */
+.card.ghost { background: transparent; box-shadow: none; border-color: var(--line-strong); border-style: dashed; }
+.ghost oss-decay { opacity: .55; filter: grayscale(1); }
+.ghost .value { color: var(--text-2); }
+/* First load: cards rise in one after another, and the dead fade from a slab to their ghost. */
+.enter { animation: arrive .5s var(--ease-out) both; animation-delay: var(--enter-delay, 0ms); }
+.card.enter.ghost { animation: arrive .5s var(--ease-out) both, to-ghost 1.4s var(--ease-out) both; animation-delay: var(--enter-delay, 0ms), calc(var(--enter-delay, 0ms) + 400ms); }
+@keyframes arrive { from { opacity: 0; transform: translateY(8px); } }
+@keyframes to-ghost { from { background-color: var(--surface); border-color: transparent; box-shadow: var(--shadow-1); } }
 .card:active { transform: scale(.99); }
 .card oss-decay { grid-area: decay; }
 .card .count { grid-area: count; align-self: end; }
@@ -50,6 +71,10 @@ ${toneCss}
   transition: background-color var(--dur-2) var(--ease-out);
 }
 .row:hover { background: var(--surface-sunken); }
+.row.tone-soon { box-shadow: inset 3px 0 0 var(--tone-soon-fg); }
+.row.tone-urgent { box-shadow: inset 3px 0 0 var(--tone-urgent-fg); background: linear-gradient(90deg, var(--glow-urgent), transparent 45%); }
+.row.tone-urgent::after { box-shadow: inset 0 0 24px -12px var(--glow-urgent); }
+.row.ghost .title { color: var(--text-2); }
 .row:active { transform: scale(.99); }
 .row oss-decay { grid-area: decay; }
 .row .mid { grid-area: mid; display: grid; gap: 2px; min-width: 0; }
@@ -117,7 +142,10 @@ a:focus-visible { outline: var(--focus); outline-offset: 2px; }
     const several = e.lifespans.length > 1;
 
     const count = h('span', { class: 'count', 'aria-hidden': 'true' }, h('span', { class: 'value' }, c.value), c.unit && h('span', { class: 'unit' }, c.unit));
-    const decay = h('oss-decay', { motif: spec.theme?.motif ?? 'hourglass', fraction: primary.fraction, tone: primary.stage.tone, size: row ? 's' : 'm' });
+    // The list marks its items on first load only; the mark is used once, so later renders are static.
+    const enter = this.hasAttribute('entering');
+    this.removeAttribute('entering');
+    const decay = h('oss-decay', { motif: spec.theme?.motif ?? 'hourglass', fraction: primary.fraction, tone: primary.stage.tone, size: row ? 's' : 'm', enter });
     const time = h('time', { datetime: primary.expiresAt, class: row ? 'sr-only' : null }, shortDay(primary.expiresAt, now));
     const others = several
       ? h(
@@ -130,9 +158,10 @@ a:focus-visible { outline: var(--focus); outline-offset: 2px; }
     const meta = h('span', { class: 'meta' }, shortLine(spec, values, now));
 
     const link = h('a', {
-      class: `item ${row ? 'row' : 'card'} tone-${primary.stage.tone}${dead ? ' dead' : ''}`,
+      class: `item ${row ? 'row' : 'card'} tone-${primary.stage.tone}${dead ? ' dead ghost' : ''}${enter ? ' enter' : ''}`,
       href: this.getAttribute('href') ?? '#',
     });
+    link.style.setProperty('--life', String(quantise(primary.fraction)));
     if (row) link.append(decay, h('span', { class: 'mid' }, titleEl, meta), count, ...(others ? [others] : []), time);
     else {
       // With several lifespans the primary countdown names its lifespan beside the date.

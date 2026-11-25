@@ -74,6 +74,8 @@ h2 { margin: 0; display: flex; align-items: center; gap: var(--s-3); font: var(-
   #entries: ListEntry[] = [];
   #now: Now = { day: '1970-01-01' };
   #openDead = false;
+  /** The first render with items plays the first-load burn-down; every later one is static. */
+  #entered = false;
   #media?: MediaQueryList;
   #onMedia = () => this.update();
 
@@ -131,7 +133,19 @@ h2 { margin: 0; display: flex; align-items: center; gap: var(--s-3); font: var(-
       return;
     }
     const rows = this.#rows();
-    this.root.replaceChildren(h('div', { class: rows ? 'groups' : 'groups cards' }, groupEntries(this.#entries).map((g) => this.#group(g.tone, g.entries, rows))));
+    const enter = !this.#entered;
+    this.#entered = true;
+    let order = 0;
+    const groups = groupEntries(this.#entries).map((g) => this.#group(g.tone, g.entries, rows));
+    if (enter) {
+      // One after another, capped so the whole run ends within about 2.5s.
+      for (const item of groups.flatMap((g) => Array.from(g.querySelectorAll('oss-item')))) {
+        item.setAttribute('entering', '');
+        item.style.setProperty('--i', String(order));
+        item.style.setProperty('--enter-delay', `${Math.min(order++, 20) * 50}ms`);
+      }
+    }
+    this.root.replaceChildren(h('div', { class: rows ? 'groups' : 'groups cards', 'data-enter': enter }, groups));
   }
 
   #group(tone: Tone, entries: ListEntry[], rows: boolean): HTMLElement {

@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type Entry, entry, gizmo, gizmoEntry, now, widget, widgets } from '../../testing/ui-fixtures';
 import { accessibleName } from '../countdown';
+import { quantise } from '../motifs/index';
 import './oss-item';
 import './oss-list';
 import type { OssItem } from './oss-item';
@@ -19,6 +20,42 @@ function item(e: Entry, variant: 'card' | 'row' = 'card', spec = widget): OssIte
 
 const q = (el: Element, sel: string) => el.shadowRoot?.querySelector(sel) ?? null;
 const qa = (el: Element, sel: string) => Array.from(el.shadowRoot?.querySelectorAll(sel) ?? []);
+
+describe('oss-item decay', () => {
+  it('carries its life left and its tone, so the card can fade and glow', () => {
+    for (const e of widgets()) {
+      const el = item(e);
+      const link = q(el, 'a') as HTMLElement;
+      const primary = e.evaluation.lifespans[e.evaluation.primaryIndex];
+      expect(link.style.getPropertyValue('--life')).toBe(String(quantise(primary?.fraction ?? 0)));
+      expect(link.classList.contains(`tone-${primary?.stage.tone}`)).toBe(true);
+    }
+  });
+
+  it('turns a dead item into a ghost card that still reads its number and stage', () => {
+    const dead = widgets().find((e) => e.evaluation.lifespans[e.evaluation.primaryIndex]?.stage.tone === 'dead');
+    expect(dead).toBeDefined();
+    const el = item(dead as Entry);
+    expect(q(el, 'a')?.classList.contains('ghost')).toBe(true);
+    expect(q(el, '.unit')?.textContent).toMatch(/ago/);
+    expect(q(el, 'oss-pill')?.getAttribute('tone')).toBe('dead');
+  });
+});
+
+describe('oss-list first load', () => {
+  it('plays the burn-down on the first render with items only', () => {
+    const list = document.createElement('oss-list') as OssList;
+    list.setAttribute('layout', 'grid');
+    Object.assign(list, { spec: widget, now, entries: [] });
+    document.body.append(list);
+    expect(list.shadowRoot?.querySelector('[data-enter]')).toBeNull();
+    list.entries = widgets();
+    expect(list.shadowRoot?.querySelector('.groups')?.hasAttribute('data-enter')).toBe(true);
+    expect(list.shadowRoot?.querySelectorAll('oss-item[style*="--i"]').length).toBe(widgets().length);
+    list.entries = widgets();
+    expect(list.shadowRoot?.querySelector('.groups')?.hasAttribute('data-enter')).toBe(false);
+  });
+});
 
 describe('oss-item card', () => {
   it('renders the primary countdown, pill, decay, title, short line and date', () => {
