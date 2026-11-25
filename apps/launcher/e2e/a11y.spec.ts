@@ -39,10 +39,10 @@ test('axe finds no WCAG 2.1 A or AA violation', async ({ page }) => {
   await page.screenshot({ path: `${shots}launcher-${page.viewportSize()?.width}.png`, fullPage: true });
 });
 
-test('Tab and Shift+Tab reach every link, each with a focus ring', async ({ page }) => {
+test('Tab and Shift+Tab reach the theme toggle and every link, each with a focus ring', async ({ page }) => {
   await open(page);
   const walk = await tabThrough(page);
-  expect(walk.total).toBe(4);
+  expect(walk.total).toBe(5);
   expect(walk.missed).toEqual([]);
   expect(walk.noRing).toEqual([]);
 });

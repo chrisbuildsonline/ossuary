@@ -136,11 +136,11 @@ test('countdowns refresh silently: an hour on the clock changes no live region',
   }
 });
 
-test('the page behind the shell is the Pantry Reaper canvas, also past the end of a short list', async ({ page }) => {
+test('the page behind the shell is the Pantry Reaper crypt canvas, also past the end of a short list', async ({ page }) => {
   await seed(page);
   const canvas = () =>
     page.evaluate(() => ({ token: getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim(), body: getComputedStyle(document.body).backgroundColor }));
-  expect(await canvas()).toEqual({ token: '#f2efea', body: 'rgb(242, 239, 234)' });
+  expect(await canvas()).toEqual({ token: '#14120d', body: 'rgb(20, 18, 13)' });
   await page.mouse.wheel(0, 4000);
-  expect(await canvas()).toEqual({ token: '#f2efea', body: 'rgb(242, 239, 234)' });
+  expect(await canvas()).toEqual({ token: '#14120d', body: 'rgb(20, 18, 13)' });
 });

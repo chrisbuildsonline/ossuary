@@ -100,11 +100,11 @@ for (const size of sizes) {
       await expect(traceCard).toBeHidden();
     }
 
-    // 7. The look: the theme values, Space Grotesk on the countdown number, the cool canvas.
+    // 7. The look: the crypt theme values, Space Grotesk on the countdown number, the blue-night canvas.
     const shell = page.locator('oss-shell');
-    expect(await shell.evaluate((el) => getComputedStyle(el).getPropertyValue('--accent').trim())).toBe('#5a4bd1');
-    expect(await shell.evaluate((el) => getComputedStyle(el).getPropertyValue('--canvas').trim())).toBe('#edeff6');
-    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(237, 239, 246)');
+    expect(await shell.evaluate((el) => getComputedStyle(el).getPropertyValue('--accent').trim())).toBe('#9086e0');
+    expect(await shell.evaluate((el) => getComputedStyle(el).getPropertyValue('--canvas').trim())).toBe('#0b0e16');
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(11, 14, 22)');
     expect(await cards(page).first().locator('.value').evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/^"?Space Grotesk/);
     expect(await page.evaluate(() => document.fonts.check('600 40px "Space Grotesk Variable"'))).toBe(true);
 

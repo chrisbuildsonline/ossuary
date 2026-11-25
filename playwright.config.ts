@@ -11,7 +11,18 @@ const wraithOffline = { script: 'bun run build:wraith && bun run preview:wraith'
 // The launcher runs from the one static build, with both apps under their sub-paths.
 const launcher = { testDir: 'apps/launcher/e2e', script: 'bun run build && bun run preview', baseURL: 'http://localhost:4180' };
 
+// Every origin starts as a returning visit, so no test meets the first-visit samples unless it asks for a fresh
+// storage state (the crypt specs do).
+const visited = {
+  cookies: [],
+  origins: [5173, 5174, 4173, 4174, 4180, 5180].map((port) => ({
+    origin: `http://localhost:${port}`,
+    localStorage: ['pantry-reaper', 'warranty-wraith'].map((id) => ({ name: `ossuary:${id}:visited`, value: '1' })),
+  })),
+};
+
 export default defineConfig({
+  use: { storageState: visited },
   forbidOnly: true,
   reporter: 'list',
   projects: [
