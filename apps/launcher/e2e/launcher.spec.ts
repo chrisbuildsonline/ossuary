@@ -91,7 +91,6 @@ test('one headline, one line, two large app cards and one primary pill', async (
 });
 
 test('on a short phone screen the pill never covers a card, at any scroll', async ({ page }) => {
-  test.skip(!isPhone(page), 'phone layout only');
   await page.setViewportSize({ width: 390, height: 664 });
   await open(page);
   const pill = page.getByRole('link', { name: 'Make your own' });

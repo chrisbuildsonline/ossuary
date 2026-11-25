@@ -44,11 +44,15 @@ for (const width of WIDTHS) {
       await checkAxe(page);
       await page.screenshot({ path: `${shots}pantry-crypt-${width}.png`, fullPage: true });
 
-      // Spoiled food is a ghost of a card: no slab, a dashed outline, a grey motif.
+      // Spoiled food is a ghost: a grey faded motif, and on desktop a card with no slab and a dashed outline.
       await page.getByRole('button', { name: /Spoiled/ }).click();
       const ghost = page.locator('a.ghost').first();
       await expect(ghost).toBeVisible();
-      expect(await ghost.evaluate((a) => [getComputedStyle(a).borderTopStyle, getComputedStyle(a).backgroundColor])).toEqual(['dashed', 'rgba(0, 0, 0, 0)']);
+      // On a phone the dead item is a row in its group card: a faded grey motif and a muted name.
+      expect(await ghost.locator('oss-decay').evaluate((d) => [getComputedStyle(d).opacity, getComputedStyle(d).filter])).toEqual(['0.55', 'grayscale(1)']);
+      if (width >= 900) {
+        expect(await ghost.evaluate((a) => [getComputedStyle(a).borderTopStyle, getComputedStyle(a).backgroundColor])).toEqual(['dashed', 'rgba(0, 0, 0, 0)']);
+      }
       await settle(page);
       await checkAxe(page);
 

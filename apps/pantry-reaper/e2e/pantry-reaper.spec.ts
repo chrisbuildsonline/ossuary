@@ -79,9 +79,10 @@ test('adds yogurt, moves it to the freezer and exports its date', async ({ page 
   await expect.poll(() => detailDate(page)).toBe(shown);
   await expect(trace).toContainText('USDA FoodKeeper');
 
-  // Theme: the warm accent and the Fraunces display face.
+  // Theme: the warm accent (ember in the crypt, pumpkin in light) and the Fraunces display face.
   const shell = page.locator('oss-shell');
-  expect(await shell.evaluate((el) => getComputedStyle(el).getPropertyValue('--accent').trim())).toBe('#b8460e');
+  expect(await shell.evaluate((el) => getComputedStyle(el).getPropertyValue('--accent').trim())).toBe('#f07639');
+  expect(await shell.evaluate((el) => getComputedStyle(el).getPropertyValue('--light-accent').trim())).toBe('#b8460e');
   expect(await page.locator('.pr-detail h1').evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/Fraunces/);
   expect(await page.evaluate(() => document.fonts.check('600 32px Fraunces'))).toBe(true);
 
