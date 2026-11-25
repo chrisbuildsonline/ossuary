@@ -23,3 +23,6 @@ export { orderLifespans } from './lifespans';
 export { type Motif, type MotifSize, motifSvg, quantise } from './motifs/index';
 export { ensureDocumentTokens } from './styles';
 export { applyTheme, themeProperties } from './theme';
+export { type CryptColours, cryptTheme } from './crypt';
+export { firstVisitKey, seedFirstVisit } from './first-visit';
+export { MODE_KEY, type Mode, currentMode, initMode, setMode } from './mode';

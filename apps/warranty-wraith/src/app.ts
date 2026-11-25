@@ -1,5 +1,5 @@
 // The app glue: store, evaluation against bone.json, and the core elements. No engine, schema, store or ICS logic here.
-import { type Item, evaluate, exportIcs } from '@ossuary/core';
+import { type IsoDay, type Item, evaluate, exportIcs } from '@ossuary/core';
 import { type Store, openStore } from '@ossuary/core/store';
 import {
   type Download,
@@ -19,6 +19,7 @@ import {
   loadDisplayFont,
   orderLifespans,
   saveCalendar,
+  seedFirstVisit,
   shortDay,
   titleOf,
 } from '@ossuary/core/ui';
@@ -33,6 +34,10 @@ export interface AppDeps {
   newId(): string;
   indexedDB?: IDBFactory;
   download?: Download;
+  /** Sample items for the very first visit to an empty store (main.ts passes them; tests opt in). */
+  samples?: (today: IsoDay) => Item[];
+  /** Where the first visit is remembered; localStorage by default. */
+  storage?: Pick<Storage, 'getItem' | 'setItem'>;
   /** The recall list to match against; the bundled CPSC snapshot by default. */
   recalls?: readonly Recall[];
 }
@@ -301,9 +306,9 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
 
   /** One toast at a time; `undo` belongs to the toast on screen. */
   let undo: (() => Promise<void>) | undefined;
-  function say(message: string, onUndo?: () => Promise<void>): void {
+  function say(message: string, onUndo?: () => Promise<void>, undoLabel = 'Undo'): void {
     undo = onUndo;
-    toast.show(message, onUndo ? { undoLabel: 'Undo' } : {});
+    toast.show(message, onUndo ? { undoLabel } : {});
   }
   toast.addEventListener('oss-undo', () => {
     const run = undo;
@@ -347,7 +352,18 @@ export async function mountApp(root: HTMLElement, deps: AppDeps): Promise<App> {
     store = opened.value;
     importer.store = store;
     selected = /^#item-(.+)$/.exec(location.hash)?.[1];
+    const added = deps.samples ? await seedFirstVisit({ specId: boneSpec.id, store, samples: deps.samples(now().day), storage: deps.storage }) : [];
     await reload();
+    if (added.length > 0) {
+      say(
+        'Sample items added',
+        async () => {
+          for (const id of added) await store?.remove(id);
+          await reload();
+        },
+        'Clear',
+      );
+    }
   }
 
   const openAdd = () => {

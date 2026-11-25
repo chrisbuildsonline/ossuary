@@ -6,6 +6,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import ICAL from 'ical.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type App, type AppDeps, mountApp } from './app';
+import { samples } from './data/samples';
 import type { Recall } from './data/cpsc';
 import { boneSpec, defaults } from './spec';
 
@@ -77,9 +78,11 @@ describe('warranty wraith app: home, add, edit and done', () => {
   it('shows the themed shell and the empty state with the ghost parcel and the spec title', async () => {
     app = await mountApp(document.body, deps());
     const shell = document.querySelector('oss-shell');
-    expect(shell?.style.getPropertyValue('--accent')).toBe('#5a4bd1');
+    expect(shell?.style.getPropertyValue('--light-accent')).toBe('#5a4bd1');
+    expect(shell?.style.getPropertyValue('--crypt-accent')).toBe('#9086e0');
     // The page behind the shell is the cool canvas too, not the core default.
-    expect(document.documentElement.style.getPropertyValue('--canvas')).toBe('#edeff6');
+    expect(document.documentElement.style.getPropertyValue('--light-canvas')).toBe('#edeff6');
+    expect(document.documentElement.style.getPropertyValue('--crypt-canvas')).toBe('#0b0e16');
     expect(shadow(shell, '.wordmark')?.textContent).toBe('Warranty Wraith');
     const empty = await waitFor(() => shadow(list(), 'oss-empty'));
     expect(empty.getAttribute('kind')).toBe('empty');
@@ -608,5 +611,36 @@ describe('warranty wraith app: live regions', () => {
     expect(check()).toEqual(['oss-banner', 'oss-toast']);
     await openItem('DREO Space Heater');
     expect(check()).toEqual(['oss-banner', 'oss-banner', 'oss-toast']);
+  });
+});
+
+describe('first visit', () => {
+  const memory = () => {
+    const data = new Map<string, string>();
+    return { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v) };
+  };
+  const listed = () => Array.from(list()?.shadowRoot?.querySelectorAll('oss-item') ?? []);
+
+  it('opens on the sample items once, says so, and Clear takes them away', async () => {
+    const indexedDB = new IDBFactory();
+    const storage = memory();
+    app = await mountApp(document.body, { ...deps(indexedDB), samples, storage });
+    await vi.waitFor(() => expect(listed().length).toBeGreaterThan(0));
+    expect(listed().some((i) => i.shadowRoot?.textContent?.includes('Air fryer'))).toBe(true);
+    const toast = document.querySelector('oss-toast');
+    expect(shadow(toast, '.toast span')?.textContent).toBe('Sample items added');
+    expect(shadow(toast, '.toast button')?.textContent).toBe('Clear');
+    (shadow(toast, '.toast button') as HTMLElement).click();
+    await vi.waitFor(() => expect(listed()).toHaveLength(0));
+    app.close();
+    document.body.replaceChildren();
+    app = await mountApp(document.body, { ...deps(indexedDB), samples, storage });
+    await vi.waitFor(() => expect(list()?.shadowRoot?.querySelector('oss-empty')).not.toBeNull());
+    expect(listed()).toHaveLength(0);
+  });
+
+  it('adds nothing without samples', async () => {
+    app = await mountApp(document.body, { ...deps(), storage: memory() });
+    await vi.waitFor(() => expect(list()?.shadowRoot?.querySelector('oss-empty')).not.toBeNull());
   });
 });
