@@ -181,7 +181,7 @@ export interface IcsEntry { id: string; values: Item }
 export function exportIcs(
   spec: BoneSpec,
   entries: IcsEntry[],
-  opts: { now: Now; prodId?: string },
+  opts: { now: Now; prodId?: string; describe?: (entry: IcsEntry, lifespan: LifespanEvaluation) => string | undefined },
 ): { ics: string; skipped: { id: string; issues: Issue[] }[] };
 ```
 
